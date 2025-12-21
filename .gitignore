@@ -33,3 +33,5 @@ build/
 # Temporary Files
 *.tmp
 *.temp
+.vercel
+.env*.local

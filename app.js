@@ -1,7 +1,9 @@
 import { kvData, newsData } from './data.js';
 
 // Configuration
-const API_BASE_URL = 'http://localhost:3001/api';
+const API_BASE_URL = window.location.hostname === 'localhost' 
+    ? 'http://localhost:3001/api'
+    : 'https://rov-sn-tournament-api.vercel.app/api';
 
 const statusEl = document.getElementById('connectionStatus');
 const mobileStatusEl = document.getElementById('mobileConnectionStatus');

@@ -63,7 +63,9 @@
     </div>
 
     <script type="module">
-        const API_BASE_URL = 'http://localhost:3001/api';
+        const API_BASE_URL = window.location.hostname === 'localhost'
+            ? 'http://localhost:3001/api'
+            : 'https://rov-sn-tournament-api.vercel.app/api';
         let scheduleData = null;
         let resultsData = null;
         let currentDay = null;
