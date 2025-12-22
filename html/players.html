@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Player Stats | ROV SN TOURNAMENT 2026</title>
+
+    <!-- Favicon -->
+    <link rel="icon" href="../img/RoV Logo.png" type="image/png">
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Custom Styles -->
+    <link href="../css/styles.css" rel="stylesheet">
+</head>
+<body class="flex flex-col min-h-screen">
+
+    <!-- Loading Screen -->
+    <div id="loadingScreen" class="fixed inset-0 bg-[#E8F7FF] z-[100] flex flex-col items-center justify-center transition-opacity duration-700 ease-out">
+        <div class="relative flex flex-col items-center">
+            <div class="w-40 h-40 md:w-56 md:h-56 bg-white rounded-full shadow-2xl flex items-center justify-center border-4 border-[#15C8FF] animate-pulse-logo mb-6 overflow-hidden p-2">
+                <img src="../img/RoV Logo.png" class="w-full h-full object-cover rounded-full" alt="RoV Logo">
+            </div>
+            <div class="mt-4 flex space-x-2 animate-bounce">
+                <div class="w-3 h-3 bg-[#15C8FF] rounded-full"></div>
+                <div class="w-3 h-3 bg-[#15C8FF] rounded-full animation-delay-200"></div>
+                <div class="w-3 h-3 bg-[#15C8FF] rounded-full animation-delay-400"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navbar -->
+    <nav class="sticky top-0 z-50 bg-[#0B1120] border-b-4 border-primary-custom shadow-lg relative">
+        <div class="container mx-auto px-4 h-16 flex items-center justify-between">
+            <!-- Logo -->
+            <div class="flex items-center gap-3 cursor-pointer" onclick="window.location.href='../index.html'">
+                <div class="w-10 h-10 rounded-full bg-white flex items-center justify-center border-2 border-primary-custom shadow-[0_0_10px_rgba(21,200,255,0.5)]">
+                    <i class="fas fa-trophy text-primary-custom text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="font-heading text-xl font-bold tracking-wide leading-none text-white m-0">ROV SN <span class="text-primary-custom">2026</span></h1>
+                    <p class="text-[10px] text-gray-400 tracking-wider uppercase m-0">Official Tournament Hub</p>
+                </div>
+            </div>
+
+            <!-- Menu (Desktop) -->
+            <div class="hidden md:flex items-center gap-8 text-sm font-medium uppercase tracking-wide">
+                <a href="../index.html" class="nav-link-custom">หน้าหลัก</a>
+                <a href="schedule.html" class="nav-link-custom">ตารางแข่ง</a>
+                <a href="table.html" class="nav-link-custom">ตารางคะแนน</a>
+                <a href="teams.html" class="nav-link-custom">ทีมแข่ง</a>
+                <a href="players.html" class="nav-link-custom active">สถิติผู้เล่น</a>
+            </div>
+
+            <!-- User Profile / Login (Optional) -->
+            <div class="hidden md:flex items-center gap-4">
+                <div id="connectionStatus" class="text-xs text-gray-400 flex items-center gap-2">
+                    <div class="w-2 h-2 rounded-full bg-gray-500 animate-pulse"></div>
+                    Connecting...
+                </div>
+            </div>
+
+            <!-- Mobile Menu Btn -->
+            <button class="md:hidden text-white text-xl bg-transparent border-0" onclick="toggleMobileMenu()">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+
+        <!-- Mobile Menu Dropdown -->
+        <div id="mobile-menu" class="md:hidden absolute top-16 left-0 right-0 bg-[#0B1120] border-b-2 border-primary-custom shadow-xl z-40 p-4 flex flex-col gap-4 transition-all duration-300 ease-in-out opacity-0 -translate-y-4 pointer-events-none invisible origin-top">
+            <a href="../index.html" class="text-left text-gray-300 hover:text-white font-medium py-2 border-b border-gray-800 w-full">หน้าหลัก</a>
+            <a href="schedule.html" class="text-left text-gray-300 hover:text-white font-medium py-2 border-b border-gray-800 w-full">ตารางแข่ง</a>
+            <a href="table.html" class="text-left text-gray-300 hover:text-white font-medium py-2 border-b border-gray-800 w-full">ตารางคะแนน</a>
+            <a href="teams.html" class="text-left text-gray-300 hover:text-white font-medium py-2 border-b border-gray-800 w-full">ทีมแข่ง</a>
+            <a href="players.html" class="text-left text-white font-medium py-2 w-full">สถิติผู้เล่น</a>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="flex-grow container mx-auto px-4 py-8">
+        <div class="max-w-6xl mx-auto">
+            <!-- Header -->
+            <div class="mb-8">
+                <h1 class="text-4xl md:text-5xl font-heading font-bold text-white mb-2">Player Statistics</h1>
+                <p class="text-gray-400 text-lg">สถิติประจำตัวผู้เล่นในการแข่งขัน</p>
+            </div>
+
+            <!-- Filter Section -->
+            <div class="bg-[#0B1120] rounded-xl p-4 md:p-6 mb-8 border border-primary-custom/20">
+                <div class="flex flex-row md:grid md:grid-cols-3 gap-3 md:gap-4 overflow-x-auto">
+                    <div class="min-w-0 w-1/3 md:w-auto">
+                        <label class="text-gray-300 text-sm font-medium mb-2 block">เลือกทีม</label>
+                        <select id="teamFilter" class="w-full min-w-0 max-w-full bg-gray-900 text-white border border-primary-custom/30 rounded px-2 py-2 text-xs md:text-sm truncate appearance-none focus:outline-none focus:border-primary-custom">
+                            <option value="">ทั้งหมด</option>
+                        </select>
+                    </div>
+                    <div class="min-w-0 w-1/3 md:w-auto">
+                        <label class="text-gray-300 text-sm font-medium mb-2 block">เลือกตำแหน่ง</label>
+                        <select id="positionFilter" class="w-full min-w-0 max-w-full bg-gray-900 text-white border border-primary-custom/30 rounded px-2 py-2 text-xs md:text-sm truncate appearance-none focus:outline-none focus:border-primary-custom">
+                            <option value="">ทั้งหมด</option>
+                            <option value="Jungle">ฟาร์มป่า</option>
+                            <option value="DarkSlayerLane">เลน Dark Slayer</option>
+                            <option value="AbyssalDragonLane">เลนมังกร</option>
+                            <option value="MidLane">เลนกลาง</option>
+                            <option value="Roaming">โรมมิ่ง</option>
+                        </select>
+                    </div>
+                    <div class="min-w-0 w-1/3 md:w-auto">
+                        <label class="text-gray-300 text-sm font-medium mb-2 block">เรียงลำดับตาม</label>
+                        <select id="sortFilter" class="w-full min-w-0 max-w-full bg-gray-900 text-white border border-primary-custom/30 rounded px-2 py-2 text-xs md:text-sm truncate appearance-none focus:outline-none focus:border-primary-custom">
+                            <option value="kills">Kills (มากสุด)</option>
+                            <option value="assists">Assists (มากสุด)</option>
+                            <option value="kda">KDA Ratio (สูงสุด)</option>
+                            <option value="gold">Gold (มากสุด)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Players Table -->
+            <div class="bg-white rounded-xl shadow-xl overflow-hidden border border-gray-100">
+                <div class="overflow-x-auto">
+                    <table class="w-full min-w-[800px]">
+                        <thead class="bg-gradient-to-r from-primary-custom/10 to-primary-custom/5 border-b-2 border-primary-custom/20">
+                            <tr>
+                                <th class="px-2 md:px-4 py-3 md:py-4 text-left text-[10px] md:text-xs font-bold text-primary-custom uppercase tracking-wider">#</th>
+                                <th class="px-2 md:px-4 py-3 md:py-4 text-left text-[10px] md:text-xs font-bold text-primary-custom uppercase tracking-wider">ผู้เล่น</th>
+                                <th class="px-2 md:px-4 py-3 md:py-4 text-left text-[10px] md:text-xs font-bold text-primary-custom uppercase tracking-wider">ทีม</th>
+                                <th class="px-2 md:px-4 py-3 md:py-4 text-left text-[10px] md:text-xs font-bold text-primary-custom uppercase tracking-wider">ตำแหน่ง</th>
+                                <th class="px-2 md:px-4 py-3 md:py-4 text-center text-[10px] md:text-xs font-bold text-primary-custom uppercase tracking-wider">Games</th>
+                                <th class="px-2 md:px-4 py-3 md:py-4 text-center text-[10px] md:text-xs font-bold text-primary-custom uppercase tracking-wider">K</th>
+                                <th class="px-2 md:px-4 py-3 md:py-4 text-center text-[10px] md:text-xs font-bold text-primary-custom uppercase tracking-wider">D</th>
+                                <th class="px-2 md:px-4 py-3 md:py-4 text-center text-[10px] md:text-xs font-bold text-primary-custom uppercase tracking-wider">A</th>
+                                <th class="px-2 md:px-4 py-3 md:py-4 text-center text-[10px] md:text-xs font-bold text-primary-custom uppercase tracking-wider">KDA</th>
+                                <th class="px-2 md:px-4 py-3 md:py-4 text-center text-[10px] md:text-xs font-bold text-primary-custom uppercase tracking-wider">MVP</th>
+                                <th class="px-2 md:px-4 py-3 md:py-4 text-center text-[10px] md:text-xs font-bold text-primary-custom uppercase tracking-wider">GPM</th>
+                                <th class="px-2 md:px-4 py-3 md:py-4 text-center text-[10px] md:text-xs font-bold text-primary-custom uppercase tracking-wider">DMG</th>
+                                <th class="px-2 md:px-4 py-3 md:py-4 text-center text-[10px] md:text-xs font-bold text-primary-custom uppercase tracking-wider">Taken</th>
+                            </tr>
+                        </thead>
+                        <tbody id="players-table-body" class="divide-y divide-gray-100">
+                            <!-- Players will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-[#0B1120] border-t-4 border-primary-custom py-12 mt-12">
+        <div class="container mx-auto px-4">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-8">
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-full bg-white flex items-center justify-center shadow-lg shadow-cyan-500/50">
+                        <i class="fas fa-trophy text-primary-custom text-xl"></i>
+                    </div>
+                    <div>
+                        <h2 class="font-heading text-2xl font-bold text-white tracking-wide m-0">ROV SN TOURNAMENT</h2>
+                        <p class="text-gray-400 text-sm m-0">The Ultimate Mobile MOBA Competition</p>
+                    </div>
+                </div>
+                <div class="flex gap-6">
+                    <a href="https://www.facebook.com/profile.php?id=61573326877157&ref=pl_edit_xav_ig_profile_page_web#" class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-gray-400 hover:bg-primary-custom hover:text-white transition"><i class="fab fa-facebook-f"></i></a>
+                    <a href="https://www.instagram.com/sn.ac.th?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==" class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-gray-400 hover:bg-primary-custom hover:text-white transition"><i class="fab fa-instagram"></i></a>
+                    <a href="https://discord.gg/eAjAAM58wd" class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-gray-400 hover:bg-primary-custom hover:text-white transition"><i class="fab fa-discord"></i></a>
+                </div>
+            </div>
+            <div class="border-t border-white/10 mt-8 pt-8 text-center text-gray-500 text-xs">
+                &copy; 2026 RoV SN Tournament. All rights reserved. <br>
+                Powered by PhuriphatiZAMU.
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom Scripts -->
+    <script type="module" src="../js/navigation.js"></script>
+    <script type="module">
+        import { toggleMobileMenu } from '../js/navigation.js';
+        
+        // Config API URL
+        const API_BASE_URL = window.location.hostname === 'localhost' 
+            ? 'http://localhost:3001/api'
+            : 'https://rov-sn-tournament-api.vercel.app/api';
+        
+        let allPlayers = [];
+        let filteredPlayers = [];
+        
+        window.addEventListener('DOMContentLoaded', async () => {
+            await fetchPlayers();
+            populateTeamFilter();
+            applyFilters(); 
+            setupFilterListeners();
+        });
+        
+        async function fetchPlayers() {
+            try {
+                // ใช้ API ใหม่ /api/player-stats/totals
+                const response = await fetch(`${API_BASE_URL}/player-stats/totals`);
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    // API returns { players: [], totalPlayers, calculatedAt }
+                    if (data?.players) {
+                        allPlayers = data.players;
+                    } else if (Array.isArray(data)) {
+                        allPlayers = data;
+                    }
+                    
+                    filteredPlayers = [...allPlayers];
+                    console.log('Loaded players:', allPlayers.length);
+                }
+            } catch (error) {
+                console.error('Error fetching players:', error);
+                allPlayers = [];
+                filteredPlayers = [];
+            }
+        }
+        
+        function populateTeamFilter() {
+            const teams = [...new Set(allPlayers.map(p => p.team).filter(t => t))].sort();
+            const teamFilter = document.getElementById('teamFilter');
+            
+            teamFilter.innerHTML = '<option value="">ทั้งหมด</option>';
+            
+            teams.forEach(team => {
+                const option = document.createElement('option');
+                option.value = team;
+                option.textContent = team;
+                teamFilter.appendChild(option);
+            });
+        }
+        
+        function setupFilterListeners() {
+            document.getElementById('teamFilter').addEventListener('change', applyFilters);
+            document.getElementById('positionFilter').addEventListener('change', applyFilters);
+            document.getElementById('sortFilter').addEventListener('change', applyFilters);
+        }
+        
+        function applyFilters() {
+            const teamFilter = document.getElementById('teamFilter').value;
+            const positionFilter = document.getElementById('positionFilter').value;
+            const sortFilter = document.getElementById('sortFilter').value;
+            
+            // Filter
+            filteredPlayers = allPlayers.filter(player => {
+                const teamMatch = !teamFilter || player.team === teamFilter;
+                const positionMatch = !positionFilter || player.role === positionFilter;
+                return teamMatch && positionMatch;
+            });
+            
+            // Sort (ใช้ข้อมูลตรงจาก player object)
+            filteredPlayers.sort((a, b) => {
+                switch(sortFilter) {
+                    case 'kills':
+                        return (b.kills || 0) - (a.kills || 0);
+                    case 'assists':
+                        return (b.assists || 0) - (a.assists || 0);
+                    case 'kda':
+                        return (b.kda || 0) - (a.kda || 0);
+                    case 'gold':
+                        return (b.goldPerMin || 0) - (a.goldPerMin || 0);
+                    default:
+                        return (b.kills || 0) - (a.kills || 0);
+                }
+            });
+            
+            renderPlayers();
+        }
+        
+        // Helper: format number to K (e.g., 15000 -> 15.0K)
+        function formatNumberK(num) {
+            if (!num) return '0';
+            if (num >= 1000) {
+                return (num / 1000).toFixed(1) + 'K';
+            }
+            return num.toString();
+        }
+
+        function renderPlayers() {
+            const tbody = document.getElementById('players-table-body');
+            tbody.innerHTML = '';
+            
+            if (filteredPlayers.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="13" class="text-center py-8 text-gray-400">ไม่พบข้อมูลผู้เล่น</td></tr>`;
+                return;
+            }
+
+            filteredPlayers.forEach((player, index) => {
+                // ใช้ข้อมูลจาก player_stats/totals โดยตรง
+                const gamesPlayed = player.gamesPlayed || 0;
+                const kills = player.kills || 0;
+                const deaths = player.deaths || 0;
+                const assists = player.assists || 0;
+                const kda = player.kda ? player.kda.toFixed(2) : '0.00';
+                const mvp = player.mvp || 0;
+                const goldPerMin = player.goldPerMin || 0;
+                const damageDealt = formatNumberK(player.damageDealt);
+                const damageTaken = formatNumberK(player.damageTaken);
+                const roleDisplay = player.roleDisplay || player.role || '-';
+
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-gray-50 transition border-b border-gray-100 last:border-0';
+                row.innerHTML = `
+                    <td class="px-2 md:px-4 py-2 md:py-3 font-bold text-primary-custom text-center text-xs md:text-sm">${index + 1}</td>
+                    <td class="px-2 md:px-4 py-2 md:py-3">
+                        <div class="flex items-center gap-1 md:gap-2">
+                            <div class="w-6 h-6 md:w-8 md:h-8 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 border border-gray-300 flex items-center justify-center text-gray-500 font-bold text-[10px] md:text-sm shadow-sm flex-shrink-0">
+                                ${player.name.charAt(0).toUpperCase()}
+                            </div>
+                            <div class="font-bold text-gray-800 text-xs md:text-sm truncate max-w-[60px] md:max-w-none">${player.name}</div>
+                        </div>
+                    </td>
+                    <td class="px-2 md:px-4 py-2 md:py-3">
+                        <span class="bg-gray-100 text-gray-600 px-1 md:px-2 py-0.5 md:py-1 rounded-full text-[10px] md:text-xs font-bold border border-gray-200 whitespace-nowrap">
+                            ${player.team}
+                        </span>
+                    </td>
+                    <td class="px-2 md:px-4 py-2 md:py-3 font-medium text-gray-500 text-[10px] md:text-xs whitespace-nowrap">${roleDisplay}</td>
+                    <td class="px-2 md:px-4 py-2 md:py-3 text-center font-bold text-gray-600 text-xs md:text-sm">${gamesPlayed}</td>
+                    <td class="px-2 md:px-4 py-2 md:py-3 text-center font-bold text-green-600 text-xs md:text-sm">${kills}</td>
+                    <td class="px-2 md:px-4 py-2 md:py-3 text-center font-bold text-red-500 text-xs md:text-sm">${deaths}</td>
+                    <td class="px-2 md:px-4 py-2 md:py-3 text-center font-bold text-blue-500 text-xs md:text-sm">${assists}</td>
+                    <td class="px-2 md:px-4 py-2 md:py-3 text-center font-bold text-primary-custom text-xs md:text-sm">${kda}</td>
+                    <td class="px-2 md:px-4 py-2 md:py-3 text-center font-bold text-yellow-500 text-xs md:text-sm">${mvp > 0 ? '⭐' + mvp : '-'}</td>
+                    <td class="px-2 md:px-4 py-2 md:py-3 text-center font-medium text-gray-600 text-xs md:text-sm">${goldPerMin}</td>
+                    <td class="px-2 md:px-4 py-2 md:py-3 text-center font-medium text-orange-500 text-xs md:text-sm">${damageDealt}</td>
+                    <td class="px-2 md:px-4 py-2 md:py-3 text-center font-medium text-purple-500 text-xs md:text-sm">${damageTaken}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+    </script>
+    
+    <!-- Loading Screen Handler -->
+    <script>
+        window.addEventListener('load', () => {
+            const loadingScreen = document.getElementById('loadingScreen');
+            if (loadingScreen) {
+                setTimeout(() => {
+                    loadingScreen.classList.add('opacity-0');
+                    setTimeout(() => {
+                        loadingScreen.classList.add('hidden');
+                    }, 700);
+                }, 500);
+            }
+        });
+    </script>
+</body>
+</html>
