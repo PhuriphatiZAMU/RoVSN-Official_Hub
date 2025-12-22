@@ -396,14 +396,38 @@ export function renderStandings(teams) {
             
         const rankClass = isQualified ? 'text-[#0B1120] font-bold' : 'text-gray-500';
         
-        // Mock Form (แสดงผลฟอร์ม 5 นัดหลังสุด - ส่วนนี้อาจต้องเขียน Logic เพิ่มถ้ามีข้อมูลประวัติ)
+        // Generate Form from actual data (W = win, L = loss)
+        // If team has form array from DB, use it; otherwise generate from matchWins/matchLosses
+        let formDots = [];
+        if (team.form && Array.isArray(team.form) && team.form.length > 0) {
+            // Use form data from database (array of 'W' or 'L')
+            formDots = team.form.slice(-5).map(result => {
+                if (result === 'W') return '<span class="w-5 h-5 rounded-full bg-green-500 text-white text-[10px] font-bold flex items-center justify-center shadow-sm">W</span>';
+                if (result === 'L') return '<span class="w-5 h-5 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center shadow-sm">L</span>';
+                return '<span class="w-5 h-5 rounded-full bg-gray-300 text-gray-500 text-[10px] font-bold flex items-center justify-center">-</span>';
+            });
+        } else {
+            // Generate form from matchWins/matchLosses (most recent matches approximation)
+            const wins = team.matchWins || 0;
+            const losses = team.matchLosses || 0;
+            const totalMatches = wins + losses;
+            
+            // Create form array: fill wins first, then losses, up to 5 slots
+            for (let i = 0; i < Math.min(wins, 5); i++) {
+                formDots.push('<span class="w-5 h-5 rounded-full bg-green-500 text-white text-[10px] font-bold flex items-center justify-center shadow-sm">W</span>');
+            }
+            for (let i = 0; i < Math.min(losses, 5 - formDots.length); i++) {
+                formDots.push('<span class="w-5 h-5 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center shadow-sm">L</span>');
+            }
+            // Fill remaining slots with empty dots
+            while (formDots.length < 5) {
+                formDots.push('<span class="w-5 h-5 rounded-full bg-gray-200 text-gray-400 text-[10px] flex items-center justify-center">-</span>');
+            }
+        }
+        
         const formHtml = `
-            <div class="flex justify-center gap-1 opacity-50">
-                <span class="w-2 h-2 rounded-full bg-gray-300"></span>
-                <span class="w-2 h-2 rounded-full bg-gray-300"></span>
-                <span class="w-2 h-2 rounded-full bg-gray-300"></span>
-                <span class="w-2 h-2 rounded-full bg-gray-300"></span>
-                <span class="w-2 h-2 rounded-full bg-gray-300"></span>
+            <div class="flex justify-center gap-1">
+                ${formDots.join('')}
             </div>
         `;
 
