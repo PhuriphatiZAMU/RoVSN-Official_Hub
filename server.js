@@ -26,7 +26,7 @@ app.use(express.json());
 // MongoDB Connection
 let db;
 let schedulesCollection;
-let standingsCollection;
+let tableCollection;
 let playersCollection;
 let scheduleResultsCollection;
 
@@ -38,7 +38,7 @@ const connectDB = async () => {
         
         db = client.db('rov_sn_tournament_2026');
         schedulesCollection = db.collection('schedules');
-        standingsCollection = db.collection('standings');
+        tableCollection = db.collection('table');
         playersCollection = db.collection('players');
         scheduleResultsCollection = db.collection('schedule_results');
         
@@ -292,7 +292,7 @@ app.get('/api/schedule-results/latest', async (req, res) => {
             .findOne({}, { sort: { createdAt: -1 } });
         
         if (!latestResult) {
-            return res.status(404).json({ error: 'No schedule results found' });
+            return res.status(200).json({ results: [] });
         }
         
         res.status(200).json(latestResult);
@@ -409,83 +409,89 @@ app.delete('/api/schedules/:id', async (req, res) => {
     }
 });
 
-// ==================== STANDINGS ROUTES ====================
+// ==================== STANDINGS ROUTES (TABLE) ====================
 
-// Get All Standings (Sorted by latest)
-app.get('/api/standings', async (req, res) => {
+// Shared helpers for table/standings routes
+const getAllTable = async () => tableCollection.find({}).sort({ createdAt: -1 }).toArray();
+
+const getLatestStandingsPayload = async () => {
+    const docs = await tableCollection.find({}).sort({ createdAt: -1, _id: -1 }).toArray();
+    if (!docs || docs.length === 0) return { standings: [] };
+
+    const first = docs[0];
+    if (Array.isArray(first.standings)) return first;
+
+    const standingsArray = docs
+        .map(doc => ({ ...doc, _id: undefined }))
+        .sort((a, b) => {
+            if (a.rank !== undefined && b.rank !== undefined) return a.rank - b.rank;
+            return (b.points || 0) - (a.points || 0);
+        });
+
+    return { standings: standingsArray };
+};
+
+const handleListTable = async (req, res) => {
     try {
-        const standings = await standingsCollection
-            .find({})
-            .sort({ createdAt: -1 })
-            .toArray();
-        
-        res.status(200).json(standings);
+        const table = await getAllTable();
+        res.status(200).json(table);
     } catch (error) {
-        console.error('Error fetching standings:', error);
-        res.status(500).json({ error: 'Failed to fetch standings' });
+        console.error('Error fetching table:', error);
+        res.status(500).json({ error: 'Failed to fetch table' });
     }
-});
+};
 
-// Get Latest Standings
-app.get('/api/standings/latest', async (req, res) => {
+const handleLatestTable = async (req, res) => {
     try {
-        const latestStanding = await standingsCollection
-            .findOne({}, { sort: { createdAt: -1 } });
-        
-        if (!latestStanding) {
-            return res.status(404).json({ error: 'No standings found' });
-        }
-        
-        res.status(200).json(latestStanding);
+        const payload = await getLatestStandingsPayload();
+        res.status(200).json(payload);
     } catch (error) {
-        console.error('Error fetching latest standings:', error);
-        res.status(500).json({ error: 'Failed to fetch latest standings' });
+        console.error('Error fetching latest table:', error);
+        res.status(500).json({ error: 'Failed to fetch latest table' });
     }
-});
+};
 
-// Create New Standings
-app.post('/api/standings', async (req, res) => {
+const handleCreateTable = async (req, res) => {
     try {
         const standingsData = {
             ...req.body,
             createdAt: new Date(),
             updatedAt: new Date()
         };
-        
-        const result = await standingsCollection.insertOne(standingsData);
-        
-        res.status(201).json({ 
-            message: 'Standings created successfully',
+
+        const result = await tableCollection.insertOne(standingsData);
+
+        res.status(201).json({
+            message: 'Table created successfully',
             id: result.insertedId,
             data: standingsData
         });
     } catch (error) {
-        console.error('Error creating standings:', error);
-        res.status(500).json({ error: 'Failed to create standings' });
+        console.error('Error creating table:', error);
+        res.status(500).json({ error: 'Failed to create table' });
     }
-});
+};
 
-// Update Standings by ID
-app.put('/api/standings/:id', async (req, res) => {
+const handleUpdateTable = async (req, res) => {
     try {
         const { ObjectId } = require('mongodb');
-        const standingId = new ObjectId(req.params.id);
-        
+        const tableId = new ObjectId(req.params.id);
+
         const updateData = {
             ...req.body,
             updatedAt: new Date()
         };
-        
-        const result = await standingsCollection.updateOne(
-            { _id: standingId },
+
+        const result = await tableCollection.updateOne(
+            { _id: tableId },
             { $set: updateData }
         );
-        
+
         if (result.matchedCount === 0) {
             return res.status(404).json({ error: 'Standings not found' });
         }
-        
-        res.status(200).json({ 
+
+        res.status(200).json({
             message: 'Standings updated successfully',
             modifiedCount: result.modifiedCount
         });
@@ -493,28 +499,36 @@ app.put('/api/standings/:id', async (req, res) => {
         console.error('Error updating standings:', error);
         res.status(500).json({ error: 'Failed to update standings' });
     }
-});
+};
 
-// Delete Standings by ID
-app.delete('/api/standings/:id', async (req, res) => {
+const handleDeleteTable = async (req, res) => {
     try {
         const { ObjectId } = require('mongodb');
-        const standingId = new ObjectId(req.params.id);
-        
-        const result = await standingsCollection.deleteOne({ _id: standingId });
-        
+        const tableId = new ObjectId(req.params.id);
+
+        const result = await tableCollection.deleteOne({ _id: tableId });
+
         if (result.deletedCount === 0) {
-            return res.status(404).json({ error: 'Standings not found' });
+            return res.status(404).json({ error: 'Table not found' });
         }
-        
-        res.status(200).json({ 
-            message: 'Standings deleted successfully'
+
+        res.status(200).json({
+            message: 'Table deleted successfully'
         });
     } catch (error) {
-        console.error('Error deleting standings:', error);
-        res.status(500).json({ error: 'Failed to delete standings' });
+        console.error('Error deleting table:', error);
+        res.status(500).json({ error: 'Failed to delete table' });
     }
-});
+};
+
+// Primary routes
+app.get('/api/table', handleListTable);
+app.get('/api/table/latest', handleLatestTable);
+app.post('/api/table', handleCreateTable);
+app.put('/api/table/:id', handleUpdateTable);
+app.delete('/api/table/:id', handleDeleteTable);
+
+// Standings endpoints removed; use /api/table instead
 
 // ==================== PLAYERS ROUTES ====================
 
@@ -632,7 +646,7 @@ const startServer = async () => {
         console.log(`📡 API Base URL: http://localhost:${PORT}/api`);
         console.log(`💚 Health Check: http://localhost:${PORT}/api/health`);
         console.log(`📊 Schedules: http://localhost:${PORT}/api/schedules`);
-        console.log(`🏆 Standings: http://localhost:${PORT}/api/standings`);
+        console.log(`🏆 Table: http://localhost:${PORT}/api/table`);
         console.log(`👥 Players: http://localhost:${PORT}/api/players`);
     });
 };

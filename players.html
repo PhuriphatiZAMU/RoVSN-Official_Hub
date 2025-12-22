@@ -183,16 +183,21 @@
     <!-- Custom Scripts -->
     <script type="module" src="navigation.js"></script>
     <script type="module">
-        const API_BASE_URL = 'http://localhost:3001/api';
+        import { switchTab, toggleMobileMenu } from './navigation.js';
+        
+        // Config API URL
+        const API_BASE_URL = window.location.hostname === 'localhost' 
+            ? 'http://localhost:3001/api'
+            : 'https://rov-sn-tournament-api.vercel.app/api';
         
         let allPlayers = [];
         let filteredPlayers = [];
         
-        // Initialize page
         window.addEventListener('DOMContentLoaded', async () => {
             await fetchPlayers();
             populateTeamFilter();
-            renderPlayers();
+            // เริ่มต้นด้วยการ Sort ตาม Kills
+            applyFilters(); 
             setupFilterListeners();
         });
         
@@ -201,13 +206,16 @@
                 const response = await fetch(`${API_BASE_URL}/players/latest`);
                 if (response.ok) {
                     const data = await response.json();
-                    console.log('Players data:', data);
                     
-                    if (data?.players) {
+                    // รองรับทั้ง Array และ object { players: [] }
+                    if (Array.isArray(data)) {
+                        allPlayers = data;
+                    } else if (data?.players) {
                         allPlayers = data.players;
-                        filteredPlayers = [...allPlayers];
-                        console.log('Loaded players:', allPlayers.length);
                     }
+                    
+                    filteredPlayers = [...allPlayers];
+                    console.log('Loaded players:', allPlayers.length);
                 }
             } catch (error) {
                 console.error('Error fetching players:', error);
@@ -217,10 +225,10 @@
         }
         
         function populateTeamFilter() {
-            const teams = [...new Set(allPlayers.map(p => p.team))];
+            // รายชื่อทีมไม่ซ้ำ
+            const teams = [...new Set(allPlayers.map(p => p.team))].sort();
             const teamFilter = document.getElementById('teamFilter');
             
-            // Clear existing options except first one
             teamFilter.innerHTML = '<option value="">ทั้งหมด</option>';
             
             teams.forEach(team => {
@@ -242,61 +250,92 @@
             const positionFilter = document.getElementById('positionFilter').value;
             const sortFilter = document.getElementById('sortFilter').value;
             
+            // Filter
             filteredPlayers = allPlayers.filter(player => {
                 const teamMatch = !teamFilter || player.team === teamFilter;
-                const positionMatch = !positionFilter || player.position === positionFilter;
+                const role = player.role || player.position; 
+                const positionMatch = !positionFilter || role === positionFilter;
                 return teamMatch && positionMatch;
             });
             
-            // Sort
+            // Sort ใน stats object
             filteredPlayers.sort((a, b) => {
+                const statsA = a.stats || {};
+                const statsB = b.stats || {};
+
                 switch(sortFilter) {
                     case 'kills':
-                        return b.kills - a.kills;
+                        return (statsB.k || 0) - (statsA.k || 0);
                     case 'assists':
-                        return b.assists - a.assists;
+                        return (statsB.a || 0) - (statsA.a || 0);
                     case 'kda':
-                        return (b.kills + b.assists) / Math.max(1, b.deaths) - (a.kills + a.assists) / Math.max(1, a.deaths);
+                        return (statsB.kda || 0) - (statsA.kda || 0);
                     case 'gold':
-                        return b.goldPerMin - a.goldPerMin;
+                        return (statsB.gpm || 0) - (statsA.gpm || 0);
                     default:
-                        return 0;
+                        return (statsB.k || 0) - (statsA.k || 0);
                 }
             });
             
             renderPlayers();
         }
         
+        // Helper: format number to K (e.g., 15000 -> 15.0K)
+        function formatNumberK(num) {
+            if (!num) return '0';
+            if (num >= 1000) {
+                return (num / 1000).toFixed(1) + 'K';
+            }
+            return num.toString();
+        }
+
         function renderPlayers() {
             const tbody = document.getElementById('players-table-body');
             tbody.innerHTML = '';
             
+            if (filteredPlayers.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="10" class="text-center py-8 text-gray-400">ไม่พบข้อมูลผู้เล่น</td></tr>`;
+                return;
+            }
+
             filteredPlayers.forEach((player, index) => {
-                const kdaRatio = ((player.kills + player.assists) / Math.max(1, player.deaths)).toFixed(2);
+                const stats = player.stats || {};
+                
+                const kills = stats.k || 0;
+                const deaths = stats.d || 0;
+                const assists = stats.a || 0;
+                const kda = stats.kda ? stats.kda.toFixed(2) : '0.00';
+                const gpm = stats.gpm || 0;
+                const damage = formatNumberK(stats.damage);
+                const role = player.role || player.position || '-';
+
                 const row = document.createElement('tr');
-                row.className = 'hover:bg-gray-50 transition';
+                row.className = 'hover:bg-gray-50 transition border-b border-gray-100 last:border-0';
                 row.innerHTML = `
-                    <td class="px-6 py-4 font-bold text-primary-custom">${index + 1}</td>
+                    <td class="px-6 py-4 font-bold text-primary-custom text-center">${index + 1}</td>
                     <td class="px-6 py-4">
                         <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-primary-custom to-cyan-600 flex items-center justify-center text-white font-bold">
-                                ${player.playerName.charAt(0)}
+                            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 border border-gray-300 flex items-center justify-center text-gray-500 font-bold shadow-sm">
+                                ${player.name.charAt(0).toUpperCase()}
                             </div>
                             <div>
-                                <div class="font-bold text-gray-800">${player.playerName}</div>
+                                <div class="font-bold text-gray-800">${player.name}</div>
+                                <div class="text-xs text-gray-400 md:hidden">${player.team}</div>
                             </div>
                         </div>
                     </td>
-                    <td class="px-6 py-4">
-                        <span class="bg-primary-custom/10 text-primary-custom px-3 py-1 rounded-full text-sm font-medium">${player.team}</span>
+                    <td class="px-6 py-4 hidden md:table-cell">
+                        <span class="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs font-bold border border-gray-200">
+                            ${player.team}
+                        </span>
                     </td>
-                    <td class="px-6 py-4 font-medium text-gray-700">${player.position}</td>
-                    <td class="px-6 py-4 text-center font-bold text-green-600">${player.kills}</td>
-                    <td class="px-6 py-4 text-center font-bold text-red-600">${player.deaths}</td>
-                    <td class="px-6 py-4 text-center font-bold text-blue-600">${player.assists}</td>
-                    <td class="px-6 py-4 text-center font-bold text-purple-600">${kdaRatio}</td>
-                    <td class="px-6 py-4 text-center font-medium text-amber-600">${player.goldPerMin}</td>
-                    <td class="px-6 py-4 text-center font-medium text-gray-700">${player.damage}</td>
+                    <td class="px-6 py-4 font-medium text-gray-500 text-sm">${role}</td>
+                    <td class="px-6 py-4 text-center font-bold text-gray-800">${kills}</td>
+                    <td class="px-6 py-4 text-center font-bold text-red-500">${deaths}</td>
+                    <td class="px-6 py-4 text-center font-bold text-gray-600">${assists}</td>
+                    <td class="px-6 py-4 text-center font-bold text-primary-custom text-lg">${kda}</td>
+                    <td class="px-6 py-4 text-center font-medium text-gray-600">${gpm}</td>
+                    <td class="px-6 py-4 text-center font-medium text-gray-600">${damage}</td>
                 `;
                 tbody.appendChild(row);
             });

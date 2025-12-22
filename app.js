@@ -150,17 +150,30 @@ export async function fetchTournamentData() {
             }
         }
 
-        // 4. Fetch Standings Data
+        // 4. Fetch Table (Standings) Data
         try {
-            const standingsResponse = await fetch(`${API_BASE_URL}/standings/latest`);
+            console.log('Fetching table from:', `${API_BASE_URL}/table/latest`);
+            const standingsResponse = await fetch(`${API_BASE_URL}/table/latest`);
+            console.log('Table response status:', standingsResponse.status);
+            
             if (standingsResponse.ok) {
                 const latestStandings = await standingsResponse.json();
                 console.log('Standings data:', latestStandings);
                 
-                if (latestStandings?.standings) {
-                    console.log('Rendering standings with teams:', latestStandings.standings.length);
-                    renderStandings(latestStandings.standings);
+                const teams = Array.isArray(latestStandings?.standings)
+                    ? latestStandings.standings
+                    : Array.isArray(latestStandings)
+                        ? latestStandings
+                        : null;
+
+                if (teams && teams.length) {
+                    console.log('Rendering standings with teams:', teams.length);
+                    renderStandings(teams);
+                } else {
+                    console.warn('No teams data found in response');
                 }
+            } else {
+                console.error('Table API returned error:', standingsResponse.status);
             }
         } catch (standingsError) {
             console.error('Standings fetch error:', standingsError);
@@ -363,69 +376,55 @@ export function renderStandings(teams) {
     
     container.innerHTML = '';
     
-    // 1. Calculate additional data (if Backend doesn't send it)
-    const processedTeams = teams.map(team => {
-        // Calculate games from matchWins/matchLosses
-        const gamesWon = team.matchWins || 0;
-        const gamesLost = team.matchLosses || 0;
-        
-        return {
-            ...team,
-            matchPlayed: (team.wins || 0) + (team.losses || 0), // P
-            gameDiff: team.diff || 0 // GD
-        };
-    });
-
-    // 2. Sorting Logic (Tie-breakers)
-    // 1. Points -> 2. Game Difference -> 3. Total Wins
-    processedTeams.sort((a, b) => {
-        if (b.points !== a.points) return b.points - a.points; // Points
-        if (b.gameDiff !== a.gameDiff) return b.gameDiff - a.gameDiff; // Game difference
-        if (b.wins !== a.wins) return b.wins - a.wins; // Match wins
-        return 0; // Random Draw (if all equal)
+    // เรียงลำดับข้อมูล: คะแนน > ผลต่างเกม > แมตช์ที่ชนะ
+    const processedTeams = teams.sort((a, b) => {
+        if (b.points !== a.points) return b.points - a.points; // คะแนน
+        if (b.gameDiff !== a.gameDiff) return b.gameDiff - a.gameDiff; // ผลต่างเกม
+        if (b.matchWins !== a.matchWins) return b.matchWins - a.matchWins; // จำนวนแมตช์ที่ชนะ
+        return 0;
     });
     
-    // 3. Render Rows
+    // สร้างตาราง
     processedTeams.forEach((team, index) => {
         const rank = index + 1;
-        const isQualified = rank <= 4; // Top 4 advance
+        const isQualified = rank <= 4; // Top 4 เข้ารอบ
         
-        // Style for qualified teams (left border)
+        // กำหนดสีพื้นหลังและขอบสำหรับทีมที่เข้ารอบ
         const rowClass = isQualified 
             ? 'bg-blue-50/30 hover:bg-blue-50 border-l-4 border-l-primary-custom' 
             : 'hover:bg-gray-50 border-l-4 border-l-transparent';
             
         const rankClass = isQualified ? 'text-[#0B1120] font-bold' : 'text-gray-500';
         
-        // Mock Form (last 5 matches - if no data, use random or leave blank)
-        // W = Win (Green), L = Lose (Red)
+        // Mock Form (แสดงผลฟอร์ม 5 นัดหลังสุด - ส่วนนี้อาจต้องเขียน Logic เพิ่มถ้ามีข้อมูลประวัติ)
         const formHtml = `
-            <div class="flex justify-center gap-1">
-                <span class="w-2 h-2 rounded-full bg-green-500"></span>
-                <span class="w-2 h-2 rounded-full bg-green-500"></span>
-                <span class="w-2 h-2 rounded-full bg-red-400"></span>
-                <span class="w-2 h-2 rounded-full bg-green-500"></span>
+            <div class="flex justify-center gap-1 opacity-50">
+                <span class="w-2 h-2 rounded-full bg-gray-300"></span>
+                <span class="w-2 h-2 rounded-full bg-gray-300"></span>
+                <span class="w-2 h-2 rounded-full bg-gray-300"></span>
+                <span class="w-2 h-2 rounded-full bg-gray-300"></span>
                 <span class="w-2 h-2 rounded-full bg-gray-300"></span>
             </div>
         `;
 
-        // Create HTML
         container.innerHTML += `
             <tr class="${rowClass} transition-colors duration-200 group">
                 <td class="p-4 text-center ${rankClass}">${rank}</td>
                 <td class="p-4">
                     <div class="flex items-center gap-3">
                         <div class="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center shadow-sm">
-                            <span class="text-[10px] font-bold text-gray-400">${team.teamName ? team.teamName.substring(0,2).toUpperCase() : 'T'}</span>
+                            <span class="text-[10px] font-bold text-gray-400">
+                                ${team.teamName ? team.teamName.substring(0,2).toUpperCase() : 'T'}
+                            </span>
                         </div>
                         <span class="font-bold text-gray-800 group-hover:text-primary-custom transition">${team.teamName}</span>
                     </div>
                 </td>
-                <td class="p-4 text-center text-gray-600">${team.matchPlayed || 0}</td>
-                <td class="p-4 text-center text-gray-800 font-semibold">${team.wins || 0}</td>
-                <td class="p-4 text-center text-gray-500">${team.losses || 0}</td>
+                <td class="p-4 text-center text-gray-600">${team.matchesPlayed || 0}</td>
+                <td class="p-4 text-center text-gray-800 font-semibold">${team.matchWins || 0}</td>
+                <td class="p-4 text-center text-gray-500">${team.matchLosses || 0}</td>
                 <td class="p-4 text-center font-mono text-xs text-gray-500">
-                    <span class="text-gray-800">${team.matchWins || 0}</span> : <span>${team.matchLosses || 0}</span>
+                    <span class="text-gray-800">${team.gameWins || 0}</span> : <span>${team.gameLosses || 0}</span>
                 </td>
                 <td class="p-4 text-center font-bold ${team.gameDiff > 0 ? 'text-green-600' : (team.gameDiff < 0 ? 'text-red-500' : 'text-gray-400')}">
                     ${team.gameDiff > 0 ? '+' : ''}${team.gameDiff || 0}
