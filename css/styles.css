@@ -181,6 +181,26 @@ a {
     width: 100%;
 }
 
+/* News carousel sizing: enforce 16:9 aspect ratio and proper image cover */
+#newsCarousel .carousel-inner {
+    /* allow carousel to size based on slides */
+    min-height: 0;
+}
+
+#newsCarousel .carousel-item {
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    display: block;
+    width: 100%;
+}
+
+#newsCarousel .carousel-item img {
+    object-fit: cover;
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
 /* Loading Screen Animations */
 .animate-pulse-logo {
     animation: pulseLogo 1.8s ease-in-out infinite;

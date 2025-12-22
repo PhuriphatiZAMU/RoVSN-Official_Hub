@@ -49,10 +49,14 @@ export function renderNewsCarousel() {
     const indicators = document.getElementById('news-indicators');
     
     if (!inner || !indicators) return;
+    console.log('renderNewsCarousel called, newsData length:', newsData?.length);
     
     inner.innerHTML = '';
     indicators.innerHTML = '';
-
+    if (!newsData || newsData.length === 0) {
+        inner.innerHTML = `<div class="p-8 text-center text-gray-400">ยังไม่มีข่าวล่าสุด</div>`;
+        return;
+    }
     newsData.forEach((news, index) => {
         const isActive = index === 0 ? 'active' : '';
         
@@ -61,7 +65,7 @@ export function renderNewsCarousel() {
 
         // Slides
         const slide = document.createElement('div');
-        slide.className = `carousel-item ${isActive} aspect-video cursor-pointer`;
+        slide.className = `carousel-item ${isActive} cursor-pointer`;
         slide.onclick = () => openNews(news.id);
         
         slide.innerHTML = `
