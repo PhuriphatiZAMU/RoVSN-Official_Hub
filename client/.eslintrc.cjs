@@ -1,6 +1,11 @@
 module.exports = {
   root: true,
-  env: { browser: true, es2020: true },
+  env: { 
+    browser: true, 
+    es2020: true,
+    node: true,
+    jest: true // Adds globals for describe, it, expect
+  },
   extends: [
     'eslint:recommended',
     'plugin:react/recommended',
@@ -16,6 +21,10 @@ module.exports = {
       'warn',
       { allowConstantExport: true },
     ],
-    'react/prop-types': 'off', // Optional: Turn off prop-types if not using them
+    'react/prop-types': 'off',
+    // Ignore "React" unused var because we might still have imports in some files
+    'no-unused-vars': ['warn', { 'varsIgnorePattern': '^React$' }],
+    // Warning for hooks deps instead of error
+    'react-hooks/exhaustive-deps': 'warn' 
   },
 }
