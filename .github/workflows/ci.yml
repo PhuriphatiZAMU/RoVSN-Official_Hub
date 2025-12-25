@@ -1,0 +1,39 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+    branches:
+      - main
+      - master
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v3
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '20' # Using Node.js 20
+
+    - name: Install Root Dependencies
+      run: npm install --prefix json
+
+    - name: Install Client Dependencies
+      run: cd client && npm install
+
+    - name: Run Linter (Client)
+      run: npm run lint --prefix client
+
+    - name: Run Tests (Client)
+      run: npm test --prefix client
+
+    - name: Build Project (Client & Server)
+      run: npm run build --prefix json

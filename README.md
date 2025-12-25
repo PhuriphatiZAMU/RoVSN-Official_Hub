@@ -1,172 +1,100 @@
-# ROV SN Tournament 2026 - Official Hub
+# RoV SN Tournament Hub (React Next-Gen)
 
-🏆 Official tournament management website for ROV SN Tournament 2026 with real-time data from MongoDB Atlas.
+A modern Esports Tournament management system, fully migrated from a static HTML/CSS/JS frontend to a dynamic React (Vite) application, backed by a Node.js/Express/MongoDB API.
 
-## 🚀 Features
+![React Badge](https://img.shields.io/badge/React-61DAFB?style=for-the-badge&logo=react&logoColor=white)
+![TailwindCSS Badge](https://img.shields.io/badge/Tailwind_CSS-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)
+![Node.js Badge](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)
+![Express.js Badge](https://img.shields.io/badge/Express.js-000000?style=for-the-badge&logo=express&logoColor=white)
+![MongoDB Badge](https://img.shields.io/badge/MongoDB-47A248?style=for-the-badge&logo=mongodb&logoColor=white)
+![Vite Badge](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white)
+![Lucide React Badge](https://img.shields.io/badge/Lucide_React-000000?style=for-the-badge&logo=lucide&logoColor=white)
 
-- **Live Tournament Schedule** - Real-time match schedules with results
-- **Standings & Rankings** - Dynamic team standings and points tracking  
-- **Player Statistics** - Individual player performance metrics
-- **Responsive Design** - Works on Desktop, Tablet, and Mobile
+## ✨ Features
 
-## 🛠️ Tech Stack
+-   **📱 Modern & Responsive UI:** Built with React and styled using Tailwind CSS, providing a sleek, responsive design across all devices.
+-   **⚡ Real-time Data Fetching:** Dynamic display of match schedules, tournament standings, and player statistics, all powered by a robust Node.js API connected to MongoDB.
+-   **🛡️ Admin Dashboard:** A secure, PIN-protected interface (`/admin`) for administrators to easily update and manage match scores, ensuring real-time data accuracy.
+-   **🤖 AI Predictions:** Integrated AI-powered match analysis and win probability predictions (`/predictions`) to provide users with deeper insights into upcoming games.
+-   **Modular Architecture:** Clean, component-based React structure for maintainability and scalability.
 
-**Frontend:**
-- HTML5, CSS3, JavaScript ES6
-- Bootstrap 5 & Tailwind CSS
-- Font Awesome Icons
+## 🚀 Installation & Local Development
 
-**Backend:**
-- Node.js + Express.js
-- MongoDB Atlas (Cloud Database)
-- RESTful API Architecture
-
-## 📦 Installation
+Follow these steps to get the project up and running on your local machine.
 
 ### Prerequisites
-- Node.js (v16 or higher)
-- MongoDB Atlas account
-- Git
+
+-   [Node.js](https://nodejs.org/) (v16.0.0 or higher)
+-   [npm](https://www.npmjs.com/) (v8.0.0 or higher)
+-   MongoDB instance (local or Atlas)
 
 ### Setup
 
-1. **Clone the repository**
-```bash
-git clone https://github.com/PhuriphatiZAMU/RoVSN-Official_Hub.git
-cd RoVSN-Official_Hub
-```
+1.  **Clone the Repository:**
+    ```bash
+    git clone https://github.com/PhuriphatiZAMU/RoVSN-Official_Hub.git
+    cd RoVSN-Official_Hub
+    ```
 
-2. **Install dependencies**
-```bash
-npm install
-```
+2.  **Environment Configuration:**
+    Create a `.env` file in the project's root directory. This file should contain your MongoDB connection URI:
+    ```
+    MONGODB_URI="mongodb+srv://<username>:<password>@<cluster-url>/<database-name>?retryWrites=true&w=majority"
+    ```
+    Replace `<username>`, `<password>`, `<cluster-url>`, and `<database-name>` with your MongoDB credentials.
 
-3. **Configure environment variables**
+3.  **Install Dependencies & Build Client:**
+    The root `package.json` (located in the `json` directory) contains scripts to manage both client and server dependencies.
+    ```bash
+    npm install --prefix json
+    npm run build --prefix json
+    ```
+    -   `npm install --prefix json`: Installs server dependencies.
+    -   `npm run build --prefix json`: Navigates into the `client` directory, installs client dependencies, and then builds the React application into `client/dist`.
 
-Create a `.env` file in the root directory:
-```env
-MONGODB_URI=your_mongodb_atlas_connection_string
-PORT=3001
-```
+    **Important:** After running `npm run build --prefix json`, ensure that the `Key-Visual-img` and `img` folders from the project's root are moved into the `client/public` directory. This is crucial for the React app to correctly display images in development and production builds.
+    
+    ```bash
+    # From project root
+    mv Key-Visual-img client/public/Key-Visual-img
+    mv img client/public/img
+    ```
+    *(Note: The above commands are for Linux/macOS. For Windows, use `move` instead of `mv`.)*
 
-4. **Start the server**
-```bash
-npm start
-```
+4.  **Start the Application:**
+    Once the client is built and assets are moved, start the integrated server and client:
+    ```bash
+    npm start --prefix json
+    ```
+    This command starts the Node.js backend, which will serve the React frontend for all non-API routes.
 
-The server will run on `http://localhost:3001`
+5.  **Access the Application:**
+    Open your web browser and navigate to `http://localhost:3001` (or the port specified in your server configuration).
 
-## 🌐 Deployment
+## 📂 Project Structure
 
-### Deploy to Render
+-   `client/`: The React frontend application (built with Vite).
+    -   `public/`: Static assets (images, favicon, etc.).
+    -   `src/`: React source code.
+        -   `components/`: Reusable UI components (e.g., `Navbar.jsx`, `MatchCard.jsx`).
+        -   `pages/`: Top-level page components (e.g., `Home.jsx`, `Schedule.jsx`, `AdminDashboard.jsx`, `Predictions.jsx`).
+        -   `layout/`: Layout components (`MainLayout.jsx`).
+        -   `data/`: Mock data for development (`mockData.js`).
+        -   `services/`: API integration logic (`api.js`).
+        -   `constants/`: Global constants (`constants.js` - *to be created*).
+-   `js/`: Node.js backend server code (`server.js`).
+-   `json/`: Contains the main `package.json` for the monorepo-like setup and `vercel.json` for Vercel deployment.
+-   `README_DEPLOY.md`: Detailed deployment instructions for platforms like Render/Vercel.
 
-1. **Create account** at [render.com](https://render.com)
+## 🛠️ Admin Dashboard Access
 
-2. **Create New Web Service**
-   - Connect your GitHub repository
-   - Select branch: `main`
-   - Build Command: `npm install`
-   - Start Command: `npm start`
+The Admin Dashboard is accessible at `/admin`.
+**Default Admin PIN:** `1234` (This should be changed in a production environment).
 
-3. **Add Environment Variables**
-   - Key: `MONGODB_URI`
-   - Value: Your MongoDB Atlas connection string
+## 🚀 Deployment
 
-4. **Deploy!** 🎉
-
-### Deploy to Railway
-
-1. **Create account** at [railway.app](https://railway.app)
-
-2. **New Project → Deploy from GitHub**
-   - Select your repository
-   - Railway auto-detects Node.js
-
-3. **Add Environment Variables**
-   - `MONGODB_URI`: Your connection string
-
-4. **Deploy automatically** 🚀
-
-### Deploy to Vercel (Serverless)
-
-1. **Install Vercel CLI**
-```bash
-npm install -g vercel
-```
-
-2. **Configure vercel.json** (already included)
-
-3. **Deploy**
-```bash
-vercel --prod
-```
-
-## 📁 Project Structure
-
-```
-RoVSN-Official_Hub/
-├── css/
-│   └── styles.css          # Custom styles
-├── html/
-│   ├── news-detail.html    # News detail page
-│   ├── players.html        # Player statistics
-│   ├── schedule.html       # Match schedule
-│   ├── table.html          # Team standings
-│   └── teams.html          # Team list
-├── img/                    # Images and assets
-├── js/
-│   ├── app.js              # Frontend logic
-│   ├── data.js             # Static data
-│   ├── navigation.js       # Navigation handler
-│   └── server.js           # Express backend
-├── json/
-│   ├── package.json        # Dependencies
-│   └── vercel.json         # Vercel config
-├── Key-Visual-img/         # Tournament key visuals
-├── index.html              # Home page
-└── README.md               # Documentation
-```
-
-## 🔑 API Endpoints
-
-### Schedules
-- `GET /api/schedules` - Get all schedules
-- `GET /api/schedules/latest` - Get latest schedule
-
-### Standings
-- `GET /api/standings` - Get all standings
-- `GET /api/standings/latest` - Get latest standings
-
-### Players
-- `GET /api/players` - Get all players
-- `GET /api/players/latest` - Get latest player stats
-
-### Match Results
-- `GET /api/schedule-results/latest` - Get latest results
-
-### Health Check
-- `GET /api/health` - Server health status
-
-## 🔒 Security
-
-- Environment variables stored in `.env` (not committed to Git)
-- CORS enabled for specific origins only
-- MongoDB connection uses authentication
-- Input validation on all API endpoints
-
-## 📝 License
-
-Copyright © 2026 RoV SN Tournament. All rights reserved.
-
-## 👨‍💻 Developer
-
-**PhuriphatiZAMU**
-- GitHub: [@PhuriphatiZAMU](https://github.com/PhuriphatiZAMU)
-
-## 🆘 Support
-
-For issues or questions, please open an issue on GitHub or contact the developer.
+Refer to `README_DEPLOY.md` for detailed instructions on deploying this application to platforms like Render or Vercel.
 
 ---
 
-Made with ❤️ for ROV SN Tournament 2026
+Feel free to explore, contribute, or adapt this project to your needs!

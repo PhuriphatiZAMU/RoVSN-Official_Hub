@@ -24,8 +24,6 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 
-// Serve static files (from project root)
-app.use(express.static(path.join(__dirname, '..')));
 // MongoDB Connection
 let db;
 let schedulesCollection;
@@ -60,8 +58,8 @@ const connectDB = async () => {
 
 // Health Check
 app.get('/api/health', (req, res) => {
-    res.status(200).json({ 
-        status: 'ok', 
+    res.status(200).json( {
+        status: 'ok',
         message: 'Server is running',
         database: db ? 'connected' : 'disconnected'
     });
@@ -117,7 +115,7 @@ app.get('/api/fixtures/completed', async (req, res) => {
             groupedByDay[f.matchDay].push(f);
         });
         
-        res.status(200).json({
+        res.status(200).json( {
             total: fixtures.length,
             byDay: groupedByDay,
             fixtures: fixtures
@@ -144,7 +142,7 @@ app.post('/api/fixtures', async (req, res) => {
         
         const result = await fixturesCollection.insertOne(fixtureData);
         
-        res.status(201).json({ 
+        res.status(201).json( {
             message: 'Fixture created successfully',
             id: result.insertedId
         });
@@ -178,7 +176,7 @@ app.patch('/api/fixtures/:matchDay/:matchNo', async (req, res) => {
             return res.status(404).json({ error: 'Fixture not found' });
         }
         
-        res.status(200).json({ 
+        res.status(200).json( {
             message: 'Fixture updated successfully',
             modifiedCount: result.modifiedCount
         });
@@ -200,7 +198,7 @@ app.post('/api/fixtures/bulk', async (req, res) => {
         // Validate matchDay and matchNo
         const invalidFixtures = fixtures.filter(f => !f.matchDay || !f.matchNo);
         if (invalidFixtures.length > 0) {
-            return res.status(400).json({ 
+            return res.status(400).json( {
                 error: 'All fixtures must have matchDay and matchNo',
                 invalidCount: invalidFixtures.length
             });
@@ -213,7 +211,7 @@ app.post('/api/fixtures/bulk', async (req, res) => {
         
         const result = await fixturesCollection.insertMany(fixturesWithTimestamp);
         
-        res.status(201).json({ 
+        res.status(201).json( {
             message: 'Fixtures created successfully',
             insertedCount: result.insertedCount
         });
@@ -268,7 +266,7 @@ app.post('/api/schedules', async (req, res) => {
         
         const result = await schedulesCollection.insertOne(scheduleData);
         
-        res.status(201).json({ 
+        res.status(201).json( {
             message: 'Schedule created successfully',
             id: result.insertedId,
             data: scheduleData
@@ -299,7 +297,7 @@ app.put('/api/schedules/:id', async (req, res) => {
             return res.status(404).json({ error: 'Schedule not found' });
         }
         
-        res.status(200).json({ 
+        res.status(200).json( {
             message: 'Schedule updated successfully',
             modifiedCount: result.modifiedCount
         });
@@ -324,7 +322,7 @@ app.patch('/api/schedules/:id/match-score', async (req, res) => {
         
         const result = await schedulesCollection.updateOne(
             { _id: scheduleId },
-            { 
+            {
                 $set: {
                     [`${updatePath}.team1Score`]: parseInt(team1Score),
                     [`${updatePath}.team2Score`]: parseInt(team2Score),
@@ -338,7 +336,7 @@ app.patch('/api/schedules/:id/match-score', async (req, res) => {
             return res.status(404).json({ error: 'Schedule not found' });
         }
         
-        res.status(200).json({ 
+        res.status(200).json( {
             message: 'Match score updated successfully',
             modifiedCount: result.modifiedCount
         });
@@ -363,7 +361,7 @@ app.patch('/api/schedules/:id/reset-match', async (req, res) => {
         
         const result = await schedulesCollection.updateOne(
             { _id: scheduleId },
-            { 
+            {
                 $unset: {
                     [`${updatePath}.team1Score`]: '',
                     [`${updatePath}.team2Score`]: '',
@@ -379,7 +377,7 @@ app.patch('/api/schedules/:id/reset-match', async (req, res) => {
             return res.status(404).json({ error: 'Schedule not found' });
         }
         
-        res.status(200).json({ 
+        res.status(200).json( {
             message: 'Match score reset successfully',
             modifiedCount: result.modifiedCount
         });
@@ -417,13 +415,13 @@ app.patch('/api/schedules/:id/reset-day', async (req, res) => {
         
         const result = await schedulesCollection.updateOne(
             { _id: scheduleId },
-            { 
+            {
                 $unset: unsetFields,
                 $set: { updatedAt: new Date() }
             }
         );
         
-        res.status(200).json({ 
+        res.status(200).json( {
             message: `Reset ${matchesCount} matches successfully`,
             modifiedCount: result.modifiedCount
         });
@@ -474,7 +472,7 @@ app.post('/api/schedule-results/match', async (req, res) => {
         
         if (dayIndex === undefined || matchIndex === undefined || !team1 || !team2 || 
             team1Score === undefined || team2Score === undefined) {
-            return res.status(400).json({ 
+            return res.status(400).json( {
                 error: 'Missing required fields: dayIndex, matchIndex, team1, team2, team1Score, team2Score' 
             });
         }
@@ -512,7 +510,7 @@ app.post('/api/schedule-results/match', async (req, res) => {
             { upsert: true }
         );
         
-        res.status(200).json({ 
+        res.status(200).json( {
             message: 'Match result updated successfully',
             data: results.results[dayIndex].matches[matchIndex]
         });
@@ -565,7 +563,7 @@ app.delete('/api/schedules/:id', async (req, res) => {
             return res.status(404).json({ error: 'Schedule not found' });
         }
         
-        res.status(200).json({ 
+        res.status(200).json( {
             message: 'Schedule deleted successfully'
         });
     } catch (error) {
@@ -626,7 +624,7 @@ const handleCreateTable = async (req, res) => {
 
         const result = await tableCollection.insertOne(standingsData);
 
-        res.status(201).json({
+        res.status(201).json( {
             message: 'Table created successfully',
             id: result.insertedId,
             data: standingsData
@@ -656,7 +654,7 @@ const handleUpdateTable = async (req, res) => {
             return res.status(404).json({ error: 'Standings not found' });
         }
 
-        res.status(200).json({
+        res.status(200).json( {
             message: 'Standings updated successfully',
             modifiedCount: result.modifiedCount
         });
@@ -677,7 +675,7 @@ const handleDeleteTable = async (req, res) => {
             return res.status(404).json({ error: 'Table not found' });
         }
 
-        res.status(200).json({
+        res.status(200).json( {
             message: 'Table deleted successfully'
         });
     } catch (error) {
@@ -782,7 +780,7 @@ const calculateStandingsFromFixtures = async () => {
             // 4. ชื่อทีม (A-Z)
             return a.team.localeCompare(b.team);
         })
-        .map((team, index) => ({
+        .map((team, index) => ({ 
             ...team,
             rank: index + 1
         }));
@@ -795,7 +793,7 @@ app.get('/api/table/calculated', async (req, res) => {
     try {
         const standings = await calculateStandingsFromFixtures();
         
-        res.status(200).json({
+        res.status(200).json( {
             standings: standings,
             calculatedAt: new Date().toISOString(),
             totalTeams: standings.length,
@@ -824,7 +822,7 @@ app.post('/api/table/sync-from-fixtures', async (req, res) => {
         // บันทึกลง database
         const result = await tableCollection.insertOne(standingsDoc);
         
-        res.status(201).json({
+        res.status(201).json( {
             message: 'Standings synced from fixtures successfully',
             id: result.insertedId,
             totalTeams: standings.length,
@@ -890,7 +888,7 @@ app.post('/api/players', async (req, res) => {
         
         const result = await playersCollection.insertOne(playersData);
         
-        res.status(201).json({ 
+        res.status(201).json( {
             message: 'Players created successfully',
             id: result.insertedId,
             data: playersData
@@ -921,7 +919,7 @@ app.put('/api/players/:id', async (req, res) => {
             return res.status(404).json({ error: 'Players not found' });
         }
         
-        res.status(200).json({ 
+        res.status(200).json( {
             message: 'Players updated successfully',
             modifiedCount: result.modifiedCount
         });
@@ -943,7 +941,7 @@ app.delete('/api/players/:id', async (req, res) => {
             return res.status(404).json({ error: 'Players not found' });
         }
         
-        res.status(200).json({ 
+        res.status(200).json( {
             message: 'Players deleted successfully'
         });
     } catch (error) {
@@ -970,7 +968,7 @@ const getRoleDisplay = (role) => {
 
 // API: ดึงรายการ roles ทั้งหมด
 app.get('/api/player-stats/roles', (req, res) => {
-    res.status(200).json({
+    res.status(200).json( {
         roles: PLAYER_ROLES,
         list: Object.entries(PLAYER_ROLES).map(([key, value]) => ({
             id: key,
@@ -985,7 +983,7 @@ app.post('/api/player-stats', async (req, res) => {
         const { matchDay, matchNo, gameNo, players } = req.body;
         
         if (!matchDay || !players || !Array.isArray(players)) {
-            return res.status(400).json({ 
+            return res.status(400).json( {
                 error: 'Please provide matchDay and players array' 
             });
         }
@@ -994,7 +992,7 @@ app.post('/api/player-stats', async (req, res) => {
         const validRoles = Object.keys(PLAYER_ROLES);
         const invalidPlayers = players.filter(p => p.role && !validRoles.includes(p.role));
         if (invalidPlayers.length > 0) {
-            return res.status(400).json({
+            return res.status(400).json( {
                 error: 'Invalid role detected',
                 invalidPlayers: invalidPlayers.map(p => ({ name: p.name, role: p.role })),
                 validRoles: validRoles
@@ -1005,14 +1003,14 @@ app.post('/api/player-stats', async (req, res) => {
         const statsRecord = {
             matchDay: matchDay,
             matchNo: matchNo || null,
-            gameNo: gameNo || null,  // เกมที่ 1, 2, 3 ใน Bo3
+            gameNo: gameNo || null,
             players: players,
             createdAt: new Date()
         };
         
         const result = await playerStatsCollection.insertOne(statsRecord);
         
-        res.status(201).json({
+        res.status(201).json( {
             message: 'Player stats added successfully',
             id: result.insertedId,
             playersCount: players.length
@@ -1139,7 +1137,7 @@ app.get('/api/player-stats/totals', async (req, res) => {
     try {
         const totals = await calculatePlayerTotals();
         
-        res.status(200).json({
+        res.status(200).json( {
             players: totals,
             totalPlayers: totals.length,
             calculatedAt: new Date().toISOString()
@@ -1161,7 +1159,7 @@ app.get('/api/player-stats/top/:stat', async (req, res) => {
         // Sort by requested stat
         const sorted = totals.sort((a, b) => (b[stat] || 0) - (a[stat] || 0));
         
-        res.status(200).json({
+        res.status(200).json( {
             stat: stat,
             top: sorted.slice(0, limit),
             calculatedAt: new Date().toISOString()
@@ -1195,7 +1193,7 @@ app.get('/api/player-stats/player/:name', async (req, res) => {
                 p.name.toLowerCase() === playerName.toLowerCase()
             );
             if (playerRecord) {
-                matchHistory.push({
+                matchHistory.push( {
                     matchDay: record.matchDay,
                     matchNo: record.matchNo,
                     stats: playerRecord
@@ -1203,7 +1201,7 @@ app.get('/api/player-stats/player/:name', async (req, res) => {
             }
         });
         
-        res.status(200).json({
+        res.status(200).json( {
             totals: player,
             matchHistory: matchHistory
         });
@@ -1227,7 +1225,7 @@ app.post('/api/player-stats/sync', async (req, res) => {
         
         const result = await playersCollection.insertOne(playersDoc);
         
-        res.status(201).json({
+        res.status(201).json( {
             message: 'Player stats synced successfully',
             id: result.insertedId,
             totalPlayers: totals.length
@@ -1254,7 +1252,7 @@ app.post('/api/player-stats/bulk', async (req, res) => {
         
         const result = await playerStatsCollection.insertMany(recordsWithTimestamp);
         
-        res.status(201).json({
+        res.status(201).json( {
             message: 'Player stats bulk added successfully',
             insertedCount: result.insertedCount
         });
@@ -1357,7 +1355,7 @@ app.get('/api/predictions', async (req, res) => {
             
             // Predicted winner
             const predictedWinner = team1WinProb > team2WinProb ? match.blue : match.red;
-            const confidence = Math.max(team1WinProb, team2WinProb);
+            const confidence = Math.max(prob1, prob2);
             
             // Predicted score (Bo3)
             let predictedScore;
@@ -1370,10 +1368,7 @@ app.get('/api/predictions', async (req, res) => {
             }
             
             return {
-                match: {
-                    blue: match.blue,
-                    red: match.red
-                },
+                match: { blue: match.blue, red: match.red },
                 prediction: {
                     winner: predictedWinner,
                     confidence: confidence,
@@ -1405,7 +1400,7 @@ app.get('/api/predictions', async (req, res) => {
             };
         });
         
-        res.status(200).json({
+        res.status(200).json( {
             day: day,
             type: daySchedule.type,
             totalMatches: predictions.length,
@@ -1481,7 +1476,7 @@ app.get('/api/predictions/match', async (req, res) => {
                 [team2]: {
                     rank: teamData2.rank || '-',
                     form: teamData2.form || [],
-                    record: `${teamData2.matchWins}W-${teamData2.matchLosses}L`,
+                    record: `${team2.matchWins}W-${team2.matchLosses}L`,
                     points: teamData2.points || 0
                 }
             },
@@ -1493,6 +1488,22 @@ app.get('/api/predictions/match', async (req, res) => {
         res.status(500).json({ error: 'Failed to predict match' });
     }
 });
+
+// ==================== PRODUCTION CLIENT SERVING ====================
+// Serve static files from the React app's build directory
+app.use(express.static(path.join(__dirname, '..', 'client', 'dist')));
+
+// The "catchall" handler: for any request that doesn't match an API route,
+// send back React's index.html file.
+app.get('*', (req, res) => {
+    if (!req.path.startsWith('/api/')) {
+        res.sendFile(path.join(__dirname, '..', 'client', 'dist', 'index.html'));
+    } else {
+        // This else block handles non-existent API routes
+        res.status(404).json({ error: `API route not found: ${req.path}` });
+    }
+});
+
 
 // Start Server
 const startServer = async () => {
