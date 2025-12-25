@@ -1,7 +1,7 @@
 // src/components/Navbar.jsx
 import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { navLinks } from '../data/mockData';
+import { navLinks } from '../data/Data';
 import { Menu, X } from 'lucide-react';
 
 const Navbar = () => {

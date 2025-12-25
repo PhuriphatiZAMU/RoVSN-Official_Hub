@@ -1,6 +1,6 @@
 // src/components/KeyVisualCarousel.jsx
 import React, { useState, useEffect, useCallback } from 'react';
-import { keyVisuals } from '../data/mockData';
+import { keyVisuals } from '../data/Data';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 const KeyVisualCarousel = () => {
