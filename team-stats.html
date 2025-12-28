@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Club Stats - RoV SN Tournament</title>
+    <!-- Favicon -->
+    <link href="images/logo/RoV-Logo.png" rel="shortcut icon" type="image/x-icon">
+
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=Oswald:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            prefix: 'tw-', 
+            important: true, 
+            theme: { 
+                extend: { 
+                    colors: { 'cyan-aura': '#15C8FF', 'echo-white': '#E8F7FF', 'deep-space': '#0f172a', 'uefa-dark': '#1e293b' }, 
+                    fontFamily: { sans: ['Kanit', 'sans-serif'], display: ['Oswald', 'sans-serif'] }, 
+                    aspectRatio: { 'cinema': '21 / 9' } 
+                } 
+            } 
+        }
+    </script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="tw-flex tw-flex-col tw-min-h-screen">
+
+    <!-- NAVBAR -->
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom sticky-top">
+        <div class="container">
+            <a class="navbar-brand" href="index.html">
+                <div class="tw-w-10 tw-h-10 tw-bg-gradient-to-br tw-from-cyan-aura tw-to-blue-600 tw-rounded-full tw-flex tw-items-center tw-justify-center tw-shadow-[0_0_15px_rgba(21,200,255,0.6)]">
+                    <i class="fas fa-trophy text-white tw-text-lg"></i>
+                </div>
+                <div class="d-flex flex-column">
+                    <span class="tw-font-display tw-font-bold tw-text-2xl tw-tracking-wide text-white" style="line-height: 1;">ROV SN</span>
+                    <span class="tw-text-cyan-aura tw-text-xs tw-font-sans tw-tracking-widest tw-uppercase">Official Tournament</span>
+                </div>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item"><a class="nav-link" href="index.html">Home</a></li>
+                    <li class="nav-item"><a class="nav-link" href="fixtures-results.html">Fixtures</a></li>
+                    <li class="nav-item"><a class="nav-link" href="standings.html">Standings</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="statistics.html">Stats</a></li>
+                    <li class="nav-item"><a class="nav-link" href="team.html">Clubs</a></li>
+                    <li class="nav-item"><a class="nav-link" href="format.html">Format</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- MAIN CONTENT -->
+    <main class="tw-flex-grow tw-bg-gray-50">
+        <div class="tw-bg-uefa-dark tw-py-12 tw-mb-8">
+            <div class="container tw-mx-auto tw-px-4">
+                <h1 class="tw-text-4xl md:tw-text-5xl tw-font-display tw-font-bold tw-text-white tw-uppercase">Statistics</h1>
+                
+                <!-- Sub-nav -->
+                <div class="tw-flex tw-space-x-6 tw-mt-8 tw-font-display tw-text-gray-400 tw-text-lg tw-uppercase">
+                    <a href="statistics.html" class="hover:tw-text-white tw-pb-1 tw-no-underline">Season</a>
+                    <a href="team-stats.html" class="tw-text-cyan-aura tw-border-b-2 tw-border-cyan-aura tw-pb-1 tw-no-underline">Club</a>
+                    <a href="players.html" class="hover:tw-text-white tw-pb-1 tw-no-underline">Player</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="container tw-mx-auto tw-px-4 tw-pb-12">
+            <h2 class="tw-text-2xl tw-font-display tw-font-bold tw-text-uefa-dark tw-mb-6 tw-border-l-4 tw-border-cyan-aura tw-pl-3">Club Rankings</h2>
+            
+            <!-- Table Container with ID for Script -->
+            <div class="tw-bg-white tw-shadow-sm tw-rounded-lg tw-overflow-hidden">
+                <table id="stats-team-table" class="tw-w-full uefa-table">
+                    <thead>
+                        <tr>
+                            <th class="tw-p-4 tw-text-left">Club</th>
+                            <th class="tw-p-4 tw-text-center">Games</th>
+                            <th class="tw-p-4 tw-text-center">Wins</th>
+                            <th class="tw-p-4 tw-text-center">Kills</th>
+                            <th class="tw-p-4 tw-text-center">Deaths</th>
+                            <th class="tw-p-4 tw-text-center">Assists</th>
+                            <th class="tw-p-4 tw-text-center">Gold (Avg)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="stats-team-table-body">
+                        <!-- Loading State -->
+                        <tr>
+                            <td colspan="7" class="tw-p-8 tw-text-center tw-text-gray-500">
+                                <i class="fas fa-circle-notch fa-spin tw-text-2xl tw-text-cyan-aura tw-mb-2"></i>
+                                <p>Calculating Stats from Match Data...</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="tw-bg-uefa-dark tw-text-white tw-border-t-4 tw-border-cyan-aura tw-mt-auto">
+        <div class="container tw-mx-auto tw-px-4 tw-py-12">
+            <div class="tw-flex tw-flex-col tw-items-center tw-mb-8">
+                <div class="tw-w-16 tw-h-16 tw-bg-gradient-to-br tw-from-cyan-aura tw-to-blue-600 tw-rounded-full tw-flex tw-items-center tw-justify-center tw-mb-4"><i class="fas fa-trophy text-white tw-text-2xl"></i></div>
+                <h2 class="tw-font-display tw-font-bold tw-text-2xl tw-tracking-widest">ROV SN TOURNAMENT</h2>
+            </div>
+            <div class="footer-comp-nav pk-d--flex pk-justify-content--around tw-flex tw-flex-wrap tw-justify-center tw-gap-8 tw-py-6 tw-border-t tw-border-gray-700 tw-font-sans tw-text-sm tw-text-gray-400"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Cookie Policy</a><a href="#">Contact</a></div><div class="tw-text-center tw-text-gray-500 tw-text-xs tw-mt-4">© 2026 RoV SN Tournament.</div></div></footer>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
