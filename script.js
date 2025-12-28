@@ -1,7 +1,8 @@
 // --- CONFIG & DATA ---
+// แก้ไขบรรทัดนี้: ใส่ URL ที่ได้จาก Render ของคุณลงไปตรงส่วน Production
 const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
     ? 'http://localhost:3000' 
-    : 'https://rov-sn-tournament-official.onrender.com/';
+    : 'https://rov-sn-tournament-official.onrender.com'; // <-- ใส่ URL ของคุณที่นี่ (ไม่ต้องมี / ปิดท้าย)
 
 // Global State
 let globalSchedule = [];
