@@ -68,6 +68,15 @@ const GameStatSchema = new mongoose.Schema({
 });
 const GameStat = mongoose.model('GameStat', GameStatSchema, 'gamestats');
 
+// 4. Team Logo Schema (เก็บ URL โลโก้ทีม) [NEW]
+const TeamLogoSchema = new mongoose.Schema({
+    teamName: String,       // ชื่อทีม (Key หลักในการค้นหา)
+    logoUrl: String,        // URL รูปภาพ (Cloud Storage / Public URL)
+    createdAt: { type: Date, default: Date.now }
+});
+// บังคับชื่อ Collection ว่า 'teamlogo' ตามที่คุณระบุ
+const TeamLogo = mongoose.model('TeamLogo', TeamLogoSchema, 'teamlogo'); 
+
 
 // --- API Routes ---
 
@@ -227,6 +236,38 @@ app.get('/api/season-stats', async (req, res) => {
             }
         ]);
         res.json(stats[0] || { totalKills: 0, totalDeaths: 0, avgGameDuration: 0 });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// GET: ดึงข้อมูลโลโก้ทั้งหมด
+app.get('/api/team-logos', async (req, res) => {
+    try {
+        const logos = await TeamLogo.find();
+        res.json(logos);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// POST: บันทึกหรืออัปเดตโลโก้ทีม
+app.post('/api/team-logos', async (req, res) => {
+    try {
+        const { teamName, logoUrl } = req.body;
+        
+        if (!teamName || !logoUrl) {
+            return res.status(400).json({ error: "teamName and logoUrl are required" });
+        }
+
+        // ใช้ upsert: true (ถ้ามีอัปเดต ถ้าไม่มีสร้างใหม่)
+        const result = await TeamLogo.findOneAndUpdate(
+            { teamName: teamName }, 
+            { logoUrl: logoUrl }, 
+            { upsert: true, new: true }
+        );
+
+        res.status(201).json(result);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
