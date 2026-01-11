@@ -144,16 +144,22 @@ app.post('/api/auth/login', async (req, res) => {
 
         // ตรวจสอบ password
         if (!ADMIN_PASSWORD_HASH) {
-            console.log("Login warning: No ADMIN_PASSWORD_HASH set, using default 'admin123'"); // LOG 3
-            // กรณีไม่ได้ตั้ง hash ใน .env ให้ใช้ default password (สำหรับ dev เท่านั้น!)
+            console.log("Login warning: No ADMIN_PASSWORD_HASH set, using default 'admin123'");
             if (password !== 'admin123') {
                 return res.status(401).json({ error: 'Invalid credentials' });
             }
         } else {
-            console.log("Verifying password against hash..."); // LOG 4
+            console.log("Verifying password against hash...");
+
+            // --- DEBUG SECTION START ---
+            console.log(`Debug: Received password length: ${password.length}`);
+            console.log(`Debug: Is password exactly 'Lastfreedom4_'? ${password === 'Lastfreedom4_'}`);
+            console.log(`Debug: Hash loaded from Env starts with: ${ADMIN_PASSWORD_HASH.substring(0, 10)}...`);
+            // --- DEBUG SECTION END ---
+
             const isValid = await bcrypt.compare(password, ADMIN_PASSWORD_HASH);
             if (!isValid) {
-                console.log("Login failed: Password incorrect"); // LOG 5
+                console.log("Login failed: Password incorrect (Hash mismatch)");
                 return res.status(401).json({ error: 'Invalid credentials' });
             }
         }
