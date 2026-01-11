@@ -1,16 +1,26 @@
 require('dotenv').config();
 const express = require('express');
-const mongoose = require('mongoose'); // 1. Import mongoose ก่อนเสมอ
+const mongoose = require('mongoose');
 const cors = require('cors');
 const bodyParser = require('body-parser');
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// JWT Secret (ต้องตั้งใน .env)
+const JWT_SECRET = process.env.JWT_SECRET || 'default-secret-change-me';
+const JWT_EXPIRES_IN = '24h';
+
+// Admin Credentials (ต้องตั้งใน .env)
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
+const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH; // bcrypt hash
+
 app.use(cors());
 app.use(bodyParser.json());
 app.use(cors({
-    origin: 'https://phuriphatizamu.github.io' // อนุญาตเฉพาะเว็บของเรา
+    origin: ['https://phuriphatizamu.github.io', 'http://localhost:5500', 'http://127.0.0.1:5500']
 }));
 
 // --- Database Connection ---
@@ -84,13 +94,99 @@ const TeamLogoSchema = new mongoose.Schema({
 const TeamLogo = mongoose.model('TeamLogo', TeamLogoSchema, 'teamlogo');
 
 
+// --- AUTH MIDDLEWARE ---
+const authenticateToken = (req, res, next) => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+
+    if (!token) {
+        return res.status(401).json({ error: 'Access token required' });
+    }
+
+    jwt.verify(token, JWT_SECRET, (err, user) => {
+        if (err) {
+            return res.status(403).json({ error: 'Invalid or expired token' });
+        }
+        req.user = user;
+        next();
+    });
+};
+
 // --- API Routes ---
 
 app.get('/', (req, res) => {
-    res.send('<h1>RoV SN Tournament API</h1><p>Status: Online</p>');
+    res.send('<h1>RoV SN Tournament API</h1><p>Status: Online</p><p>Version: 2.0 (with Auth)</p>');
 });
 
-app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
+app.get('/api/health', (req, res) => res.json({ status: 'ok', version: '2.0' }));
+
+// --- AUTH ROUTES ---
+
+// POST: Login
+app.post('/api/auth/login', async (req, res) => {
+    try {
+        const { username, password } = req.body;
+
+        if (!username || !password) {
+            return res.status(400).json({ error: 'Username and password required' });
+        }
+
+        // ตรวจสอบ username
+        if (username !== ADMIN_USERNAME) {
+            return res.status(401).json({ error: 'Invalid credentials' });
+        }
+
+        // ตรวจสอบ password
+        if (!ADMIN_PASSWORD_HASH) {
+            // กรณีไม่ได้ตั้ง hash ใน .env ให้ใช้ default password (สำหรับ dev เท่านั้น!)
+            if (password !== 'admin123') {
+                return res.status(401).json({ error: 'Invalid credentials' });
+            }
+        } else {
+            const isValid = await bcrypt.compare(password, ADMIN_PASSWORD_HASH);
+            if (!isValid) {
+                return res.status(401).json({ error: 'Invalid credentials' });
+            }
+        }
+
+        // สร้าง JWT Token
+        const token = jwt.sign(
+            { username, role: 'admin' },
+            JWT_SECRET,
+            { expiresIn: JWT_EXPIRES_IN }
+        );
+
+        res.json({
+            message: 'Login successful',
+            token,
+            expiresIn: JWT_EXPIRES_IN
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// GET: Verify Token
+app.get('/api/auth/verify', authenticateToken, (req, res) => {
+    res.json({ valid: true, user: req.user });
+});
+
+// POST: Generate Password Hash (สำหรับสร้าง hash ใส่ใน .env)
+app.post('/api/auth/hash', async (req, res) => {
+    try {
+        const { password } = req.body;
+        if (!password) {
+            return res.status(400).json({ error: 'Password required' });
+        }
+        const hash = await bcrypt.hash(password, 10);
+        res.json({
+            message: 'Password hash generated. Add this to your .env file as ADMIN_PASSWORD_HASH',
+            hash
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
 
 // GET: Schedules
 app.get('/api/schedules', async (req, res) => {
@@ -103,8 +199,8 @@ app.get('/api/schedules', async (req, res) => {
     }
 });
 
-// POST: Schedules
-app.post('/api/schedules', async (req, res) => {
+// POST: Schedules (Protected)
+app.post('/api/schedules', authenticateToken, async (req, res) => {
     try {
         const newSchedule = new Schedule(req.body);
         const saved = await newSchedule.save();
@@ -124,8 +220,8 @@ app.get('/api/results', async (req, res) => {
     }
 });
 
-// POST: Results
-app.post('/api/results', async (req, res) => {
+// POST: Results (Protected)
+app.post('/api/results', authenticateToken, async (req, res) => {
     try {
         const { matchDay, teamBlue, teamRed, scoreBlue, scoreRed } = req.body;
 
@@ -257,8 +353,8 @@ app.get('/api/team-logos', async (req, res) => {
     }
 });
 
-// POST: บันทึกหรืออัปเดตโลโก้ทีม
-app.post('/api/team-logos', async (req, res) => {
+// POST: บันทึกหรืออัปเดตโลโก้ทีม (Protected)
+app.post('/api/team-logos', authenticateToken, async (req, res) => {
     try {
         const { teamName, logoUrl } = req.body;
 
@@ -279,8 +375,8 @@ app.post('/api/team-logos', async (req, res) => {
     }
 });
 
-// POST: Stats (Batch Insert)
-app.post('/api/stats', async (req, res) => {
+// POST: Stats (Batch Insert) (Protected)
+app.post('/api/stats', authenticateToken, async (req, res) => {
     try {
         const statsArray = req.body;
         if (!Array.isArray(statsArray)) {
