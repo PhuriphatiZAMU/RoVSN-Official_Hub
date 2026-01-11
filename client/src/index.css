@@ -1,0 +1,138 @@
+@import "tailwindcss";
+
+/* Custom Theme */
+@theme {
+  --color-cyan-aura: #15C8FF;
+  --color-echo-white: #E8F7FF;
+  --color-deep-space: #0f172a;
+  --color-uefa-dark: #1e293b;
+
+  --font-family-sans: 'Kanit', sans-serif;
+  --font-family-display: 'Oswald', sans-serif;
+}
+
+/* --- GLOBAL STYLES --- */
+body {
+  background-color: #ffffff;
+  color: #1e293b;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+  font-family: 'Kanit', sans-serif;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: 'Oswald', sans-serif;
+}
+
+/* --- NAVBAR --- */
+.navbar-custom {
+  background-color: #1e293b;
+  border-bottom: 3px solid #15C8FF;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.nav-link {
+  color: white;
+  font-family: 'Oswald', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  position: relative;
+  padding-bottom: 4px;
+  transition: color 0.3s;
+}
+
+.nav-link::after {
+  content: '';
+  position: absolute;
+  width: 0;
+  height: 3px;
+  bottom: 0;
+  left: 0;
+  background-color: #15C8FF;
+  transition: width 0.3s;
+}
+
+.nav-link:hover::after,
+.nav-link.active::after {
+  width: 100%;
+}
+
+.nav-link.active {
+  color: #15C8FF;
+}
+
+/* --- TABLES --- */
+.uefa-table th {
+  background-color: #f1f5f9;
+  color: #64748b;
+  font-family: 'Oswald', sans-serif;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  letter-spacing: 0.05em;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.uefa-table tr {
+  border-bottom: 1px solid #e2e8f0;
+  transition: background-color 0.2s;
+}
+
+.uefa-table tr:hover {
+  background-color: #E8F7FF;
+}
+
+/* --- SKELETON LOADING --- */
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s ease-in-out infinite;
+  border-radius: 4px;
+}
+
+/* --- ERROR STATES --- */
+.error-container {
+  text-align: center;
+  padding: 3rem 1rem;
+  background: linear-gradient(135deg, #fef2f2 0%, #fff1f2 100%);
+  border: 1px solid #fecaca;
+  border-radius: 12px;
+}
+
+/* --- RULE CARDS --- */
+.rule-card {
+  border-left: 5px solid #15C8FF;
+  background: white;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s;
+}
+
+.rule-card:hover {
+  transform: translateX(5px);
+}
+
+/* --- CAROUSEL --- */
+.carousel-wrapper {
+  display: flex;
+  transition: transform 0.5s ease-in-out;
+}
+
+.carousel-slide {
+  flex: 0 0 100%;
+  width: 100%;
+}
