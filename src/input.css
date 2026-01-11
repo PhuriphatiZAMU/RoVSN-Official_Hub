@@ -1,0 +1,173 @@
+/* Tailwind CSS v4 Input File */
+@import "tailwindcss";
+
+/* Custom Theme */
+@theme {
+    --color-cyan-aura: #15C8FF;
+    --color-echo-white: #E8F7FF;
+    --color-deep-space: #0f172a;
+    --color-uefa-dark: #1e293b;
+
+    --font-family-sans: 'Kanit', sans-serif;
+    --font-family-display: 'Oswald', sans-serif;
+}
+
+/* --- GLOBAL STYLES --- */
+body {
+    background-color: #ffffff;
+    color: #1e293b;
+    overflow-x: hidden;
+    scroll-behavior: smooth;
+    font-family: 'Kanit', sans-serif;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    font-family: 'Oswald', sans-serif;
+}
+
+main {
+    flex-grow: 1;
+}
+
+/* --- BOOTSTRAP OVERRIDES for THEME --- */
+.navbar-custom {
+    background-color: #1e293b;
+    /* uefa-dark */
+    border-bottom: 3px solid #15C8FF;
+    /* cyan-aura */
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+}
+
+.navbar-custom .navbar-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.navbar-custom .nav-link {
+    color: white !important;
+    font-family: 'Oswald', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    position: relative;
+    padding-bottom: 4px;
+    margin: 0 10px;
+    font-size: 1.1rem;
+}
+
+.navbar-custom .nav-link::after {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 3px;
+    bottom: 0;
+    left: 0;
+    background-color: #15C8FF;
+    transition: width 0.3s;
+}
+
+.navbar-custom .nav-link.active::after,
+.navbar-custom .nav-link:hover::after {
+    width: 100%;
+}
+
+.navbar-custom .nav-link.active {
+    color: #15C8FF !important;
+}
+
+.navbar-toggler {
+    border-color: #15C8FF;
+    color: #15C8FF;
+}
+
+.navbar-toggler-icon {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba(21, 200, 255, 1)' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+}
+
+/* --- HOME: CAROUSEL (Fixed Logic) --- */
+.js-swiper-wrapper {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    /* ใช้ transform ในการเลื่อน */
+    transition: transform 0.5s ease-in-out;
+    box-sizing: border-box;
+}
+
+.swiper-slide {
+    /* สำคัญ: บังคับให้กว้าง 100% ของ Container เสมอ ห้ามย่อ (shrink) ห้ามขยาย (grow) */
+    flex: 0 0 100%;
+    width: 100%;
+    max-width: 100%;
+    /* กันไม่ให้เกิน */
+    position: relative;
+    overflow: hidden;
+}
+
+/* --- TABLES --- */
+.uefa-table th {
+    background-color: #f1f5f9;
+    color: #64748b;
+    font-family: 'Oswald', sans-serif;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 0.05em;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.uefa-table tr {
+    border-bottom: 1px solid #e2e8f0;
+    transition: background-color 0.2s;
+}
+
+.uefa-table tr:hover {
+    background-color: #E8F7FF;
+}
+
+.uefa-table td {
+    vertical-align: middle;
+}
+
+/* --- FOOTER --- */
+.footer-comp-nav a {
+    text-decoration: none;
+    color: #94a3b8;
+    transition: color 0.2s;
+}
+
+.footer-comp-nav a:hover {
+    color: #15C8FF;
+}
+
+/* Rules Section Styling */
+.rule-card {
+    border-left: 5px solid #15C8FF;
+    background: white;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s;
+}
+
+.rule-card:hover {
+    transform: translateX(5px);
+}
+
+.rule-badge {
+    background-color: #1e293b;
+    color: white;
+    padding: 5px 12px;
+    border-radius: 4px;
+    font-family: 'Oswald', sans-serif;
+    font-size: 0.9rem;
+    margin-right: 10px;
+}

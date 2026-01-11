@@ -1,59 +1,165 @@
 <!DOCTYPE html>
 <html lang="th">
+
 <head>
-    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Format - RoV SN Tournament</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Format - RoV SN Tournament</title>
     <!-- Favicon -->
     <link href="images/logo/RoV-Logo.png" rel="shortcut icon" type="image/x-icon">
 
-    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=Oswald:wght@400;500;700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=Oswald:wght@400;500;700&display=swap"
+        rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>tailwind.config = { prefix: 'tw-', important: true, theme: { extend: { colors: { 'cyan-aura': '#15C8FF', 'echo-white': '#E8F7FF', 'deep-space': '#0f172a', 'uefa-dark': '#1e293b' }, fontFamily: { sans: ['Kanit', 'sans-serif'], display: ['Oswald', 'sans-serif'] }, aspectRatio: { 'cinema': '21 / 9' } } } }</script>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="dist/output.css">
 </head>
+
 <body class="tw-flex tw-flex-col tw-min-h-screen">
     <nav class="navbar navbar-expand-lg navbar-dark navbar-custom sticky-top">
         <div class="container">
             <a class="navbar-brand" href="index.html">
-                <div class="tw-w-10 tw-h-10 tw-bg-gradient-to-br tw-from-cyan-aura tw-to-blue-600 tw-rounded-full tw-flex tw-items-center tw-justify-center tw-shadow-[0_0_15px_rgba(21,200,255,0.6)]">
+                <div
+                    class="tw-w-10 tw-h-10 tw-bg-gradient-to-br tw-from-cyan-aura tw-to-blue-600 tw-rounded-full tw-flex tw-items-center tw-justify-center tw-shadow-[0_0_15px_rgba(21,200,255,0.6)]">
                     <img src="images/logo/RoV-Logo.png" alt="RoV Logo" class="tw-w-6 tw-h-6">
                 </div>
                 <div class="d-flex flex-column">
-                    <span class="tw-font-display tw-font-bold tw-text-2xl tw-tracking-wide text-white" style="line-height: 1;">ROV SN</span>
-                    <span class="tw-text-cyan-aura tw-text-xs tw-font-sans tw-tracking-widest tw-uppercase">Tournament Official</span>
+                    <span class="tw-font-display tw-font-bold tw-text-2xl tw-tracking-wide text-white"
+                        style="line-height: 1;">ROV SN</span>
+                    <span class="tw-text-cyan-aura tw-text-xs tw-font-sans tw-tracking-widest tw-uppercase">Tournament
+                        Official</span>
                 </div>
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"><span class="navbar-toggler-icon"></span></button>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"><span
+                    class="navbar-toggler-icon"></span></button>
             <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
-                <ul class="navbar-nav"><li class="nav-item"><a class="nav-link" href="index.html">Home</a></li><li class="nav-item"><a class="nav-link" href="fixtures-results.html">Fixtures</a></li><li class="nav-item"><a class="nav-link" href="standings.html">Standings</a></li><li class="nav-item"><a class="nav-link" href="statistics.html">Stats</a></li><li class="nav-item"><a class="nav-link" href="team.html">Clubs</a></li><li class="nav-item"><a class="nav-link active" href="format.html">Format</a></li></ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item"><a class="nav-link" href="index.html">Home</a></li>
+                    <li class="nav-item"><a class="nav-link" href="fixtures-results.html">Fixtures</a></li>
+                    <li class="nav-item"><a class="nav-link" href="standings.html">Standings</a></li>
+                    <li class="nav-item"><a class="nav-link" href="statistics.html">Stats</a></li>
+                    <li class="nav-item"><a class="nav-link" href="team.html">Clubs</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="format.html">Format</a></li>
+                </ul>
             </div>
         </div>
     </nav>
     <main class="tw-flex-grow tw-bg-gray-50">
         <div class="tw-bg-uefa-dark tw-py-12 tw-mb-8">
             <div class="container tw-mx-auto tw-px-4">
-                <h1 class="tw-text-4xl md:tw-text-5xl tw-font-display tw-font-bold tw-text-white tw-uppercase">Tournament Format</h1>
+                <h1 class="tw-text-4xl md:tw-text-5xl tw-font-display tw-font-bold tw-text-white tw-uppercase">
+                    Tournament Format</h1>
             </div>
         </div>
         <div class="container tw-mx-auto tw-px-4 tw-pb-12 tw-max-w-4xl">
-            <div class="tw-text-center tw-mb-10"><i class="fas fa-scroll tw-text-6xl tw-text-cyan-aura tw-mb-4"></i><h2 class="tw-text-3xl tw-font-display tw-font-bold tw-uppercase tw-text-uefa-dark">กฎกติกาและรูปแบบการแข่งขัน</h2><p class="tw-text-gray-500">RoV SN Tournament 2026</p></div>
-            <div class="rule-card tw-p-6"><div class="tw-flex tw-items-center tw-mb-4"><i class="fas fa-chess-board tw-text-2xl tw-text-uefa-dark tw-mr-3"></i><h3 class="tw-text-xl tw-font-bold tw-text-uefa-dark tw-uppercase tw-m-0">1. รอบเก็บคะแนน (League Phase)</h3></div><div class="tw-pl-4"><p class="tw-font-bold tw-text-cyan-aura tw-mb-2">รูปแบบ: Modified League (12 ทีม)</p><ul class="tw-list-none tw-space-y-2 tw-text-gray-700"><li><strong>จำนวนทีม:</strong> 12 ทีม</li><li><strong>การแบ่งสาย:</strong> จับสลากแบ่งเป็น 2 โถ (Pot A และ Pot B) โถละ 6 ทีม</li><li><strong>จำนวนแมตช์:</strong> ทุกทีมจะได้แข่งทั้งหมด 6 แมตช์<ul class="tw-list-none tw-pl-4 tw-mt-2 tw-space-y-1"><li>เจอทีมจากโถเดียวกัน: 3 ทีม</li><li>เจอทีมจากต่างโถ: 3 ทีม</li></ul></li><li><span class="rule-badge">รูปแบบเกม</span> Best of 3 (BO3)</li><li><span class="rule-badge">การคัดเข้ารอบ</span> อันดับ 1–4 เข้า Semi Final</li></ul></div></div>
-            <div class="rule-card tw-p-6"><div class="tw-flex tw-items-center tw-mb-4"><i class="fas fa-balance-scale tw-text-2xl tw-text-uefa-dark tw-mr-3"></i><h3 class="tw-text-xl tw-font-bold tw-text-uefa-dark tw-uppercase tw-m-0">2. เกณฑ์การให้คะแนน</h3></div><div class="tw-grid md:tw-grid-cols-2 tw-gap-6"><div class="tw-bg-gray-50 tw-p-4 tw-rounded"><h4 class="tw-font-bold tw-text-sm tw-uppercase tw-mb-3 tw-text-gray-500">ระบบคะแนน</h4><div class="tw-flex tw-items-center tw-mb-2"><span class="tw-w-3 tw-h-3 tw-bg-green-500 tw-rounded-full tw-mr-2"></span><span class="tw-font-bold">ชนะ:</span> <span class="tw-ml-auto">3 คะแนน</span></div><div class="tw-flex tw-items-center"><span class="tw-w-3 tw-h-3 tw-bg-red-500 tw-rounded-full tw-mr-2"></span><span class="tw-font-bold">แพ้:</span> <span class="tw-ml-auto">0 คะแนน</span></div></div><div class="tw-bg-gray-50 tw-p-4 tw-rounded"><h4 class="tw-font-bold tw-text-sm tw-uppercase tw-mb-3 tw-text-gray-500">Tie-breakers</h4><ol class="tw-list-decimal tw-pl-5 tw-text-sm tw-space-y-1"><li>Game Difference</li><li>Head-to-Head</li><li>Total Wins</li><li>Random Draw</li></ol></div></div></div>
-            <div class="rule-card tw-p-6"><div class="tw-flex tw-items-center tw-mb-4"><i class="fas fa-fist-raised tw-text-2xl tw-text-uefa-dark tw-mr-3"></i><h3 class="tw-text-xl tw-font-bold tw-text-uefa-dark tw-uppercase tw-m-0">3. รอบรองชนะเลิศ</h3></div><div class="tw-pl-4"><p class="tw-mb-2"><span class="tw-font-bold tw-text-cyan-aura">รูปแบบ:</span> Best of 5 (BO5)</p><div class="tw-flex tw-flex-col md:tw-flex-row tw-gap-4 tw-mb-4"><div class="tw-bg-uefa-dark tw-text-white tw-p-3 tw-rounded tw-flex-1 tw-text-center"><div class="tw-text-xs tw-text-cyan-aura tw-uppercase">คู่ที่ 1</div><div class="tw-font-bold tw-text-lg">อันดับ 1 🆚 อันดับ 2</div></div><div class="tw-bg-uefa-dark tw-text-white tw-p-3 tw-rounded tw-flex-1 tw-text-center"><div class="tw-text-xs tw-text-cyan-aura tw-uppercase">คู่ที่ 2</div><div class="tw-font-bold tw-text-lg">อันดับ 3 🆚 อันดับ 4</div></div></div></div></div>
-            <div class="rule-card tw-p-6 tw-bg-gradient-to-br tw-from-uefa-dark tw-to-black tw-text-white"><div class="tw-flex tw-items-center tw-mb-4"><i class="fas fa-crown tw-text-2xl tw-text-yellow-400 tw-mr-3"></i><h3 class="tw-text-xl tw-font-bold tw-text-white tw-uppercase tw-m-0">4. รอบชิงชนะเลิศ</h3></div><div class="tw-pl-4"><div class="tw-flex tw-items-start tw-mb-4"><i class="fas fa-map-marker-alt tw-text-cyan-aura tw-mt-1 tw-mr-3"></i><div><strong class="tw-block tw-text-cyan-aura">สถานที่</strong><span>แข่งขัน Offline ณ งาน Open House</span></div></div><div class="tw-flex tw-items-start"><i class="fas fa-gamepad tw-text-cyan-aura tw-mt-1 tw-mr-3"></i><div><strong class="tw-block tw-text-cyan-aura">รูปแบบการแข่ง</strong><ul class="tw-list-none tw-space-y-1 tw-text-gray-300"><li>🏆 <strong>คู่ชิงชนะเลิศ:</strong> Best of 5 (BO5)</li><li>🥉 <strong>คู่ชิงอันดับ 3:</strong> Best of 5 (BO5)</li></ul></div></div></div></div>
+            <div class="tw-text-center tw-mb-10"><i class="fas fa-scroll tw-text-6xl tw-text-cyan-aura tw-mb-4"></i>
+                <h2 class="tw-text-3xl tw-font-display tw-font-bold tw-uppercase tw-text-uefa-dark">
+                    กฎกติกาและรูปแบบการแข่งขัน</h2>
+                <p class="tw-text-gray-500">RoV SN Tournament 2026</p>
+            </div>
+            <div class="rule-card tw-p-6">
+                <div class="tw-flex tw-items-center tw-mb-4"><i
+                        class="fas fa-chess-board tw-text-2xl tw-text-uefa-dark tw-mr-3"></i>
+                    <h3 class="tw-text-xl tw-font-bold tw-text-uefa-dark tw-uppercase tw-m-0">1. รอบเก็บคะแนน (League
+                        Phase)</h3>
+                </div>
+                <div class="tw-pl-4">
+                    <p class="tw-font-bold tw-text-cyan-aura tw-mb-2">รูปแบบ: Modified League (12 ทีม)</p>
+                    <ul class="tw-list-none tw-space-y-2 tw-text-gray-700">
+                        <li><strong>จำนวนทีม:</strong> 12 ทีม</li>
+                        <li><strong>การแบ่งสาย:</strong> จับสลากแบ่งเป็น 2 โถ (Pot A และ Pot B) โถละ 6 ทีม</li>
+                        <li><strong>จำนวนแมตช์:</strong> ทุกทีมจะได้แข่งทั้งหมด 6 แมตช์<ul
+                                class="tw-list-none tw-pl-4 tw-mt-2 tw-space-y-1">
+                                <li>เจอทีมจากโถเดียวกัน: 3 ทีม</li>
+                                <li>เจอทีมจากต่างโถ: 3 ทีม</li>
+                            </ul>
+                        </li>
+                        <li><span class="rule-badge">รูปแบบเกม</span> Best of 3 (BO3)</li>
+                        <li><span class="rule-badge">การคัดเข้ารอบ</span> อันดับ 1–4 เข้า Semi Final</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="rule-card tw-p-6">
+                <div class="tw-flex tw-items-center tw-mb-4"><i
+                        class="fas fa-balance-scale tw-text-2xl tw-text-uefa-dark tw-mr-3"></i>
+                    <h3 class="tw-text-xl tw-font-bold tw-text-uefa-dark tw-uppercase tw-m-0">2. เกณฑ์การให้คะแนน</h3>
+                </div>
+                <div class="tw-grid md:tw-grid-cols-2 tw-gap-6">
+                    <div class="tw-bg-gray-50 tw-p-4 tw-rounded">
+                        <h4 class="tw-font-bold tw-text-sm tw-uppercase tw-mb-3 tw-text-gray-500">ระบบคะแนน</h4>
+                        <div class="tw-flex tw-items-center tw-mb-2"><span
+                                class="tw-w-3 tw-h-3 tw-bg-green-500 tw-rounded-full tw-mr-2"></span><span
+                                class="tw-font-bold">ชนะ:</span> <span class="tw-ml-auto">3 คะแนน</span></div>
+                        <div class="tw-flex tw-items-center"><span
+                                class="tw-w-3 tw-h-3 tw-bg-red-500 tw-rounded-full tw-mr-2"></span><span
+                                class="tw-font-bold">แพ้:</span> <span class="tw-ml-auto">0 คะแนน</span></div>
+                    </div>
+                    <div class="tw-bg-gray-50 tw-p-4 tw-rounded">
+                        <h4 class="tw-font-bold tw-text-sm tw-uppercase tw-mb-3 tw-text-gray-500">Tie-breakers</h4>
+                        <ol class="tw-list-decimal tw-pl-5 tw-text-sm tw-space-y-1">
+                            <li>Game Difference</li>
+                            <li>Head-to-Head</li>
+                            <li>Total Wins</li>
+                            <li>Random Draw</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+            <div class="rule-card tw-p-6">
+                <div class="tw-flex tw-items-center tw-mb-4"><i
+                        class="fas fa-fist-raised tw-text-2xl tw-text-uefa-dark tw-mr-3"></i>
+                    <h3 class="tw-text-xl tw-font-bold tw-text-uefa-dark tw-uppercase tw-m-0">3. รอบรองชนะเลิศ</h3>
+                </div>
+                <div class="tw-pl-4">
+                    <p class="tw-mb-2"><span class="tw-font-bold tw-text-cyan-aura">รูปแบบ:</span> Best of 5 (BO5)</p>
+                    <div class="tw-flex tw-flex-col md:tw-flex-row tw-gap-4 tw-mb-4">
+                        <div class="tw-bg-uefa-dark tw-text-white tw-p-3 tw-rounded tw-flex-1 tw-text-center">
+                            <div class="tw-text-xs tw-text-cyan-aura tw-uppercase">คู่ที่ 1</div>
+                            <div class="tw-font-bold tw-text-lg">อันดับ 1 🆚 อันดับ 2</div>
+                        </div>
+                        <div class="tw-bg-uefa-dark tw-text-white tw-p-3 tw-rounded tw-flex-1 tw-text-center">
+                            <div class="tw-text-xs tw-text-cyan-aura tw-uppercase">คู่ที่ 2</div>
+                            <div class="tw-font-bold tw-text-lg">อันดับ 3 🆚 อันดับ 4</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="rule-card tw-p-6 tw-bg-gradient-to-br tw-from-uefa-dark tw-to-black tw-text-white">
+                <div class="tw-flex tw-items-center tw-mb-4"><i
+                        class="fas fa-crown tw-text-2xl tw-text-yellow-400 tw-mr-3"></i>
+                    <h3 class="tw-text-xl tw-font-bold tw-text-white tw-uppercase tw-m-0">4. รอบชิงชนะเลิศ</h3>
+                </div>
+                <div class="tw-pl-4">
+                    <div class="tw-flex tw-items-start tw-mb-4"><i
+                            class="fas fa-map-marker-alt tw-text-cyan-aura tw-mt-1 tw-mr-3"></i>
+                        <div><strong class="tw-block tw-text-cyan-aura">สถานที่</strong><span>แข่งขัน Offline ณ งาน Open
+                                House</span></div>
+                    </div>
+                    <div class="tw-flex tw-items-start"><i class="fas fa-gamepad tw-text-cyan-aura tw-mt-1 tw-mr-3"></i>
+                        <div><strong class="tw-block tw-text-cyan-aura">รูปแบบการแข่ง</strong>
+                            <ul class="tw-list-none tw-space-y-1 tw-text-gray-300">
+                                <li>🏆 <strong>คู่ชิงชนะเลิศ:</strong> Best of 5 (BO5)</li>
+                                <li>🥉 <strong>คู่ชิงอันดับ 3:</strong> Best of 5 (BO5)</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </main>
     <!-- FOOTER -->
     <footer class="tw-bg-uefa-dark tw-text-white tw-border-t-4 tw-border-cyan-aura tw-mt-auto">
         <div class="container tw-mx-auto tw-px-4 tw-py-12">
             <div class="tw-flex tw-flex-col tw-items-center tw-mb-8">
-                <div class="tw-w-16 tw-h-16 tw-bg-gradient-to-br tw-from-cyan-aura tw-to-blue-600 tw-rounded-full tw-flex tw-items-center tw-justify-center tw-mb-4">
+                <div
+                    class="tw-w-16 tw-h-16 tw-bg-gradient-to-br tw-from-cyan-aura tw-to-blue-600 tw-rounded-full tw-flex tw-items-center tw-justify-center tw-mb-4">
                     <img src="images/logo/RoV-Logo.png" alt="RoV Logo" class="tw-w-6 tw-h-6">
                 </div>
                 <h2 class="tw-font-display tw-font-bold tw-text-2xl tw-tracking-widest">ROV SN TOURNAMENT OFFICIAL</h2>
             </div>
-            <div class="footer-comp-nav pk-d--flex pk-justify-content--around tw-flex tw-flex-wrap tw-justify-center tw-gap-8 tw-py-6 tw-border-t tw-border-gray-700 tw-font-sans tw-text-sm tw-text-gray-400">
+            <div
+                class="footer-comp-nav pk-d--flex pk-justify-content--around tw-flex tw-flex-wrap tw-justify-center tw-gap-8 tw-py-6 tw-border-t tw-border-gray-700 tw-font-sans tw-text-sm tw-text-gray-400">
                 <a href="privacy-policy.html">Privacy</a>
                 <a href="terms-of-service.html">Terms</a>
                 <a href="contact-us.html">Contact</a>
@@ -64,4 +170,5 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="script.js"></script>
 </body>
+
 </html>
