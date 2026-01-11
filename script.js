@@ -1,7 +1,7 @@
 // --- CONFIG & DATA ---
 // URL ของ Backend API (บน Render)
-const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
-    ? 'http://localhost:3000' 
+const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? 'http://localhost:3000'
     : 'https://rov-sn-tournament-official.onrender.com';
 
 // Global State (ตัวแปรเก็บข้อมูลกลาง)
@@ -11,9 +11,17 @@ let globalTeamLogos = {}; // เก็บ URL โลโก้ { "TeamName": "URL
 
 // --- MAIN INIT (เริ่มทำงานเมื่อโหลดหน้าเว็บ) ---
 document.addEventListener('DOMContentLoaded', async () => {
-    
+
     // 1. เริ่มต้นการทำงานของ Slider หน้า Home
     initCarousel();
+
+    // 1.5 แสดง Skeleton Loading ก่อน fetch data
+    showMatchesSkeleton('matchesContainer', 6);
+    showMatchesSkeleton('home-matches-container', 4);
+    showTableSkeleton('tableBodyLeague', 8);
+    showTableSkeleton('home-standings-body', 5);
+    showTeamsSkeleton('teamsGridPage', 12);
+    showStatsSkeleton('stats-season-container');
 
     // 2. ดึงข้อมูลจาก API (ตารางแข่ง, ผลแข่ง, โลโก้) พร้อมกัน
     try {
@@ -48,33 +56,33 @@ document.addEventListener('DOMContentLoaded', async () => {
         globalResults = (resultsRes && resultsRes.ok) ? await resultsRes.json() : [];
 
         // 3. เริ่มวาดหน้าเว็บตามข้อมูลที่มี
-        if(scheduleData) {
+        if (scheduleData) {
             globalSchedule = scheduleData.schedule;
-            
+
             // --- Logic แยกตามหน้า (Page Routing) ---
-            
+
             // หน้า: Fixtures (fixtures-results.html)
             if (document.getElementById('matchesContainer')) {
                 renderMatches(globalSchedule, globalResults, 1);
             }
-            
+
             // หน้า: Standings (standings.html)
             if (document.getElementById('tableBodyLeague')) {
                 const allTeams = [...scheduleData.potA, ...scheduleData.potB];
                 renderTable(allTeams, globalResults, 'tableBodyLeague');
             }
-            
+
             // หน้า: Clubs (team.html)
             if (document.getElementById('teamsGridPage')) {
                 renderTeams([...scheduleData.potA, ...scheduleData.potB]);
             }
-            
+
             // หน้า: Home (index.html) - ส่วนย่อ
             if (document.getElementById('home-matches-container')) {
                 renderHomeFixtures(globalSchedule, globalResults);
                 renderHomeStandings([...scheduleData.potA, ...scheduleData.potB], globalResults);
             }
-            
+
             // หน้า: Stats (statistics.html, team-stats.html, players.html)
             if (document.getElementById('stats-season-container')) {
                 fetchAndRenderSeasonStats();
@@ -86,31 +94,152 @@ document.addEventListener('DOMContentLoaded', async () => {
                 fetchAndRenderPlayerStats();
             }
         } else {
-            // กรณีโหลดข้อมูลไม่สำเร็จ ให้แสดง Error
-            const errHtml = `
-                <div class="tw-text-center tw-py-12 tw-text-gray-500">
-                    <i class="fas fa-exclamation-circle tw-text-3xl tw-text-red-400 tw-mb-3"></i>
-                    <p>ไม่สามารถโหลดข้อมูลการแข่งขันได้</p>
-                    <p class="tw-text-xs">Server อาจกำลังตื่นตัว กรุณารีเฟรชใหม่อีกครั้ง</p>
-                </div>`;
-            
-            if (document.getElementById('matchesContainer')) document.getElementById('matchesContainer').innerHTML = errHtml;
-            if (document.getElementById('home-matches-container')) document.getElementById('home-matches-container').innerHTML = errHtml;
+            // กรณีโหลดข้อมูลไม่สำเร็จ ให้แสดง Error พร้อมปุ่ม Retry
+            showError('matchesContainer', 'ไม่สามารถโหลดข้อมูลการแข่งขันได้', 'Server อาจกำลังตื่นตัว กรุณารอสักครู่แล้วลองใหม่');
+            showError('home-matches-container', 'ไม่สามารถโหลดข้อมูลการแข่งขันได้', 'Server อาจกำลังตื่นตัว');
+            showError('tableBodyLeague', 'ไม่สามารถโหลดตารางคะแนนได้', 'กรุณารีเฟรชหน้าเว็บ', true);
+            showError('teamsGridPage', 'ไม่สามารถโหลดข้อมูลทีมได้', 'กรุณารีเฟรชหน้าเว็บ');
         }
 
-    } catch (e) { console.error("Init Error:", e); }
+    } catch (e) {
+        console.error("Init Error:", e);
+        // แสดง Error ทุก container ที่มี
+        const containers = ['matchesContainer', 'home-matches-container', 'teamsGridPage', 'stats-season-container'];
+        containers.forEach(id => showError(id, 'เกิดข้อผิดพลาดในการเชื่อมต่อ', e.message));
+    }
 });
 
 
-// --- HELPER: Get Logo HTML ---
-// ฟังก์ชันสร้าง HTML รูปโลโก้ (ถ้าไม่มี URL จะใช้ไอคอนโล่)
+// --- UI HELPER FUNCTIONS ---
+
+// Skeleton Loading สำหรับ Matches
+function showMatchesSkeleton(containerId, count = 4) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    let html = '';
+    for (let i = 0; i < count; i++) {
+        html += `
+            <div class="skeleton-match">
+                <div style="display: flex; align-items: center; gap: 0.5rem; flex: 1; justify-content: flex-end;">
+                    <div class="skeleton skeleton-text" style="width: 80px;"></div>
+                    <div class="skeleton skeleton-avatar"></div>
+                </div>
+                <div style="padding: 0 1rem;">
+                    <div class="skeleton" style="width: 60px; height: 24px;"></div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.5rem; flex: 1;">
+                    <div class="skeleton skeleton-avatar"></div>
+                    <div class="skeleton skeleton-text" style="width: 80px;"></div>
+                </div>
+            </div>`;
+    }
+    container.innerHTML = html;
+}
+
+// Skeleton Loading สำหรับ Table
+function showTableSkeleton(tbodyId, rows = 5, cols = 7) {
+    const tbody = document.getElementById(tbodyId);
+    if (!tbody) return;
+
+    let html = '';
+    for (let i = 0; i < rows; i++) {
+        html += '<tr class="skeleton-row">';
+        for (let j = 0; j < cols; j++) {
+            if (j === 0) {
+                html += `<td style="padding: 0.75rem;"><div class="skeleton skeleton-avatar" style="width: 32px; height: 32px;"></div></td>`;
+            } else if (j === 1) {
+                html += `<td style="padding: 0.75rem;"><div style="display: flex; align-items: center; gap: 0.5rem;"><div class="skeleton skeleton-avatar"></div><div class="skeleton skeleton-text" style="width: 100px;"></div></div></td>`;
+            } else {
+                html += `<td style="padding: 0.75rem; text-align: center;"><div class="skeleton skeleton-text" style="width: 30px; margin: 0 auto;"></div></td>`;
+            }
+        }
+        html += '</tr>';
+    }
+    tbody.innerHTML = html;
+}
+
+// Skeleton Loading สำหรับ Teams Grid
+function showTeamsSkeleton(containerId, count = 12) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    let html = '';
+    for (let i = 0; i < count; i++) {
+        html += `
+            <div class="skeleton-card" style="display: flex; flex-direction: column; align-items: center; padding: 1.5rem;">
+                <div class="skeleton" style="width: 80px; height: 80px; border-radius: 8px; margin-bottom: 1rem;"></div>
+                <div class="skeleton skeleton-text" style="width: 80%;"></div>
+            </div>`;
+    }
+    container.innerHTML = html;
+}
+
+// Skeleton Loading สำหรับ Stats Cards
+function showStatsSkeleton(containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    container.innerHTML = `
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem;">
+            ${[1, 2, 3].map(() => `
+                <div class="skeleton-card" style="padding: 1.5rem;">
+                    <div class="skeleton skeleton-text-sm" style="width: 40%; margin-bottom: 1rem;"></div>
+                    <div class="skeleton" style="width: 80%; height: 3rem;"></div>
+                </div>
+            `).join('')}
+        </div>`;
+}
+
+// Error State
+function showError(containerId, title, message, isTableRow = false) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    if (isTableRow) {
+        container.innerHTML = `
+            <tr>
+                <td colspan="7" class="error-container">
+                    <div class="error-icon"><i class="fas fa-exclamation-triangle"></i></div>
+                    <div class="error-title">${title}</div>
+                    <div class="error-message">${message}</div>
+                    <button class="error-retry-btn" onclick="location.reload()">
+                        <i class="fas fa-redo"></i> ลองใหม่อีกครั้ง
+                    </button>
+                </td>
+            </tr>`;
+    } else {
+        container.innerHTML = `
+            <div class="error-container">
+                <div class="error-icon"><i class="fas fa-exclamation-triangle"></i></div>
+                <div class="error-title">${title}</div>
+                <div class="error-message">${message}</div>
+                <button class="error-retry-btn" onclick="location.reload()">
+                    <i class="fas fa-redo"></i> ลองใหม่อีกครั้ง
+                </button>
+            </div>`;
+    }
+}
+
+// Empty State
+function showEmpty(containerId, title, message, icon = 'fas fa-inbox') {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    container.innerHTML = `
+        <div class="empty-state">
+            <div class="empty-state-icon"><i class="${icon}"></i></div>
+            <div class="empty-state-title">${title}</div>
+            <div class="empty-state-message">${message}</div>
+        </div>`;
+}
+
+// Get Logo HTML
 function getTeamLogoHtml(teamName, sizeClass = "tw-w-8 tw-h-8") {
     const url = globalTeamLogos[teamName];
     if (url) {
-        // ใช้ onerror เพื่อกันรูปลิงก์เสีย
         return `<img src="${url}" alt="${teamName}" class="${sizeClass} tw-object-contain tw-mr-2" onerror="this.onerror=null;this.parentElement.innerHTML='<div class=\\'${sizeClass} tw-bg-gray-100 tw-rounded-full tw-mr-2 tw-flex tw-items-center tw-justify-center\\'><i class=\\'fas fa-shield-alt tw-text-gray-400\\'></i></div>';">`;
     }
-    // Default Icon
     return `<div class="${sizeClass} tw-bg-gray-100 tw-rounded-full tw-mr-2 tw-flex tw-items-center tw-justify-center"><i class="fas fa-shield-alt tw-text-gray-400"></i></div>`;
 }
 
@@ -121,7 +250,7 @@ function initCarousel() {
     const prevBtn = document.getElementById('prevBtn');
     const nextBtn = document.getElementById('nextBtn');
 
-    if (!track || !prevBtn || !nextBtn) return; 
+    if (!track || !prevBtn || !nextBtn) return;
 
     let currentIndex = 0;
     const slides = track.children;
@@ -143,7 +272,7 @@ function initCarousel() {
 
     nextBtn.addEventListener('click', nextSlide);
     prevBtn.addEventListener('click', prevSlide);
-    
+
     // เลื่อนอัตโนมัติทุก 5 วินาที
     setInterval(nextSlide, 5000);
 }
@@ -154,20 +283,20 @@ function initCarousel() {
 // แสดงตารางแข่งแบบย่อ (4 คู่แรกของวัน)
 function renderHomeFixtures(schedule, results) {
     const container = document.getElementById('home-matches-container');
-    if(!container) return;
+    if (!container) return;
 
     // หา Match Day ปัจจุบัน (สมมติว่าเป็นวันที่ 1)
-    const dayData = schedule.find(r => r.day === 1); 
+    const dayData = schedule.find(r => r.day === 1);
     container.innerHTML = '';
 
     if (dayData) {
         dayData.matches.slice(0, 4).forEach(m => {
             const matchKey = `${dayData.day}_${m.blue}_vs_${m.red}`.replace(/\s+/g, '');
             const result = results.find(r => r.matchId === matchKey);
-            
+
             let scoreDisplay = `<span class="tw-text-xs tw-text-gray-400 tw-font-bold">VS</span>`;
             let borderClass = "";
-            
+
             if (result) {
                 scoreDisplay = `<span class="tw-font-bold tw-text-uefa-dark">${result.scoreBlue} - ${result.scoreRed}</span>`;
                 borderClass = "tw-border-l-4 tw-border-l-cyan-aura";
@@ -195,30 +324,30 @@ function renderHomeFixtures(schedule, results) {
 // แสดงตารางคะแนนแบบย่อ (Top 5)
 function renderHomeStandings(teams, results) {
     const tbody = document.getElementById('home-standings-body');
-    if(!tbody) return;
+    if (!tbody) return;
 
     // คำนวณคะแนน
     const stats = teams.map(teamName => {
         let p = 0, w = 0, l = 0, gd = 0, pts = 0;
         results.forEach(r => {
-            if (r.teamBlue === teamName) { 
-                p++; 
-                if(r.scoreBlue > r.scoreRed) { w++; pts += 3; } else { l++; } 
-                gd += (r.scoreBlue - r.scoreRed); 
-            } else if (r.teamRed === teamName) { 
-                p++; 
-                if(r.scoreRed > r.scoreBlue) { w++; pts += 3; } else { l++; } 
-                gd += (r.scoreRed - r.scoreBlue); 
+            if (r.teamBlue === teamName) {
+                p++;
+                if (r.scoreBlue > r.scoreRed) { w++; pts += 3; } else { l++; }
+                gd += (r.scoreBlue - r.scoreRed);
+            } else if (r.teamRed === teamName) {
+                p++;
+                if (r.scoreRed > r.scoreBlue) { w++; pts += 3; } else { l++; }
+                gd += (r.scoreRed - r.scoreBlue);
             }
         });
         return { name: teamName, p, w, l, gd, pts };
     });
 
     // เรียงลำดับ (Points > GD > Name)
-    stats.sort((a, b) => { 
-        if (b.pts !== a.pts) return b.pts - a.pts; 
-        if (b.gd !== a.gd) return b.gd - a.gd; 
-        return a.name.localeCompare(b.name); 
+    stats.sort((a, b) => {
+        if (b.pts !== a.pts) return b.pts - a.pts;
+        if (b.gd !== a.gd) return b.gd - a.gd;
+        return a.name.localeCompare(b.name);
     });
 
     tbody.innerHTML = '';
@@ -227,12 +356,12 @@ function renderHomeStandings(teams, results) {
         const rankClass = i < 4 ? 'tw-bg-cyan-aura tw-text-uefa-dark' : 'tw-bg-gray-200 tw-text-gray-500';
         tbody.innerHTML += `
             <tr class="tw-border-b tw-border-gray-50 hover:tw-bg-echo-white tw-transition">
-                <td class="tw-p-3 tw-text-center"><div class="tw-w-6 tw-h-6 ${rankClass} tw-rounded-full tw-flex tw-items-center tw-justify-center tw-font-bold tw-text-xs tw-mx-auto">${i+1}</div></td>
+                <td class="tw-p-3 tw-text-center"><div class="tw-w-6 tw-h-6 ${rankClass} tw-rounded-full tw-flex tw-items-center tw-justify-center tw-font-bold tw-text-xs tw-mx-auto">${i + 1}</div></td>
                 <td class="tw-p-3 tw-font-bold tw-text-uefa-dark tw-text-sm tw-flex tw-items-center">
                     ${getTeamLogoHtml(d.name, "tw-w-6 tw-h-6")} ${d.name}
                 </td>
                 <td class="tw-p-3 tw-text-center tw-text-sm">${d.p}</td>
-                <td class="tw-p-3 tw-text-center tw-text-sm tw-font-mono">${d.gd > 0 ? '+'+d.gd : d.gd}</td>
+                <td class="tw-p-3 tw-text-center tw-text-sm tw-font-mono">${d.gd > 0 ? '+' + d.gd : d.gd}</td>
                 <td class="tw-p-3 tw-text-center tw-font-bold tw-text-black">${d.pts}</td>
             </tr>
         `;
@@ -246,7 +375,7 @@ function renderHomeStandings(teams, results) {
 function renderMatches(schedule, results, activeDay) {
     const container = document.getElementById('matchesContainer');
     const filters = document.getElementById('matchDayFilters');
-    if(!container || !filters) return;
+    if (!container || !filters) return;
 
     filters.innerHTML = '';
     schedule.forEach(round => {
@@ -260,14 +389,14 @@ function renderMatches(schedule, results, activeDay) {
 
     container.innerHTML = '';
     const dayData = schedule.find(r => r.day === activeDay);
-    
-    if(dayData) {
+
+    if (dayData) {
         dayData.matches.forEach(m => {
             const matchKey = `${activeDay}_${m.blue}_vs_${m.red}`.replace(/\s+/g, '');
             const result = results.find(r => r.matchId === matchKey);
             const el = document.createElement('div');
             el.className = "tw-bg-white tw-border tw-border-gray-200 tw-p-4 tw-flex tw-items-center tw-justify-between hover:tw-border-cyan-aura tw-transition tw-shadow-sm tw-relative tw-overflow-hidden tw-mb-3";
-            
+
             let centerContent, blueClass, redClass;
             if (result) {
                 blueClass = result.scoreBlue > result.scoreRed ? "tw-text-cyan-aura tw-font-bold" : "tw-text-gray-500";
@@ -301,21 +430,21 @@ function renderMatches(schedule, results, activeDay) {
 // หน้า Standings
 function renderTable(teams, results, id) {
     const tbody = document.getElementById(id);
-    if(!tbody) return;
+    if (!tbody) return;
 
     const stats = teams.map(teamName => {
         let p = 0, w = 0, l = 0, gd = 0, pts = 0;
         results.forEach(r => {
-            if (r.teamBlue === teamName) { p++; if(r.scoreBlue > r.scoreRed) { w++; pts += 3; } else { l++; } gd += (r.scoreBlue - r.scoreRed); } 
-            else if (r.teamRed === teamName) { p++; if(r.scoreRed > r.scoreBlue) { w++; pts += 3; } else { l++; } gd += (r.scoreRed - r.scoreBlue); }
+            if (r.teamBlue === teamName) { p++; if (r.scoreBlue > r.scoreRed) { w++; pts += 3; } else { l++; } gd += (r.scoreBlue - r.scoreRed); }
+            else if (r.teamRed === teamName) { p++; if (r.scoreRed > r.scoreBlue) { w++; pts += 3; } else { l++; } gd += (r.scoreRed - r.scoreBlue); }
         });
         return { name: teamName, p, w, l, gd, pts };
     });
 
-    stats.sort((a, b) => { 
-        if (b.pts !== a.pts) return b.pts - a.pts; 
-        if (b.gd !== a.gd) return b.gd - a.gd; 
-        return a.name.localeCompare(b.name); 
+    stats.sort((a, b) => {
+        if (b.pts !== a.pts) return b.pts - a.pts;
+        if (b.gd !== a.gd) return b.gd - a.gd;
+        return a.name.localeCompare(b.name);
     });
 
     tbody.innerHTML = '';
@@ -323,8 +452,8 @@ function renderTable(teams, results, id) {
         const rank = i + 1;
         const rowClass = rank <= 4 ? 'tw-bg-green-50' : '';
         const rankClass = rank <= 4 ? 'tw-bg-cyan-aura tw-text-uefa-dark' : 'tw-bg-gray-200 tw-text-gray-500';
-        const borderClass = rank === 4 ? 'tw-border-b-4 tw-border-cyan-aura' : 'tw-border-b tw-border-gray-100'; 
-        
+        const borderClass = rank === 4 ? 'tw-border-b-4 tw-border-cyan-aura' : 'tw-border-b tw-border-gray-100';
+
         tbody.innerHTML += `
             <tr class="${rowClass} ${borderClass}">
                 <td class="tw-p-3 tw-text-center"><div class="tw-w-8 tw-h-8 ${rankClass} tw-rounded-full tw-flex tw-items-center tw-justify-center tw-font-bold tw-mx-auto">${rank}</div></td>
@@ -344,7 +473,7 @@ function renderTable(teams, results, id) {
 // หน้า Clubs
 function renderTeams(teams) {
     const grid = document.getElementById('teamsGridPage');
-    if(!grid) return;
+    if (!grid) return;
     grid.innerHTML = '';
     teams.forEach(t => {
         grid.innerHTML += `
@@ -366,9 +495,9 @@ async function fetchAndRenderSeasonStats() {
     try {
         const res = await fetch(`${API_BASE_URL}/api/season-stats`);
         const data = res.ok ? await res.json() : { totalKills: 0, totalDeaths: 0, avgGameDuration: 0 };
-        
+
         const container = document.getElementById('stats-season-container');
-        if(!container) return;
+        if (!container) return;
 
         const duration = data.avgGameDuration || 0;
         const minutes = Math.floor(duration / 60);
@@ -391,7 +520,7 @@ async function fetchAndRenderSeasonStats() {
                 </div>
             </div>
         `;
-    } catch(e) { console.error("Season Stats Error:", e); }
+    } catch (e) { console.error("Season Stats Error:", e); }
 }
 
 // หน้า Team Stats
@@ -400,7 +529,7 @@ async function fetchAndRenderTeamStats() {
         const res = await fetch(`${API_BASE_URL}/api/team-stats`);
         const data = res.ok ? await res.json() : [];
         const tbody = document.getElementById('stats-team-table-body');
-        if(!tbody) return;
+        if (!tbody) return;
 
         if (data.length === 0) {
             tbody.innerHTML = `<tr><td colspan="7" class="tw-p-8 tw-text-center tw-text-gray-400">ยังไม่มีข้อมูลสถิติทีม</td></tr>`;
@@ -427,7 +556,7 @@ async function fetchAndRenderTeamStats() {
                 </tr>
             `;
         });
-    } catch(e) { console.error("Team Stats Error:", e); }
+    } catch (e) { console.error("Team Stats Error:", e); }
 }
 
 // หน้า Player Stats
@@ -436,7 +565,7 @@ async function fetchAndRenderPlayerStats() {
         const res = await fetch(`${API_BASE_URL}/api/player-stats`);
         const data = res.ok ? await res.json() : [];
         const container = document.getElementById('stats-player-list');
-        if(!container) return;
+        if (!container) return;
 
         container.innerHTML = '';
         if (data.length === 0) {
@@ -463,5 +592,5 @@ async function fetchAndRenderPlayerStats() {
                 </div>
             `;
         });
-    } catch(e) { console.error("Player Stats Error:", e); }
+    } catch (e) { console.error("Player Stats Error:", e); }
 }
