@@ -1,7 +1,6 @@
 // API Configuration
-const API_BASE_URL = import.meta.env.PROD
-    ? 'https://rov-sn-tournament-official.onrender.com'
-    : '';
+// ถ้ามี VITE_API_URL ให้ใช้ค่านั้น ถ้าไม่มี (dev) ให้ใช้ proxy
+const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
 // API Helper
 const api = {
