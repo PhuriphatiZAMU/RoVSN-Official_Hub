@@ -126,6 +126,19 @@ app.get('/api/health', (req, res) => res.json({ status: 'ok', version: '2.0' }))
 
 // --- AUTH ROUTES ---
 
+// Utility Endpoint: สร้าง Password Hash (ใช้สำหรับ Setup เท่านั้น ควรปิดเมื่อใช้งานจริง)
+app.post('/api/auth/hash-generator', async (req, res) => {
+    try {
+        const { password } = req.body;
+        if (!password) return res.status(400).json({ error: 'Password required' });
+
+        const hash = await bcrypt.hash(password, 10);
+        res.json({ password, hash });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // POST: Login
 app.post('/api/auth/login', async (req, res) => {
     try {
