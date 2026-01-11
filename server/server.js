@@ -126,24 +126,11 @@ app.get('/api/health', (req, res) => res.json({ status: 'ok', version: '2.0' }))
 
 // --- AUTH ROUTES ---
 
-// Utility Endpoint: สร้าง Password Hash (ใช้สำหรับ Setup เท่านั้น ควรปิดเมื่อใช้งานจริง)
-app.post('/api/auth/hash-generator', async (req, res) => {
-    try {
-        const { password } = req.body;
-        if (!password) return res.status(400).json({ error: 'Password required' });
-
-        const hash = await bcrypt.hash(password, 10);
-        res.json({ password, hash });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
 
 // POST: Login
 app.post('/api/auth/login', async (req, res) => {
     try {
         const { username, password } = req.body;
-        console.log(`Login attempt for username: '${username}'`); // LOG 1
 
         if (!username || !password) {
             return res.status(400).json({ error: 'Username and password required' });
@@ -151,33 +138,22 @@ app.post('/api/auth/login', async (req, res) => {
 
         // ตรวจสอบ username
         if (username !== ADMIN_USERNAME) {
-            console.log(`Login failed: Username mismatch. Expected '${ADMIN_USERNAME}', got '${username}'`); // LOG 2
             return res.status(401).json({ error: 'Invalid credentials' });
         }
 
         // ตรวจสอบ password
         if (!ADMIN_PASSWORD_HASH) {
-            console.log("Login warning: No ADMIN_PASSWORD_HASH set, using default 'admin123'");
+            // กรณีไม่ได้ตั้ง hash ใน .env ให้ใช้ default password (สำหรับ dev เท่านั้น!)
             if (password !== 'admin123') {
                 return res.status(401).json({ error: 'Invalid credentials' });
             }
         } else {
-            console.log("Verifying password against hash...");
-
-            // --- DEBUG SECTION START ---
-            console.log(`Debug: Received password length: ${password.length}`);
-            console.log(`Debug: Is password exactly 'Lastfreedom4_'? ${password === 'Lastfreedom4_'}`);
-            console.log(`Debug: Hash loaded from Env starts with: ${ADMIN_PASSWORD_HASH.substring(0, 10)}...`);
-            // --- DEBUG SECTION END ---
-
             const isValid = await bcrypt.compare(password, ADMIN_PASSWORD_HASH);
             if (!isValid) {
-                console.log("Login failed: Password incorrect (Hash mismatch)");
                 return res.status(401).json({ error: 'Invalid credentials' });
             }
         }
 
-        console.log("Login successful!"); // LOG 6
         // สร้าง JWT Token
         const token = jwt.sign(
             { username, role: 'admin' },
