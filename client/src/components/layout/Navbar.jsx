@@ -1,6 +1,9 @@
+import { useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 
 export default function Navbar() {
+    const [isOpen, setIsOpen] = useState(false);
+
     const navItems = [
         { path: '/', label: 'Home' },
         { path: '/fixtures', label: 'Fixtures' },
@@ -10,11 +13,13 @@ export default function Navbar() {
         { path: '/format', label: 'Format' },
     ];
 
+    const closeMenu = () => setIsOpen(false);
+
     return (
         <nav className="navbar-custom sticky top-0 z-50 py-4">
             <div className="container mx-auto px-4 flex items-center justify-between">
                 {/* Brand */}
-                <Link to="/" className="flex items-center gap-3">
+                <Link to="/" className="flex items-center gap-3" onClick={closeMenu}>
                     <div className="w-10 h-10 bg-gradient-to-br from-cyan-aura to-blue-600 rounded-full flex items-center justify-center shadow-[0_0_15px_rgba(21,200,255,0.6)]">
                         <img
                             src="/images/logo/RoV-Logo.png"
@@ -49,11 +54,96 @@ export default function Navbar() {
                 </div>
 
                 {/* Mobile Menu Button */}
-                <button className="md:hidden text-cyan-aura">
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                    </svg>
+                <button
+                    className="md:hidden text-cyan-aura p-2 hover:bg-white/10 rounded-lg transition-colors"
+                    onClick={() => setIsOpen(!isOpen)}
+                    aria-label="Toggle menu"
+                >
+                    <div className="w-6 h-5 relative flex flex-col justify-between">
+                        <span
+                            className={`block h-0.5 bg-current transform transition-all duration-300 origin-center ${isOpen ? 'rotate-45 translate-y-2' : ''
+                                }`}
+                        />
+                        <span
+                            className={`block h-0.5 bg-current transition-all duration-300 ${isOpen ? 'opacity-0 scale-0' : ''
+                                }`}
+                        />
+                        <span
+                            className={`block h-0.5 bg-current transform transition-all duration-300 origin-center ${isOpen ? '-rotate-45 -translate-y-2' : ''
+                                }`}
+                        />
+                    </div>
                 </button>
+            </div>
+
+            {/* Mobile Menu Overlay */}
+            <div
+                className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                    }`}
+                onClick={closeMenu}
+            />
+
+            {/* Mobile Menu Panel */}
+            <div
+                className={`fixed top-0 right-0 h-full w-72 bg-uefa-dark z-50 md:hidden transform transition-transform duration-300 ease-out shadow-2xl ${isOpen ? 'translate-x-0' : 'translate-x-full'
+                    }`}
+            >
+                {/* Mobile Menu Header */}
+                <div className="flex items-center justify-between p-4 border-b border-gray-700">
+                    <span className="font-display font-bold text-white text-lg">Menu</span>
+                    <button
+                        onClick={closeMenu}
+                        className="text-gray-400 hover:text-white p-2 hover:bg-white/10 rounded-lg transition-colors"
+                        aria-label="Close menu"
+                    >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                {/* Mobile Menu Items */}
+                <div className="py-4">
+                    {navItems.map((item, index) => (
+                        <NavLink
+                            key={item.path}
+                            to={item.path}
+                            onClick={closeMenu}
+                            className={({ isActive }) => `
+                block px-6 py-4 font-display text-lg uppercase tracking-wider
+                transition-all duration-200 border-l-4
+                ${isActive
+                                    ? 'text-cyan-aura bg-white/5 border-cyan-aura'
+                                    : 'text-white hover:text-cyan-aura hover:bg-white/5 border-transparent hover:border-cyan-aura/50'
+                                }
+              `}
+                            style={{
+                                animationDelay: `${index * 50}ms`,
+                                animation: isOpen ? 'slideIn 0.3s ease-out forwards' : 'none'
+                            }}
+                        >
+                            {item.label}
+                        </NavLink>
+                    ))}
+                </div>
+
+                {/* Mobile Menu Footer */}
+                <div className="absolute bottom-0 left-0 right-0 p-6 border-t border-gray-700">
+                    <div className="flex items-center justify-center gap-4 text-gray-500">
+                        <a href="#" className="hover:text-cyan-aura transition-colors">
+                            <i className="fab fa-facebook text-xl"></i>
+                        </a>
+                        <a href="#" className="hover:text-cyan-aura transition-colors">
+                            <i className="fab fa-discord text-xl"></i>
+                        </a>
+                        <a href="#" className="hover:text-cyan-aura transition-colors">
+                            <i className="fab fa-youtube text-xl"></i>
+                        </a>
+                    </div>
+                    <p className="text-center text-gray-600 text-xs mt-4">
+                        © 2026 RoV SN Tournament
+                    </p>
+                </div>
             </div>
         </nav>
     );
