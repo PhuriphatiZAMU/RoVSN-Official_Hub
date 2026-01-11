@@ -16,11 +16,15 @@ const JWT_EXPIRES_IN = '24h';
 // Admin Credentials (ต้องตั้งใน .env)
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
 const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH; // bcrypt hash
-
-app.use(cors());
 app.use(bodyParser.json());
 app.use(cors({
-    origin: ['https://phuriphatizamu.github.io', 'http://localhost:5500', 'http://127.0.0.1:5500']
+    origin: [
+        'https://ro-v-sn-tournament-official.vercel.app', // Vercel Production
+        'http://localhost:5173', // Vite Dev Server
+        'http://localhost:3000', // Local Backend
+        'https://phuriphatizamu.github.io' // Legacy
+    ],
+    credentials: true
 }));
 
 // --- Database Connection ---
