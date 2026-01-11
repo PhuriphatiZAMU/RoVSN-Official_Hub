@@ -14,8 +14,14 @@ app.use(cors({
 }));
 
 // --- Database Connection ---
-// ใน Production แนะนำให้ใช้ process.env.MONGO_URI แต่ถ้า hardcode ไว้ก็ต้องแน่ใจว่า string ถูกต้อง
-const MONGO_URI = process.env.MONGO_URI || "mongodb+srv://phuriphatizamu_db_user:nNkkDsJQiDcI4uh3@cluster.bi2ornw.mongodb.net/rov_sn_tournament_2026?retryWrites=true&w=majority&appName=Cluster";
+// ใช้ Environment Variable เท่านั้น (ดูไฟล์ .env.example สำหรับตัวอย่าง)
+const MONGO_URI = process.env.MONGO_URI;
+
+if (!MONGO_URI) {
+    console.error('❌ MONGO_URI is not defined in environment variables!');
+    console.error('📝 Please create a .env file in the server directory with your MongoDB connection string.');
+    process.exit(1);
+}
 
 console.log("🔄 Connecting to MongoDB...");
 mongoose.connect(MONGO_URI)
@@ -75,7 +81,7 @@ const TeamLogoSchema = new mongoose.Schema({
     createdAt: { type: Date, default: Date.now }
 });
 // บังคับชื่อ Collection ว่า 'teamlogo' ตามที่คุณระบุ
-const TeamLogo = mongoose.model('TeamLogo', TeamLogoSchema, 'teamlogo'); 
+const TeamLogo = mongoose.model('TeamLogo', TeamLogoSchema, 'teamlogo');
 
 
 // --- API Routes ---
@@ -122,7 +128,7 @@ app.get('/api/results', async (req, res) => {
 app.post('/api/results', async (req, res) => {
     try {
         const { matchDay, teamBlue, teamRed, scoreBlue, scoreRed } = req.body;
-        
+
         let winner = null;
         let loser = null;
         if (scoreBlue > scoreRed) {
@@ -140,8 +146,8 @@ app.post('/api/results', async (req, res) => {
         };
 
         const result = await Result.findOneAndUpdate(
-            { matchId: matchId }, 
-            resultData, 
+            { matchId: matchId },
+            resultData,
             { upsert: true, new: true }
         );
 
@@ -171,10 +177,10 @@ app.get('/api/player-stats', async (req, res) => {
                     playerName: "$_id.playerName",
                     teamName: "$_id.teamName",
                     totalKills: 1, totalDeaths: 1, totalAssists: 1, totalGold: 1, gamesPlayed: 1, mvpCount: 1,
-                    kda: { 
+                    kda: {
                         $cond: [
-                            { $eq: ["$totalDeaths", 0] }, 
-                            { $add: ["$totalKills", "$totalAssists"] }, 
+                            { $eq: ["$totalDeaths", 0] },
+                            { $add: ["$totalKills", "$totalAssists"] },
                             { $divide: [{ $add: ["$totalKills", "$totalAssists"] }, "$totalDeaths"] }
                         ]
                     },
@@ -209,7 +215,7 @@ app.get('/api/team-stats', async (req, res) => {
                     teamName: "$_id",
                     totalKills: 1, totalDeaths: 1, totalAssists: 1, totalGold: 1,
                     // Assuming 5 players per team, divide by 5 to get actual team stats
-                    realGamesPlayed: { $ceil: { $divide: ["$gamesPlayed", 5] } }, 
+                    realGamesPlayed: { $ceil: { $divide: ["$gamesPlayed", 5] } },
                     realWins: { $ceil: { $divide: ["$wins", 5] } }
                 }
             },
@@ -255,15 +261,15 @@ app.get('/api/team-logos', async (req, res) => {
 app.post('/api/team-logos', async (req, res) => {
     try {
         const { teamName, logoUrl } = req.body;
-        
+
         if (!teamName || !logoUrl) {
             return res.status(400).json({ error: "teamName and logoUrl are required" });
         }
 
         // ใช้ upsert: true (ถ้ามีอัปเดต ถ้าไม่มีสร้างใหม่)
         const result = await TeamLogo.findOneAndUpdate(
-            { teamName: teamName }, 
-            { logoUrl: logoUrl }, 
+            { teamName: teamName },
+            { logoUrl: logoUrl },
             { upsert: true, new: true }
         );
 
