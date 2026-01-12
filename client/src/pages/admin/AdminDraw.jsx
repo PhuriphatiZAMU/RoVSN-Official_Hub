@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useConfirmModal } from '../../components/common/ConfirmModal';
+import TeamLogo from '../../components/common/TeamLogo';
 
 export default function AdminDraw() {
     const { token } = useAuth();
@@ -26,6 +27,79 @@ export default function AdminDraw() {
     const [message, setMessage] = useState(null);
 
     const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+
+    // Schema: Logo Logic
+    const [logoModalOpen, setLogoModalOpen] = useState(false);
+    const [selectedTeam, setSelectedTeam] = useState(null);
+    const [logoUploadMode, setLogoUploadMode] = useState('file'); // 'file' | 'url'
+    const [logoFile, setLogoFile] = useState(null);
+    const [logoUrlInput, setLogoUrlInput] = useState('');
+    const [logoPreview, setLogoPreview] = useState('');
+    const [uploadingLogo, setUploadingLogo] = useState(false);
+
+    const openLogoModal = (teamName) => {
+        setSelectedTeam(teamName);
+        setLogoModalOpen(true);
+        setLogoUploadMode('file');
+        setLogoFile(null);
+        setLogoUrlInput('');
+        setLogoPreview('');
+    };
+
+    const handleLogoFileChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setLogoFile(file);
+            setLogoPreview(URL.createObjectURL(file));
+        }
+    };
+
+    const saveLogo = async () => {
+        if (!selectedTeam) return;
+        setUploadingLogo(true);
+        try {
+            let finalUrl = logoUrlInput;
+
+            // 1. Upload File if mode is file
+            if (logoUploadMode === 'file' && logoFile) {
+                const formData = new FormData();
+                formData.append('logo', logoFile);
+
+                const uploadRes = await fetch(`${API_BASE_URL}/api/upload`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    body: formData
+                });
+
+                if (!uploadRes.ok) throw new Error('Upload failed');
+                const result = await uploadRes.json();
+                finalUrl = result.url;
+            }
+
+            // 2. Save Team Logo URL
+            if (finalUrl) {
+                const res = await fetch(`${API_BASE_URL}/api/team-logos`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ teamName: selectedTeam, logoUrl: finalUrl })
+                });
+
+                if (!res.ok) throw new Error('Failed to save logo');
+
+                setMessage({ type: 'success', text: `บันทึกโลโก้ทีม ${selectedTeam} เรียบร้อย` });
+                setLogoModalOpen(false);
+                setTimeout(() => window.location.reload(), 800);
+            }
+        } catch (err) {
+            console.error(err);
+            setMessage({ type: 'error', text: 'เกิดข้อผิดพลาดในการบันทึกโลโก้' });
+        } finally {
+            setUploadingLogo(false);
+        }
+    };
 
     // ===== TEAM MANAGEMENT =====
 
@@ -93,6 +167,28 @@ export default function AdminDraw() {
         setEditingName('');
     };
 
+    // Date Settings
+    const [customMatchDates, setCustomMatchDates] = useState({});
+
+    // คำนวณจำนวนรอบ (Match Days)
+    const calculateTotalRounds = (teamCount) => {
+        if (teamCount < 2) return 0;
+        // สูตร Round Robin: ถ้า N คู่ = N-1 รอบ, ถ้า N คี่ = N รอบ
+        const isEven = teamCount % 2 === 0;
+        return isEven ? teamCount - 1 : teamCount;
+    };
+
+    const totalRounds = calculateTotalRounds(teams.length);
+
+
+
+    const handleDateChange = (day, value) => {
+        setCustomMatchDates(prev => ({
+            ...prev,
+            [day]: value
+        }));
+    };
+
     // ===== ROUND ROBIN ALGORITHM =====
 
     const generateRoundRobin = (teamList) => {
@@ -108,6 +204,14 @@ export default function AdminDraw() {
         const halfSize = teamsCopy.length / 2;
 
         const teamIndexes = teamsCopy.map((_, i) => i).slice(1);
+
+        // ใช้ Custom Dates หรือ fallback
+        const getRoundDate = (roundNum) => {
+            if (customMatchDates[roundNum]) {
+                return customMatchDates[roundNum];
+            }
+            return ''; // Default empty if not set
+        };
 
         for (let round = 0; round < numRounds; round++) {
             const roundMatches = [];
@@ -128,7 +232,7 @@ export default function AdminDraw() {
 
             rounds.push({
                 day: round + 1,
-                date: getMatchDate(round + 1),
+                date: getRoundDate(round + 1),
                 matches: roundMatches
             });
 
@@ -136,12 +240,6 @@ export default function AdminDraw() {
         }
 
         return rounds;
-    };
-
-    const getMatchDate = (day) => {
-        const startDate = new Date('2026-02-01');
-        startDate.setDate(startDate.getDate() + (day - 1) * 7);
-        return startDate.toISOString().split('T')[0];
     };
 
     // ===== DRAW ACTIONS =====
@@ -342,6 +440,13 @@ export default function AdminDraw() {
                                             <span className="font-medium text-gray-700 truncate">{team}</span>
                                             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <button
+                                                    onClick={() => openLogoModal(team)}
+                                                    className="text-gray-500 hover:text-cyan-aura p-1"
+                                                    title="เปลี่ยนโลโก้"
+                                                >
+                                                    <i className="fas fa-image text-xs"></i>
+                                                </button>
+                                                <button
                                                     onClick={() => startEditing(index)}
                                                     className="text-blue-500 hover:text-blue-600 p-1"
                                                     title="แก้ไข"
@@ -369,6 +474,34 @@ export default function AdminDraw() {
                             </p>
                         )}
                     </div>
+
+                    {/* Date Settings - แสดงเฉพาะตอนยังไม่เริ่มจับสลาก และมีทีมพอ */}
+                    {!isDrawing && !drawComplete && teams.length >= 2 && (
+                        <div className="mb-8 border-t border-gray-100 pt-6">
+                            <h3 className="font-bold text-gray-700 text-lg mb-4">
+                                <i className="fas fa-calendar-alt mr-2 text-cyan-aura"></i>
+                                กำหนดวันแข่งขัน ({totalRounds} Match Days)
+                            </h3>
+
+
+                            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                                {Array.from({ length: totalRounds }).map((_, i) => {
+                                    const day = i + 1;
+                                    return (
+                                        <div key={day} className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                                            <div className="text-xs font-bold text-gray-500 mb-1">Day {day}</div>
+                                            <input
+                                                type="date"
+                                                value={customMatchDates[day] || ''}
+                                                onChange={(e) => handleDateChange(day, e.target.value)}
+                                                className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:border-cyan-aura"
+                                            />
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
 
                     {/* Action Buttons */}
                     <div className="flex flex-wrap gap-3">
@@ -498,6 +631,98 @@ export default function AdminDraw() {
                                     </div>
                                 </div>
                             ))}
+                        </div>
+                    </div>
+                </div>
+            )}
+            {/* Logo Management Modal */}
+            {logoModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                    <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md mx-4 animate-fade-in">
+                        <div className="flex justify-between items-center mb-6">
+                            <h3 className="text-xl font-bold text-gray-800">จัดการโลโก้ทีม {selectedTeam}</h3>
+                            <button onClick={() => setLogoModalOpen(false)} className="text-gray-400 hover:text-gray-600">
+                                <i className="fas fa-times"></i>
+                            </button>
+                        </div>
+
+                        <div className="flex justify-center mb-6">
+                            <div className="flex flex-col items-center">
+                                <div className="mb-2 text-sm text-gray-500">ปัจจุบัน</div>
+                                <TeamLogo teamName={selectedTeam} size="xl" />
+                            </div>
+                            {logoPreview && (
+                                <>
+                                    <div className="flex items-center mx-4 text-gray-300">
+                                        <i className="fas fa-arrow-right"></i>
+                                    </div>
+                                    <div className="flex flex-col items-center">
+                                        <div className="mb-2 text-sm text-cyan-aura font-bold">ใหม่</div>
+                                        <img src={logoPreview} alt="New Logo" className="w-16 h-16 object-contain" />
+                                    </div>
+                                </>
+                            )}
+                        </div>
+
+                        <div className="flex gap-2 mb-4 bg-gray-100 p-1 rounded-lg">
+                            <button
+                                onClick={() => setLogoUploadMode('file')}
+                                className={`flex-1 py-1 px-3 rounded text-sm font-bold transition-colors ${logoUploadMode === 'file' ? 'bg-white text-cyan-aura shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                            >
+                                อัปโหลดไฟล์
+                            </button>
+                            <button
+                                onClick={() => setLogoUploadMode('url')}
+                                className={`flex-1 py-1 px-3 rounded text-sm font-bold transition-colors ${logoUploadMode === 'url' ? 'bg-white text-cyan-aura shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                            >
+                                ใช้ URL
+                            </button>
+                        </div>
+
+                        <div className="mb-6">
+                            {logoUploadMode === 'file' ? (
+                                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-cyan-aura transition-colors cursor-pointer relative">
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={handleLogoFileChange}
+                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                    />
+                                    <i className="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-2"></i>
+                                    <p className="text-sm text-gray-600">คลิกเพื่อเลือกรูปภาพ</p>
+                                    <p className="text-xs text-gray-400 mt-1">PNG, JPG, SVG (Max 2MB)</p>
+                                </div>
+                            ) : (
+                                <div>
+                                    <label className="block text-sm text-gray-600 mb-1">ลิงก์รูปภาพ (URL)</label>
+                                    <input
+                                        type="text"
+                                        value={logoUrlInput}
+                                        onChange={(e) => {
+                                            setLogoUrlInput(e.target.value);
+                                            setLogoPreview(e.target.value);
+                                        }}
+                                        placeholder="https://example.com/logo.png"
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-cyan-aura"
+                                    />
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="flex justify-end gap-3">
+                            <button
+                                onClick={() => setLogoModalOpen(false)}
+                                className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg font-bold"
+                            >
+                                ยกเลิก
+                            </button>
+                            <button
+                                onClick={saveLogo}
+                                disabled={uploadingLogo || (!logoFile && !logoUrlInput)}
+                                className={`px-4 py-2 bg-gradient-to-r from-cyan-aura to-blue-600 text-white rounded-lg font-bold shadow-lg hover:shadow-cyan-aura/50 transition-all ${uploadingLogo ? 'opacity-70 cursor-wait' : ''}`}
+                            >
+                                {uploadingLogo ? 'กำลังบันทึก...' : 'บันทึกโลโก้'}
+                            </button>
                         </div>
                     </div>
                 </div>

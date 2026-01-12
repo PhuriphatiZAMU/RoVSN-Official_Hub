@@ -127,23 +127,7 @@ export default function Navbar() {
                     ))}
                 </div>
 
-                {/* Mobile Menu Footer */}
-                <div className="absolute bottom-0 left-0 right-0 p-6 border-t border-gray-700">
-                    <div className="flex items-center justify-center gap-4 text-gray-500">
-                        <a href="#" className="hover:text-cyan-aura transition-colors">
-                            <i className="fab fa-facebook text-xl"></i>
-                        </a>
-                        <a href="#" className="hover:text-cyan-aura transition-colors">
-                            <i className="fab fa-discord text-xl"></i>
-                        </a>
-                        <a href="#" className="hover:text-cyan-aura transition-colors">
-                            <i className="fab fa-youtube text-xl"></i>
-                        </a>
-                    </div>
-                    <p className="text-center text-gray-600 text-xs mt-4">
-                        © 2026 RoV SN Tournament
-                    </p>
-                </div>
+
             </div>
         </nav>
     );

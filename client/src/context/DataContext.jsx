@@ -69,6 +69,9 @@ export function DataProvider({ children }) {
         let p = 0, w = 0, l = 0, gd = 0, pts = 0;
 
         results.forEach(r => {
+            // Exclude Knockout Stages (>= 90) from Standings
+            if (r.matchDay && parseInt(r.matchDay) >= 90) return;
+
             if (r.teamBlue === teamName) {
                 p++;
                 if (r.scoreBlue > r.scoreRed) { w++; pts += 3; } else { l++; }

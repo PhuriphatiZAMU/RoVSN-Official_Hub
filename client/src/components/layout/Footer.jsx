@@ -23,25 +23,31 @@ export default function Footer() {
                 {/* Social Links */}
                 <div className="flex items-center justify-center gap-6 mb-8">
                     <a
-                        href="#"
+                        href="https://www.facebook.com/profile.php?id=61573326877157"
+                        target="_blank"
+                        rel="noopener noreferrer"
                         className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center text-gray-400 hover:text-cyan-aura hover:bg-cyan-aura/10 transition-all hover:shadow-[0_0_15px_rgba(21,200,255,0.3)]"
                         aria-label="Facebook"
                     >
                         <i className="fab fa-facebook text-xl"></i>
                     </a>
                     <a
-                        href="#"
+                        href="https://discord.gg/eAjAAM58wd"
+                        target="_blank"
+                        rel="noopener noreferrer"
                         className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center text-gray-400 hover:text-cyan-aura hover:bg-cyan-aura/10 transition-all hover:shadow-[0_0_15px_rgba(21,200,255,0.3)]"
                         aria-label="Discord"
                     >
                         <i className="fab fa-discord text-xl"></i>
                     </a>
                     <a
-                        href="#"
+                        href="https://www.instagram.com/sn.ac.th?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw=="
+                        target="_blank"
+                        rel="noopener noreferrer"
                         className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center text-gray-400 hover:text-cyan-aura hover:bg-cyan-aura/10 transition-all hover:shadow-[0_0_15px_rgba(21,200,255,0.3)]"
-                        aria-label="YouTube"
+                        aria-label="Instagram"
                     >
-                        <i className="fab fa-youtube text-xl"></i>
+                        <i className="fab fa-instagram text-xl"></i>
                     </a>
                 </div>
 

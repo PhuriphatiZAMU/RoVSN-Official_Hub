@@ -36,6 +36,24 @@ const api = {
             console.error(`API POST ${endpoint} error:`, error);
             throw error;
         }
+    },
+
+    async delete(endpoint, token = null) {
+        try {
+            const headers = {};
+            if (token) headers['Authorization'] = `Bearer ${token}`;
+
+            const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+                method: 'DELETE',
+                headers,
+            });
+
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            return await response.json();
+        } catch (error) {
+            console.error(`API DELETE ${endpoint} error:`, error);
+            throw error;
+        }
     }
 };
 
@@ -58,5 +76,11 @@ export const postSchedule = (data, token) =>
     api.post('/api/schedules', data, token);
 export const postTeamLogo = (data, token) =>
     api.post('/api/team-logos', data, token);
+
+export const resetResults = (day, token) =>
+    api.delete(`/api/results/reset/${day}`, token);
+
+export const deleteMatchResult = (matchId, token) =>
+    api.delete(`/api/results/${encodeURIComponent(matchId)}`, token);
 
 export default api;

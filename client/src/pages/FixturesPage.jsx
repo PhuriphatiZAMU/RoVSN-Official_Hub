@@ -4,11 +4,14 @@ import TeamLogo from '../components/common/TeamLogo';
 import { MatchSkeleton } from '../components/common/Skeleton';
 import { ErrorState, EmptyState } from '../components/common/States';
 
-function MatchCard({ match, result }) {
+function MatchCard({ match, result, date }) {
     const hasResult = !!result;
 
     const blueClass = hasResult && result.scoreBlue > result.scoreRed ? 'text-cyan-aura font-bold' : 'text-gray-500';
     const redClass = hasResult && result.scoreRed > result.scoreBlue ? 'text-cyan-aura font-bold' : 'text-gray-500';
+
+    // Format Date (e.g., "14 ก.พ.") or fallback
+    const formattedDate = date ? new Date(date).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' }) : '20:00';
 
     return (
         <div className={`bg-white border border-gray-200 p-4 flex items-center justify-between hover:border-cyan-aura transition shadow-sm ${hasResult ? 'border-l-4 border-l-cyan-aura' : ''}`}>
@@ -31,7 +34,7 @@ function MatchCard({ match, result }) {
                     </>
                 ) : (
                     <>
-                        <div className="text-xs text-gray-400 font-bold mb-1">20:00</div>
+                        <div className="text-xs text-gray-400 font-bold mb-1">{formattedDate}</div>
                         <div className="bg-gray-200 text-gray-600 px-3 py-1 rounded text-sm font-bold">VS</div>
                     </>
                 )}
@@ -45,6 +48,11 @@ function MatchCard({ match, result }) {
         </div>
     );
 }
+
+const STAGE_MAPPING = {
+    90: 'Semi-Finals',
+    99: 'Grand Final'
+};
 
 export default function FixturesPage() {
     const { schedule, results, loading, error } = useData();
@@ -88,11 +96,11 @@ export default function FixturesPage() {
                                 key={round.day}
                                 onClick={() => setActiveDay(round.day)}
                                 className={`whitespace-nowrap px-4 py-2 text-sm font-bold uppercase tracking-wider transition-colors ${round.day === activeDay
-                                        ? 'bg-cyan-aura text-uefa-dark'
-                                        : 'bg-white text-gray-500 border border-gray-200 hover:bg-gray-100'
+                                    ? 'bg-cyan-aura text-uefa-dark'
+                                    : 'bg-white text-gray-500 border border-gray-200 hover:bg-gray-100'
                                     }`}
                             >
-                                Matchday {round.day}
+                                {STAGE_MAPPING[round.day] || `Matchday ${round.day}`}
                             </button>
                         ))
                     )}
@@ -106,7 +114,7 @@ export default function FixturesPage() {
                         dayData.matches.map((m, i) => {
                             const matchKey = `${activeDay}_${m.blue}_vs_${m.red}`.replace(/\s+/g, '');
                             const result = results.find(r => r.matchId === matchKey);
-                            return <MatchCard key={i} match={m} result={result} />;
+                            return <MatchCard key={i} match={m} result={result} date={dayData.date} />;
                         })
                     ) : (
                         <EmptyState

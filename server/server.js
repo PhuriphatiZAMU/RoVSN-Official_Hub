@@ -5,6 +5,9 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -99,6 +102,32 @@ const TeamLogoSchema = new mongoose.Schema({
 // บังคับชื่อ Collection ว่า 'teamlogo' ตามที่คุณระบุ
 const TeamLogo = mongoose.model('TeamLogo', TeamLogoSchema, 'teamlogo');
 
+// --- File Upload Config ---
+const uploadDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir);
+}
+
+// Serve static files (uploads)
+app.use('/uploads', express.static(uploadDir));
+
+// Multer Storage
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, 'uploads/')
+    },
+    filename: function (req, file, cb) {
+        // Safe filename: teamname-timestamp.ext
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, 'logo-' + uniqueSuffix + path.extname(file.originalname));
+    }
+});
+
+const upload = multer({ storage: storage });
+
+// Upload Endpoint
+
+
 
 // --- AUTH MIDDLEWARE ---
 const authenticateToken = (req, res, next) => {
@@ -117,6 +146,19 @@ const authenticateToken = (req, res, next) => {
         next();
     });
 };
+
+// Upload Endpoint
+app.post('/api/upload', authenticateToken, upload.single('logo'), (req, res) => {
+    if (!req.file) {
+        return res.status(400).send({ message: 'No file uploaded' });
+    }
+    // Return the URL to access the file
+    // Note: Assuming server is running on same host/port reachable by client
+    // For localhost, req.protocol + '://' + req.get('host') works.
+    // For production behind proxy, might need adjustment (but fine for now)
+    const fileUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+    res.json({ url: fileUrl });
+});
 
 // --- API Routes ---
 
@@ -245,6 +287,35 @@ app.get('/api/results', async (req, res) => {
     }
 });
 
+// DELETE: Reset results by day (Protected)
+app.delete('/api/results/reset/:day', authenticateToken, async (req, res) => {
+    try {
+        const { day } = req.params;
+        const result = await Result.deleteMany({
+            $or: [
+                { matchDay: parseInt(day) },
+                { matchDay: day.toString() }
+            ]
+        });
+        res.json({ message: `Results for day ${day} cleared`, deleted: result.deletedCount });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// DELETE: Single Match Result (Protected)
+app.delete('/api/results/:matchId', authenticateToken, async (req, res) => {
+    try {
+        const { matchId } = req.params;
+        const result = await Result.deleteOne({ matchId });
+        // Optional: delete stats too
+        await GameStat.deleteMany({ matchId });
+        res.json({ message: `Result ${matchId} deleted`, deleted: result.deletedCount });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // POST: Results (Protected)
 app.post('/api/results', authenticateToken, async (req, res) => {
     try {
@@ -289,6 +360,8 @@ app.get('/api/player-stats', async (req, res) => {
                     totalDeaths: { $sum: "$deaths" },
                     totalAssists: { $sum: "$assists" },
                     totalGold: { $sum: "$gold" },
+                    totalDamage: { $sum: "$damage" },
+                    totalDamageTaken: { $sum: "$damageTaken" },
                     gamesPlayed: { $sum: 1 },
                     mvpCount: { $sum: { $cond: ["$mvp", 1, 0] } }
                 }
@@ -297,7 +370,8 @@ app.get('/api/player-stats', async (req, res) => {
                 $project: {
                     playerName: "$_id.playerName",
                     teamName: "$_id.teamName",
-                    totalKills: 1, totalDeaths: 1, totalAssists: 1, totalGold: 1, gamesPlayed: 1, mvpCount: 1,
+                    totalKills: 1, totalDeaths: 1, totalAssists: 1, totalGold: 1,
+                    totalDamage: 1, totalDamageTaken: 1, gamesPlayed: 1, mvpCount: 1,
                     kda: {
                         $cond: [
                             { $eq: ["$totalDeaths", 0] },
@@ -395,6 +469,20 @@ app.post('/api/team-logos', authenticateToken, async (req, res) => {
         );
 
         res.status(201).json(result);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// DELETE: ลบโลโก้ทีม (Protected)
+app.delete('/api/team-logos/:teamName', authenticateToken, async (req, res) => {
+    try {
+        const { teamName } = req.params;
+        const result = await TeamLogo.deleteOne({ teamName: teamName });
+        if (result.deletedCount === 0) {
+            return res.status(404).json({ message: 'Logo not found' });
+        }
+        res.json({ message: 'Logo deleted successfully' });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }

@@ -60,27 +60,7 @@ function TeamStats() {
             .finally(() => setLoading(false));
     }, []);
 
-    if (loading) {
-        return (
-            <table className="w-full uefa-table">
-                <thead>
-                    <tr>
-                        <th className="p-4 text-left">Club</th>
-                        <th className="p-4 text-center">Games</th>
-                        <th className="p-4 text-center">Wins</th>
-                        <th className="p-4 text-center">Win Rate</th>
-                        <th className="p-4 text-center">K/D/A</th>
-                        <th className="p-4 text-center">KDA</th>
-                        <th className="p-4 text-center">Gold (Avg)</th>
-                    </tr>
-                </thead>
-                <TableSkeleton rows={8} cols={7} />
-            </table>
-        );
-    }
-
     if (error) return <ErrorState title="ไม่สามารถโหลดสถิติทีมได้" message={error} />;
-    if (stats.length === 0) return <EmptyState title="ยังไม่มีข้อมูลสถิติทีม" message="" />;
 
     return (
         <div className="bg-white shadow-sm rounded-lg overflow-hidden">
@@ -89,40 +69,51 @@ function TeamStats() {
                     <tr>
                         <th className="p-4 text-left">Club</th>
                         <th className="p-4 text-center">Games</th>
-                        <th className="p-4 text-center">Wins</th>
+                        <th className="p-4 text-center">Win</th>
+                        <th className="p-4 text-center">Lose</th>
                         <th className="p-4 text-center">Win Rate</th>
-                        <th className="p-4 text-center">K/D/A</th>
-                        <th className="p-4 text-center">KDA</th>
-                        <th className="p-4 text-center">Gold (Avg)</th>
+                        <th className="p-4 text-center" title="(Total Kills + Assists) / Total Deaths">Team KDA</th>
                     </tr>
                 </thead>
-                <tbody>
-                    {stats.map(t => {
-                        const kdaRatio = t.totalDeaths === 0
-                            ? (t.totalKills + t.totalAssists)
-                            : ((t.totalKills + t.totalAssists) / t.totalDeaths);
-                        const winRate = t.realGamesPlayed > 0
-                            ? ((t.realWins / t.realGamesPlayed) * 100).toFixed(1)
-                            : 0;
+                {loading ? (
+                    <TableSkeleton rows={8} cols={6} />
+                ) : (
+                    <tbody>
+                        {stats.length === 0 ? (
+                            <tr><td colSpan="6" className="p-8 text-center text-gray-500">ยังไม่มีข้อมูลสถิติทีม</td></tr>
+                        ) : (
+                            stats.map(t => {
+                                // Team KDA Calculation
+                                // Team KDA Calculation
+                                const kdaRatio = t.totalDeaths === 0
+                                    ? (t.totalKills + t.totalAssists)
+                                    : ((t.totalKills + t.totalAssists) / t.totalDeaths);
 
-                        return (
-                            <tr key={t.teamName} className="hover:bg-echo-white transition">
-                                <td className="p-4 font-bold text-uefa-dark flex items-center gap-2">
-                                    <TeamLogo teamName={t.teamName} size="md" />
-                                    {t.teamName}
-                                </td>
-                                <td className="p-4 text-center">{t.realGamesPlayed || 0}</td>
-                                <td className="p-4 text-center text-green-600 font-bold">{t.realWins || 0}</td>
-                                <td className="p-4 text-center text-sm">{winRate}%</td>
-                                <td className="p-4 text-center text-sm">{t.totalKills} / {t.totalDeaths} / {t.totalAssists}</td>
-                                <td className="p-4 text-center font-bold">{kdaRatio.toFixed(2)}</td>
-                                <td className="p-4 text-center font-mono">
-                                    {Math.round(t.totalGold / (t.realGamesPlayed || 1)).toLocaleString()}
-                                </td>
-                            </tr>
-                        );
-                    })}
-                </tbody>
+                                const games = t.realGamesPlayed || 0;
+                                const wins = t.realWins || 0;
+                                const losses = games - wins;
+
+                                const winRate = games > 0
+                                    ? ((wins / games) * 100).toFixed(1)
+                                    : 0;
+
+                                return (
+                                    <tr key={t.teamName} className="hover:bg-echo-white transition">
+                                        <td className="p-4 font-bold text-uefa-dark flex items-center gap-2">
+                                            <TeamLogo teamName={t.teamName} size="md" />
+                                            {t.teamName}
+                                        </td>
+                                        <td className="p-4 text-center">{games}</td>
+                                        <td className="p-4 text-center text-green-600 font-bold">{wins}</td>
+                                        <td className="p-4 text-center text-red-500 font-bold">{losses}</td>
+                                        <td className="p-4 text-center text-sm">{winRate}%</td>
+                                        <td className="p-4 text-center font-bold text-cyan-aura">{kdaRatio.toFixed(2)}</td>
+                                    </tr>
+                                );
+                            })
+                        )}
+                    </tbody>
+                )}
             </table>
         </div>
     );
@@ -136,48 +127,68 @@ function PlayerStats() {
     useEffect(() => {
         fetchPlayerStats()
             .then(data => setStats(data || []))
+            // Sort by KDA Ratio (highest first) as default ranking
             .catch(err => setError(err.message))
             .finally(() => setLoading(false));
     }, []);
 
-    if (loading) {
-        return (
-            <div className="space-y-3">
-                {[...Array(5)].map((_, i) => (
-                    <div key={i} className="skeleton h-20 rounded"></div>
-                ))}
-            </div>
-        );
-    }
-
     if (error) return <ErrorState title="ไม่สามารถโหลดสถิติผู้เล่นได้" message={error} />;
-    if (stats.length === 0) return <EmptyState title="ยังไม่มีข้อมูลสถิติผู้เล่น" message="" />;
 
     return (
-        <div className="space-y-3">
-            {stats.slice(0, 10).map((p, idx) => (
-                <div
-                    key={p.playerName}
-                    className={`bg-white p-4 flex items-center justify-between shadow-sm ${idx < 3 ? 'border-l-4 border-cyan-aura' : ''}`}
-                >
-                    <div className="flex items-center space-x-4">
-                        <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center font-display font-bold text-gray-500">
-                            {idx + 1}
-                        </div>
-                        <div>
-                            <div className="font-bold text-lg">{p.playerName}</div>
-                            <div className="text-sm text-gray-500 flex items-center gap-1">
-                                <TeamLogo teamName={p.teamName} size="sm" />
-                                {p.teamName}
-                            </div>
-                        </div>
-                    </div>
-                    <div className="text-right">
-                        <div className="text-2xl font-display font-bold text-uefa-dark">{p.kda.toFixed(2)}</div>
-                        <div className="text-xs font-bold text-gray-400 uppercase">KDA Ratio</div>
-                    </div>
-                </div>
-            ))}
+        <div className="bg-white shadow-sm rounded-lg overflow-hidden overflow-x-auto">
+            <table className="w-full uefa-table min-w-[900px]">
+                <thead>
+                    <tr>
+                        <th className="p-4 text-center w-16">#</th>
+                        <th className="p-4 text-left">Player</th>
+                        <th className="p-4 text-left">Team</th>
+                        <th className="p-4 text-center" title="Games Played">G</th>
+                        <th className="p-4 text-center text-blue-600" title="Total Kills">K</th>
+                        <th className="p-4 text-center text-red-600" title="Total Deaths">D</th>
+                        <th className="p-4 text-center text-green-600" title="Total Assists">A</th>
+                        <th className="p-4 text-right" title="Total Damage Dealt">Damage</th>
+                        <th className="p-4 text-right" title="Total Damage Taken">Taken</th>
+                        <th className="p-4 text-center font-bold text-cyan-aura" title="KDA Ratio">KDA</th>
+                    </tr>
+                </thead>
+                {loading ? (
+                    <TableSkeleton rows={10} cols={10} />
+                ) : (
+                    <tbody>
+                        {stats.length === 0 ? (
+                            <tr><td colSpan="10" className="p-8 text-center text-gray-500">ยังไม่มีข้อมูลสถิติผู้เล่น</td></tr>
+                        ) : (
+                            stats.slice(0, 50).map((p, idx) => (
+                                <tr key={`${p.teamName}-${p.playerName}`} className={`hover:bg-echo-white transition ${idx < 3 ? 'bg-yellow-50/40' : ''}`}>
+                                    <td className={`p-4 text-center font-bold ${idx < 3 ? 'text-amber-500 text-lg' : 'text-gray-400'}`}>
+                                        {idx + 1}
+                                    </td>
+                                    <td className="p-4 font-bold text-uefa-dark">{p.playerName}</td>
+                                    <td className="p-4">
+                                        <div className="flex items-center gap-2">
+                                            <TeamLogo teamName={p.teamName} size="sm" />
+                                            <span className="text-sm text-gray-600">{p.teamName}</span>
+                                        </div>
+                                    </td>
+                                    <td className="p-4 text-center font-mono text-gray-600">{p.gamesPlayed}</td>
+                                    <td className="p-4 text-center font-mono">{p.totalKills}</td>
+                                    <td className="p-4 text-center font-mono">{p.totalDeaths}</td>
+                                    <td className="p-4 text-center font-mono">{p.totalAssists}</td>
+                                    <td className="p-4 text-right font-mono text-sm text-blue-600">
+                                        {(p.totalDamage || 0).toLocaleString()}
+                                    </td>
+                                    <td className="p-4 text-right font-mono text-sm text-red-600">
+                                        {(p.totalDamageTaken || 0).toLocaleString()}
+                                    </td>
+                                    <td className="p-4 text-center">
+                                        <span className="text-lg font-bold text-cyan-aura">{p.kda.toFixed(2)}</span>
+                                    </td>
+                                </tr>
+                            ))
+                        )}
+                    </tbody>
+                )}
+            </table>
         </div>
     );
 }
