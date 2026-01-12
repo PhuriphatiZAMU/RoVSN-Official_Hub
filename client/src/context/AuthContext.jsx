@@ -5,12 +5,12 @@ const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
     const [user, setUser] = useState(null);
-    const [token, setToken] = useState(localStorage.getItem('token'));
+    const [token, setToken] = useState(sessionStorage.getItem('token'));
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         // Check if token exists and is valid
-        const savedToken = localStorage.getItem('token');
+        const savedToken = sessionStorage.getItem('token');
         if (savedToken) {
             // Verify token (decode and check expiry)
             try {
@@ -20,11 +20,11 @@ export function AuthProvider({ children }) {
                     setUser({ username: payload.username, role: payload.role });
                 } else {
                     // Token expired
-                    localStorage.removeItem('token');
+                    sessionStorage.removeItem('token');
                     setToken(null);
                 }
             } catch {
-                localStorage.removeItem('token');
+                sessionStorage.removeItem('token');
                 setToken(null);
             }
         }
@@ -36,7 +36,7 @@ export function AuthProvider({ children }) {
             const response = await apiLogin(username, password);
             const { token: newToken } = response;
 
-            localStorage.setItem('token', newToken);
+            sessionStorage.setItem('token', newToken);
             setToken(newToken);
 
             // Decode user from token
@@ -50,7 +50,7 @@ export function AuthProvider({ children }) {
     };
 
     const logout = () => {
-        localStorage.removeItem('token');
+        sessionStorage.removeItem('token');
         setToken(null);
         setUser(null);
     };
