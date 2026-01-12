@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 
 export function ConfirmModal({
     isOpen,
@@ -8,7 +9,7 @@ export function ConfirmModal({
     message,
     confirmText = 'ยืนยัน',
     cancelText = 'ยกเลิก',
-    type = 'danger' // 'danger', 'warning', 'info'
+    type = 'danger'
 }) {
     useEffect(() => {
         if (isOpen) {
@@ -31,16 +32,27 @@ export function ConfirmModal({
 
     const config = iconConfig[type] || iconConfig.danger;
 
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    const handleConfirm = () => {
+        onClose();
+        setTimeout(() => {
+            onConfirm();
+        }, 100);
+    };
+
+    const modalContent = (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
             {/* Backdrop */}
             <div
-                className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-fadeIn"
+                className="absolute inset-0 bg-black/60 backdrop-blur-sm"
                 onClick={onClose}
+                style={{ animation: 'fadeIn 0.2s ease-out' }}
             />
 
             {/* Modal */}
-            <div className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 transform animate-scaleIn">
+            <div
+                className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full p-6"
+                style={{ animation: 'scaleIn 0.2s ease-out' }}
+            >
                 {/* Icon */}
                 <div className={`w-16 h-16 ${config.bgColor} rounded-full flex items-center justify-center mx-auto mb-4`}>
                     <i className={`fas ${config.icon} text-3xl ${config.iconColor}`}></i>
@@ -65,10 +77,7 @@ export function ConfirmModal({
                         {cancelText}
                     </button>
                     <button
-                        onClick={() => {
-                            onConfirm();
-                            onClose();
-                        }}
+                        onClick={handleConfirm}
                         className={`flex-1 px-4 py-3 text-white font-bold rounded-xl transition-colors ${config.btnColor}`}
                     >
                         {confirmText}
@@ -85,52 +94,54 @@ export function ConfirmModal({
           from { opacity: 0; transform: scale(0.9); }
           to { opacity: 1; transform: scale(1); }
         }
-        .animate-fadeIn { animation: fadeIn 0.2s ease-out; }
-        .animate-scaleIn { animation: scaleIn 0.2s ease-out; }
       `}</style>
         </div>
     );
+
+    // Use portal to render at document body
+    return createPortal(modalContent, document.body);
 }
 
 export function useConfirmModal() {
-    const [modalState, setModalState] = useState({
-        isOpen: false,
+    const [isOpen, setIsOpen] = useState(false);
+    const [modalProps, setModalProps] = useState({
         title: '',
         message: '',
-        onConfirm: () => { },
         type: 'danger',
         confirmText: 'ยืนยัน',
         cancelText: 'ยกเลิก',
     });
 
-    const showConfirm = ({ title, message, onConfirm, type = 'danger', confirmText = 'ยืนยัน', cancelText = 'ยกเลิก' }) => {
-        setModalState({
-            isOpen: true,
+    const onConfirmRef = useRef(() => { });
+
+    const showConfirm = useCallback(({ title, message, onConfirm, type = 'danger', confirmText = 'ยืนยัน', cancelText = 'ยกเลิก' }) => {
+        onConfirmRef.current = onConfirm;
+        setModalProps({
             title,
             message,
-            onConfirm,
             type,
             confirmText,
             cancelText,
         });
-    };
+        setIsOpen(true);
+    }, []);
 
-    const closeModal = () => {
-        setModalState(prev => ({ ...prev, isOpen: false }));
-    };
+    const closeModal = useCallback(() => {
+        setIsOpen(false);
+    }, []);
 
-    const ModalComponent = () => (
+    const handleConfirm = useCallback(() => {
+        onConfirmRef.current();
+    }, []);
+
+    const ModalComponent = useCallback(() => (
         <ConfirmModal
-            isOpen={modalState.isOpen}
+            isOpen={isOpen}
             onClose={closeModal}
-            onConfirm={modalState.onConfirm}
-            title={modalState.title}
-            message={modalState.message}
-            type={modalState.type}
-            confirmText={modalState.confirmText}
-            cancelText={modalState.cancelText}
+            onConfirm={handleConfirm}
+            {...modalProps}
         />
-    );
+    ), [isOpen, modalProps, closeModal, handleConfirm]);
 
     return { showConfirm, ModalComponent };
 }

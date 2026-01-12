@@ -55,7 +55,7 @@ export default function AdminDraw() {
             confirmText: 'ลบทีม',
             cancelText: 'ยกเลิก',
             onConfirm: () => {
-                setTeams(teams.filter((_, i) => i !== index));
+                setTeams(prevTeams => prevTeams.filter((_, i) => i !== index));
                 setMessage({ type: 'success', text: `ลบทีม "${teamName}" สำเร็จ` });
             }
         });
