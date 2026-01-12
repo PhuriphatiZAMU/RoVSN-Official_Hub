@@ -186,22 +186,31 @@ export default function AdminDraw() {
         setMessage(null);
 
         try {
-            for (const round of matchDays) {
-                const response = await fetch(`${API_BASE_URL}/api/schedules`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify(round)
-                });
+            // Send all data as a single document
+            const payload = {
+                schedule: matchDays,
+                teams: teams
+            };
 
-                if (!response.ok) {
-                    throw new Error(`Failed to save Match Day ${round.day}`);
-                }
+            const response = await fetch(`${API_BASE_URL}/api/schedules`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to save fixtures');
             }
 
             setMessage({ type: 'success', text: '✅ บันทึกตารางแข่งขันเรียบร้อยแล้ว!' });
+
+            // Reload page to refresh data in all components
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
         } catch (error) {
             setMessage({ type: 'error', text: `❌ ${error.message}` });
         } finally {
@@ -432,7 +441,7 @@ export default function AdminDraw() {
                         {isDrawing && (
                             <span className="px-4 py-2 bg-cyan-aura/10 text-cyan-600 rounded-full text-sm font-bold animate-pulse">
                                 <i className="fas fa-circle-notch fa-spin mr-2"></i>
-                                กำลังจับสลาก... ({currentStep}/{matchDays.reduce((acc, d) => acc + d.matches.length, 0)})
+                                กำลังจับสลาก... ({currentStep}/{matchDays.reduce((acc, d) => acc + (d && d.matches ? d.matches.length : 0), 0)})
                             </span>
                         )}
                         {drawComplete && (
@@ -445,7 +454,7 @@ export default function AdminDraw() {
 
                     <div className="p-6">
                         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {matchDays.map((round) => (
+                            {matchDays.filter(round => round && round.day && round.matches).map((round) => (
                                 <div
                                     key={round.day}
                                     className="bg-gray-50 rounded-xl p-4 border-2 border-gray-200"
@@ -462,7 +471,7 @@ export default function AdminDraw() {
                                     <div className="space-y-2">
                                         {round.matches.map((match, idx) => {
                                             const isRevealed = displayedMatches.some(
-                                                m => m.day === round.day && m.blue === match.blue && m.red === match.red
+                                                m => m && m.day === round.day && m.blue === match.blue && m.red === match.red
                                             );
 
                                             return (

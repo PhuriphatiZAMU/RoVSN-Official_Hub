@@ -20,7 +20,9 @@ app.use(bodyParser.json());
 app.use(cors({
     origin: [
         'https://ro-v-sn-tournament-official.vercel.app', // Vercel Production
-        'http://localhost:5173', // Vite Dev Server
+        'http://localhost:5173', // Vite Dev Server (Default)
+        'http://localhost:5174', // Vite Dev Server (Fallback 1)
+        'http://localhost:5175', // Vite Dev Server (Fallback 2)
         'http://localhost:3000', // Local Backend
         'https://phuriphatizamu.github.io' // Legacy
     ],
