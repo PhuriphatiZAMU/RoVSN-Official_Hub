@@ -212,8 +212,8 @@ export default function AdminDraw() {
     // ล้าง Fixtures ทั้งหมด
     const clearAllFixtures = () => {
         showConfirm({
-            title: 'ล้างตารางแข่งขัน',
-            message: 'ต้องการลบตารางแข่งขันทั้งหมดใช่หรือไม่? การกระทำนี้ไม่สามารถย้อนกลับได้!',
+            title: 'ล้างข้อมูลทั้งหมด',
+            message: 'ต้องการลบตารางแข่งขันและผลการแข่งขันทั้งหมดใช่หรือไม่?\n\n⚠️ Standings จะถูก Reset เป็น 0\n⚠️ การกระทำนี้ไม่สามารถย้อนกลับได้!',
             type: 'danger',
             confirmText: 'ลบทั้งหมด',
             cancelText: 'ยกเลิก',
@@ -230,16 +230,21 @@ export default function AdminDraw() {
                     });
 
                     if (!response.ok) {
-                        throw new Error('Failed to clear fixtures');
+                        throw new Error('Failed to clear data');
                     }
 
-                    setMessage({ type: 'success', text: '🗑️ ลบตารางแข่งขันทั้งหมดเรียบร้อยแล้ว!' });
-                    setDrawComplete(false);
-                    setMatchDays([]);
-                    setDisplayedMatches([]);
+                    const data = await response.json();
+                    setMessage({
+                        type: 'success',
+                        text: `🗑️ ลบข้อมูลทั้งหมดเรียบร้อย! (Schedules: ${data.deleted?.schedules || 0}, Results: ${data.deleted?.results || 0})`
+                    });
+
+                    // Reload page after 1.5 seconds to refresh all data
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
                 } catch (error) {
                     setMessage({ type: 'error', text: `❌ ${error.message}` });
-                } finally {
                     setClearing(false);
                 }
             }
