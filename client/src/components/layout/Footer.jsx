@@ -45,19 +45,6 @@ export default function Footer() {
                     </a>
                 </div>
 
-                {/* Links */}
-                <div className="flex flex-wrap justify-center gap-8 py-6 border-t border-gray-700 text-sm text-gray-400">
-                    <Link to="/privacy" className="hover:text-cyan-aura transition-colors">
-                        Privacy
-                    </Link>
-                    <Link to="/terms" className="hover:text-cyan-aura transition-colors">
-                        Terms
-                    </Link>
-                    <Link to="/contact" className="hover:text-cyan-aura transition-colors">
-                        Contact
-                    </Link>
-                </div>
-
                 {/* Copyright */}
                 <div className="text-center text-gray-600 text-xs mt-4">
                     © 2026 RoV SN Tournament. All rights reserved.
