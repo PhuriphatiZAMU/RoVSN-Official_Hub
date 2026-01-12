@@ -1,43 +1,112 @@
-import { useState, useEffect, useRef } from 'react';
-import { useData } from '../../context/DataContext';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 
 export default function AdminDraw() {
-    const { teams } = useData();
     const { token } = useAuth();
 
+    // Teams Management
+    const [teams, setTeams] = useState([
+        'ม.4/1', 'ม.4/2', 'ม.4/3', 'ม.4/4', 'ม.4/5',
+        'ม.5/1', 'ม.5/2', 'ม.5/3', 'ม.5/4', 'ม.5/5'
+    ]);
+    const [newTeamName, setNewTeamName] = useState('');
+    const [editingIndex, setEditingIndex] = useState(null);
+    const [editingName, setEditingName] = useState('');
+
+    // Draw State
     const [isDrawing, setIsDrawing] = useState(false);
     const [drawComplete, setDrawComplete] = useState(false);
     const [currentStep, setCurrentStep] = useState(0);
     const [matchDays, setMatchDays] = useState([]);
     const [displayedMatches, setDisplayedMatches] = useState([]);
     const [saving, setSaving] = useState(false);
+    const [clearing, setClearing] = useState(false);
     const [message, setMessage] = useState(null);
-    const audioRef = useRef(null);
 
-    // Round Robin Algorithm สำหรับ 10 ทีม
+    const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+
+    // ===== TEAM MANAGEMENT =====
+
+    // เพิ่มทีมใหม่
+    const addTeam = () => {
+        const name = newTeamName.trim();
+        if (!name) {
+            setMessage({ type: 'error', text: 'กรุณาใส่ชื่อทีม' });
+            return;
+        }
+        if (teams.includes(name)) {
+            setMessage({ type: 'error', text: 'ชื่อทีมนี้มีอยู่แล้ว' });
+            return;
+        }
+        setTeams([...teams, name]);
+        setNewTeamName('');
+        setMessage({ type: 'success', text: `เพิ่มทีม "${name}" สำเร็จ` });
+    };
+
+    // ลบทีม
+    const deleteTeam = (index) => {
+        const teamName = teams[index];
+        if (confirm(`ต้องการลบทีม "${teamName}" ใช่หรือไม่?`)) {
+            setTeams(teams.filter((_, i) => i !== index));
+            setMessage({ type: 'success', text: `ลบทีม "${teamName}" สำเร็จ` });
+        }
+    };
+
+    // เริ่มแก้ไขชื่อทีม
+    const startEditing = (index) => {
+        setEditingIndex(index);
+        setEditingName(teams[index]);
+    };
+
+    // บันทึกการแก้ไข
+    const saveEdit = () => {
+        const name = editingName.trim();
+        if (!name) {
+            setMessage({ type: 'error', text: 'ชื่อทีมห้ามว่าง' });
+            return;
+        }
+        if (teams.some((t, i) => t === name && i !== editingIndex)) {
+            setMessage({ type: 'error', text: 'ชื่อทีมนี้มีอยู่แล้ว' });
+            return;
+        }
+        const oldName = teams[editingIndex];
+        const newTeams = [...teams];
+        newTeams[editingIndex] = name;
+        setTeams(newTeams);
+        setEditingIndex(null);
+        setEditingName('');
+        setMessage({ type: 'success', text: `เปลี่ยนชื่อจาก "${oldName}" เป็น "${name}" สำเร็จ` });
+    };
+
+    // ยกเลิกการแก้ไข
+    const cancelEdit = () => {
+        setEditingIndex(null);
+        setEditingName('');
+    };
+
+    // ===== ROUND ROBIN ALGORITHM =====
+
     const generateRoundRobin = (teamList) => {
         const n = teamList.length;
         const rounds = [];
-        const teams = [...teamList];
+        const teamsCopy = [...teamList];
 
-        // ถ้าจำนวนคี่ให้เพิ่ม BYE
         if (n % 2 !== 0) {
-            teams.push('BYE');
+            teamsCopy.push('BYE');
         }
 
-        const numRounds = teams.length - 1;
-        const halfSize = teams.length / 2;
+        const numRounds = teamsCopy.length - 1;
+        const halfSize = teamsCopy.length / 2;
 
-        const teamIndexes = teams.map((_, i) => i).slice(1);
+        const teamIndexes = teamsCopy.map((_, i) => i).slice(1);
 
         for (let round = 0; round < numRounds; round++) {
             const roundMatches = [];
             const newIndexes = [0].concat(teamIndexes);
 
             for (let i = 0; i < halfSize; i++) {
-                const home = teams[newIndexes[i]];
-                const away = teams[newIndexes[newIndexes.length - 1 - i]];
+                const home = teamsCopy[newIndexes[i]];
+                const away = teamsCopy[newIndexes[newIndexes.length - 1 - i]];
 
                 if (home !== 'BYE' && away !== 'BYE') {
                     roundMatches.push({
@@ -54,24 +123,23 @@ export default function AdminDraw() {
                 matches: roundMatches
             });
 
-            // Rotate
             teamIndexes.push(teamIndexes.shift());
         }
 
         return rounds;
     };
 
-    // สร้างวันที่สำหรับแต่ละ Match Day
     const getMatchDate = (day) => {
         const startDate = new Date('2026-02-01');
         startDate.setDate(startDate.getDate() + (day - 1) * 7);
         return startDate.toISOString().split('T')[0];
     };
 
-    // เริ่มจับสลาก
+    // ===== DRAW ACTIONS =====
+
     const startDraw = () => {
-        if (teams.length < 10) {
-            setMessage({ type: 'error', text: 'ต้องมีทีมอย่างน้อย 10 ทีมถึงจะจับสลากได้' });
+        if (teams.length < 2) {
+            setMessage({ type: 'error', text: 'ต้องมีทีมอย่างน้อย 2 ทีม' });
             return;
         }
 
@@ -81,12 +149,10 @@ export default function AdminDraw() {
         setDisplayedMatches([]);
         setMessage(null);
 
-        // Shuffle teams
         const shuffledTeams = [...teams].sort(() => Math.random() - 0.5);
         const rounds = generateRoundRobin(shuffledTeams);
         setMatchDays(rounds);
 
-        // Animate แสดงทีละคู่
         let step = 0;
         const allMatches = rounds.flatMap((r, dayIndex) =>
             r.matches.map(m => ({ ...m, day: dayIndex + 1 }))
@@ -102,18 +168,15 @@ export default function AdminDraw() {
                 setIsDrawing(false);
                 setDrawComplete(true);
             }
-        }, 300);
+        }, 250);
     };
 
-    // บันทึกลง Database
+    // บันทึก Fixtures
     const saveToFixtures = async () => {
         setSaving(true);
         setMessage(null);
 
         try {
-            const API_BASE_URL = import.meta.env.VITE_API_URL || '';
-
-            // ลบ schedule เก่า และเพิ่มใหม่
             for (const round of matchDays) {
                 const response = await fetch(`${API_BASE_URL}/api/schedules`, {
                     method: 'POST',
@@ -137,7 +200,39 @@ export default function AdminDraw() {
         }
     };
 
-    // Reset
+    // ล้าง Fixtures ทั้งหมด
+    const clearAllFixtures = async () => {
+        if (!confirm('⚠️ ต้องการลบตารางแข่งขันทั้งหมดใช่หรือไม่?\n\nการกระทำนี้ไม่สามารถย้อนกลับได้!')) {
+            return;
+        }
+
+        setClearing(true);
+        setMessage(null);
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/schedules/clear`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to clear fixtures');
+            }
+
+            setMessage({ type: 'success', text: '🗑️ ลบตารางแข่งขันทั้งหมดเรียบร้อยแล้ว!' });
+            setDrawComplete(false);
+            setMatchDays([]);
+            setDisplayedMatches([]);
+        } catch (error) {
+            setMessage({ type: 'error', text: `❌ ${error.message}` });
+        } finally {
+            setClearing(false);
+        }
+    };
+
+    // Reset การจับสลาก
     const resetDraw = () => {
         setIsDrawing(false);
         setDrawComplete(false);
@@ -158,37 +253,101 @@ export default function AdminDraw() {
                         </span>
                         จับสลาก League Phase
                     </h2>
-                    <p className="text-gray-500 mt-2">Round Robin - 10 ทีม พบกันหมด - 10 Match Days</p>
+                    <p className="text-gray-500 mt-2">Round Robin - ทุกทีมพบกันหมด</p>
                 </div>
 
                 <div className="p-6">
-                    {/* Teams Preview */}
-                    <div className="mb-6">
-                        <h3 className="font-bold text-gray-700 mb-3">ทีมที่เข้าร่วม ({teams.length} ทีม)</h3>
-                        <div className="flex flex-wrap gap-2">
-                            {teams.map((team, i) => (
-                                <span
-                                    key={i}
-                                    className="px-3 py-1 bg-gray-100 rounded-full text-sm font-medium text-gray-700"
+                    {/* Teams Management */}
+                    <div className="mb-8">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="font-bold text-gray-700 text-lg">
+                                <i className="fas fa-users mr-2 text-cyan-aura"></i>
+                                จัดการรายชื่อทีม ({teams.length} ทีม)
+                            </h3>
+                        </div>
+
+                        {/* Add Team Input */}
+                        <div className="flex gap-2 mb-4">
+                            <input
+                                type="text"
+                                value={newTeamName}
+                                onChange={(e) => setNewTeamName(e.target.value)}
+                                onKeyPress={(e) => e.key === 'Enter' && addTeam()}
+                                placeholder="ชื่อทีมใหม่..."
+                                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-cyan-aura"
+                            />
+                            <button
+                                onClick={addTeam}
+                                className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                            >
+                                <i className="fas fa-plus mr-1"></i>
+                                เพิ่มทีม
+                            </button>
+                        </div>
+
+                        {/* Teams List */}
+                        <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                            {teams.map((team, index) => (
+                                <div
+                                    key={index}
+                                    className="flex items-center justify-between bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 group hover:border-cyan-aura transition-colors"
                                 >
-                                    {team}
-                                </span>
+                                    {editingIndex === index ? (
+                                        <div className="flex items-center gap-1 flex-1">
+                                            <input
+                                                type="text"
+                                                value={editingName}
+                                                onChange={(e) => setEditingName(e.target.value)}
+                                                onKeyPress={(e) => e.key === 'Enter' && saveEdit()}
+                                                className="w-full px-2 py-1 text-sm border border-cyan-aura rounded focus:outline-none"
+                                                autoFocus
+                                            />
+                                            <button onClick={saveEdit} className="text-green-500 hover:text-green-600">
+                                                <i className="fas fa-check"></i>
+                                            </button>
+                                            <button onClick={cancelEdit} className="text-gray-400 hover:text-gray-600">
+                                                <i className="fas fa-times"></i>
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <span className="font-medium text-gray-700 truncate">{team}</span>
+                                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <button
+                                                    onClick={() => startEditing(index)}
+                                                    className="text-blue-500 hover:text-blue-600 p-1"
+                                                    title="แก้ไข"
+                                                >
+                                                    <i className="fas fa-edit text-xs"></i>
+                                                </button>
+                                                <button
+                                                    onClick={() => deleteTeam(index)}
+                                                    className="text-red-500 hover:text-red-600 p-1"
+                                                    title="ลบ"
+                                                >
+                                                    <i className="fas fa-trash text-xs"></i>
+                                                </button>
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
                             ))}
                         </div>
-                        {teams.length < 10 && (
+
+                        {teams.length < 2 && (
                             <p className="text-red-500 text-sm mt-2">
                                 <i className="fas fa-exclamation-triangle mr-1"></i>
-                                ต้องมีทีมอย่างน้อย 10 ทีม (ปัจจุบันมี {teams.length} ทีม)
+                                ต้องมีทีมอย่างน้อย 2 ทีม
                             </p>
                         )}
                     </div>
 
                     {/* Action Buttons */}
-                    <div className="flex gap-4">
+                    <div className="flex flex-wrap gap-3">
                         {!isDrawing && !drawComplete && (
                             <button
                                 onClick={startDraw}
-                                disabled={teams.length < 10}
+                                disabled={teams.length < 2}
                                 className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-cyan-aura to-blue-600 text-white font-bold rounded-lg hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 <i className="fas fa-dice"></i>
@@ -218,6 +377,19 @@ export default function AdminDraw() {
                                 </button>
                             </>
                         )}
+
+                        {/* Clear Fixtures Button - Always visible */}
+                        <button
+                            onClick={clearAllFixtures}
+                            disabled={clearing}
+                            className="flex items-center gap-2 px-6 py-3 bg-red-100 text-red-600 font-bold rounded-lg hover:bg-red-200 transition-all disabled:opacity-50 ml-auto"
+                        >
+                            {clearing ? (
+                                <><i className="fas fa-circle-notch fa-spin"></i> กำลังลบ...</>
+                            ) : (
+                                <><i className="fas fa-trash-alt"></i> ล้าง Fixtures ทั้งหมด</>
+                            )}
+                        </button>
                     </div>
 
                     {/* Message */}
@@ -253,19 +425,17 @@ export default function AdminDraw() {
                     </div>
 
                     <div className="p-6">
-                        {/* Match Days Grid */}
-                        <div className="grid md:grid-cols-2 gap-6">
+                        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                             {matchDays.map((round) => (
                                 <div
                                     key={round.day}
                                     className="bg-gray-50 rounded-xl p-4 border-2 border-gray-200"
                                 >
-                                    <div className="flex items-center justify-between mb-4">
-                                        <h4 className="font-display font-bold text-lg text-uefa-dark">
-                                            Match Day {round.day}
+                                    <div className="flex items-center justify-between mb-3">
+                                        <h4 className="font-display font-bold text-uefa-dark">
+                                            Day {round.day}
                                         </h4>
-                                        <span className="text-sm text-gray-500">
-                                            <i className="fas fa-calendar mr-1"></i>
+                                        <span className="text-xs text-gray-500">
                                             {round.date}
                                         </span>
                                     </div>
@@ -279,19 +449,19 @@ export default function AdminDraw() {
                                             return (
                                                 <div
                                                     key={idx}
-                                                    className={`flex items-center justify-between p-3 rounded-lg transition-all duration-500 ${isRevealed
-                                                            ? 'bg-white shadow-md border-l-4 border-cyan-aura transform scale-100 opacity-100'
-                                                            : 'bg-gray-200 opacity-30 scale-95'
+                                                    className={`flex items-center justify-between p-2 rounded-lg text-sm transition-all duration-300 ${isRevealed
+                                                            ? 'bg-white shadow border-l-4 border-cyan-aura'
+                                                            : 'bg-gray-200 opacity-30'
                                                         }`}
                                                 >
-                                                    <span className={`font-bold ${isRevealed ? 'text-blue-600' : 'text-gray-400'}`}>
+                                                    <span className={`font-bold truncate flex-1 ${isRevealed ? 'text-blue-600' : 'text-gray-400'}`}>
                                                         {isRevealed ? match.blue : '???'}
                                                     </span>
-                                                    <span className={`px-3 py-1 rounded text-sm font-bold ${isRevealed ? 'bg-cyan-aura text-white' : 'bg-gray-300 text-gray-500'
+                                                    <span className={`px-2 py-0.5 rounded text-xs font-bold mx-1 ${isRevealed ? 'bg-cyan-aura text-white' : 'bg-gray-300 text-gray-500'
                                                         }`}>
                                                         VS
                                                     </span>
-                                                    <span className={`font-bold ${isRevealed ? 'text-red-600' : 'text-gray-400'}`}>
+                                                    <span className={`font-bold truncate flex-1 text-right ${isRevealed ? 'text-red-600' : 'text-gray-400'}`}>
                                                         {isRevealed ? match.red : '???'}
                                                     </span>
                                                 </div>
