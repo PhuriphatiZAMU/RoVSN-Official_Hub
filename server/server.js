@@ -216,11 +216,18 @@ app.post('/api/schedules', authenticateToken, async (req, res) => {
     }
 });
 
-// DELETE: Clear All Schedules (Protected)
+// DELETE: Clear All Schedules AND Results (Protected)
 app.delete('/api/schedules/clear', authenticateToken, async (req, res) => {
     try {
-        await Schedule.deleteMany({});
-        res.json({ message: 'All schedules cleared successfully' });
+        const scheduleResult = await Schedule.deleteMany({});
+        const resultResult = await Result.deleteMany({});
+        res.json({
+            message: 'All data cleared successfully',
+            deleted: {
+                schedules: scheduleResult.deletedCount,
+                results: resultResult.deletedCount
+            }
+        });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
