@@ -4,7 +4,7 @@ import { useConfirmModal } from '../../components/common/ConfirmModal';
 
 export default function AdminDraw() {
     const { token } = useAuth();
-    const { showConfirm, ModalComponent } = useConfirmModal();
+    const { showConfirm } = useConfirmModal();
 
     // Teams Management
     const [teams, setTeams] = useState([
@@ -263,8 +263,6 @@ export default function AdminDraw() {
 
     return (
         <div className="max-w-6xl mx-auto">
-            {/* Modal */}
-            <ModalComponent />
             {/* Header */}
             <div className="bg-white rounded-xl shadow-sm mb-8">
                 <div className="p-6 border-b border-gray-100">
