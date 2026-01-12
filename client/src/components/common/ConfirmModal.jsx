@@ -1,8 +1,7 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 
-export function ConfirmModal({
-    isOpen,
+function ConfirmModalContent({
     onClose,
     onConfirm,
     title,
@@ -11,19 +10,6 @@ export function ConfirmModal({
     cancelText = 'ยกเลิก',
     type = 'danger'
 }) {
-    useEffect(() => {
-        if (isOpen) {
-            document.body.style.overflow = 'hidden';
-        } else {
-            document.body.style.overflow = 'unset';
-        }
-        return () => {
-            document.body.style.overflow = 'unset';
-        };
-    }, [isOpen]);
-
-    if (!isOpen) return null;
-
     const iconConfig = {
         danger: { icon: 'fa-trash-alt', bgColor: 'bg-red-100', iconColor: 'text-red-500', btnColor: 'bg-red-500 hover:bg-red-600' },
         warning: { icon: 'fa-exclamation-triangle', bgColor: 'bg-yellow-100', iconColor: 'text-yellow-500', btnColor: 'bg-yellow-500 hover:bg-yellow-600' },
@@ -34,12 +20,13 @@ export function ConfirmModal({
 
     const handleConfirm = () => {
         onClose();
+        // Small delay to let modal close animation play
         setTimeout(() => {
             onConfirm();
-        }, 100);
+        }, 50);
     };
 
-    const modalContent = (
+    return (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
             {/* Backdrop */}
             <div
@@ -64,7 +51,7 @@ export function ConfirmModal({
                 </h3>
 
                 {/* Message */}
-                <p className="text-gray-600 text-center mb-6">
+                <p className="text-gray-600 text-center mb-6 whitespace-pre-line">
                     {message}
                 </p>
 
@@ -97,9 +84,6 @@ export function ConfirmModal({
       `}</style>
         </div>
     );
-
-    // Use portal to render at document body
-    return createPortal(modalContent, document.body);
 }
 
 export function useConfirmModal() {
@@ -112,9 +96,20 @@ export function useConfirmModal() {
         cancelText: 'ยกเลิก',
     });
 
-    const onConfirmRef = useRef(() => { });
+    const onConfirmRef = useRef(null);
 
-    const showConfirm = useCallback(({ title, message, onConfirm, type = 'danger', confirmText = 'ยืนยัน', cancelText = 'ยกเลิก' }) => {
+    useEffect(() => {
+        if (isOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [isOpen]);
+
+    const showConfirm = ({ title, message, onConfirm, type = 'danger', confirmText = 'ยืนยัน', cancelText = 'ยกเลิก' }) => {
         onConfirmRef.current = onConfirm;
         setModalProps({
             title,
@@ -124,24 +119,31 @@ export function useConfirmModal() {
             cancelText,
         });
         setIsOpen(true);
-    }, []);
+    };
 
-    const closeModal = useCallback(() => {
+    const closeModal = () => {
         setIsOpen(false);
-    }, []);
+    };
 
-    const handleConfirm = useCallback(() => {
-        onConfirmRef.current();
-    }, []);
+    const handleConfirm = () => {
+        if (onConfirmRef.current) {
+            onConfirmRef.current();
+        }
+    };
 
-    const ModalComponent = useCallback(() => (
-        <ConfirmModal
-            isOpen={isOpen}
-            onClose={closeModal}
-            onConfirm={handleConfirm}
-            {...modalProps}
-        />
-    ), [isOpen, modalProps, closeModal, handleConfirm]);
+    // Return a component that renders the modal via portal
+    const ModalComponent = () => {
+        if (!isOpen) return null;
+
+        return createPortal(
+            <ConfirmModalContent
+                onClose={closeModal}
+                onConfirm={handleConfirm}
+                {...modalProps}
+            />,
+            document.body
+        );
+    };
 
     return { showConfirm, ModalComponent };
 }
