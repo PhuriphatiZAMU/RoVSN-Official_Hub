@@ -8,6 +8,7 @@ export default function AdminLayout() {
 
     const menuItems = [
         { path: '/admin', label: 'Dashboard', icon: 'fas fa-tachometer-alt', exact: true },
+        { path: '/admin/draw', label: 'จับสลาก', icon: 'fas fa-random' },
         { path: '/admin/results', label: 'ผลการแข่งขัน', icon: 'fas fa-trophy' },
         { path: '/admin/logos', label: 'โลโก้ทีม', icon: 'fas fa-image' },
     ];
@@ -46,8 +47,8 @@ export default function AdminLayout() {
                             key={item.path}
                             to={item.path}
                             className={`flex items-center gap-3 px-6 py-3 transition-all border-l-4 ${isActive(item.path, item.exact)
-                                    ? 'bg-white/10 text-cyan-aura border-cyan-aura'
-                                    : 'text-gray-300 hover:bg-white/5 hover:text-white border-transparent'
+                                ? 'bg-white/10 text-cyan-aura border-cyan-aura'
+                                : 'text-gray-300 hover:bg-white/5 hover:text-white border-transparent'
                                 }`}
                         >
                             <i className={`${item.icon} w-5`}></i>

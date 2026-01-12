@@ -24,8 +24,34 @@ export function DataProvider({ children }) {
                 ]);
 
                 if (scheduleData) {
-                    setSchedule(scheduleData.schedule || []);
-                    setTeams([...(scheduleData.potA || []), ...(scheduleData.potB || [])]);
+                    const scheduleList = scheduleData.schedule || scheduleData || [];
+                    setSchedule(scheduleList);
+
+                    // ดึงรายชื่อทีมจาก matches ใน schedule
+                    const allTeams = new Set();
+                    scheduleList.forEach(round => {
+                        (round.matches || []).forEach(match => {
+                            if (match.blue) allTeams.add(match.blue);
+                            if (match.red) allTeams.add(match.red);
+                        });
+                    });
+
+                    // ถ้าไม่มีทีมใน schedule ให้ใช้ default 10 ทีม
+                    if (allTeams.size > 0) {
+                        setTeams([...allTeams]);
+                    } else {
+                        // Default teams สำหรับการจับสลาก
+                        setTeams([
+                            'ม.4/1', 'ม.4/2', 'ม.4/3', 'ม.4/4', 'ม.4/5',
+                            'ม.5/1', 'ม.5/2', 'ม.5/3', 'ม.5/4', 'ม.5/5'
+                        ]);
+                    }
+                } else {
+                    // ถ้าไม่มี schedule ให้ใช้ default teams
+                    setTeams([
+                        'ม.4/1', 'ม.4/2', 'ม.4/3', 'ม.4/4', 'ม.4/5',
+                        'ม.5/1', 'ม.5/2', 'ม.5/3', 'ม.5/4', 'ม.5/5'
+                    ]);
                 }
 
                 setResults(resultsData || []);

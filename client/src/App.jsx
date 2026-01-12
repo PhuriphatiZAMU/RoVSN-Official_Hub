@@ -17,6 +17,7 @@ import FormatPage from './pages/FormatPage';
 // Admin Pages
 import LoginPage from './pages/admin/LoginPage';
 import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminDraw from './pages/admin/AdminDraw';
 import AdminResults from './pages/admin/AdminResults';
 import AdminLogos from './pages/admin/AdminLogos';
 
@@ -54,6 +55,7 @@ function App() {
               }
             >
               <Route index element={<AdminDashboard />} />
+              <Route path="draw" element={<AdminDraw />} />
               <Route path="results" element={<AdminResults />} />
               <Route path="logos" element={<AdminLogos />} />
             </Route>
