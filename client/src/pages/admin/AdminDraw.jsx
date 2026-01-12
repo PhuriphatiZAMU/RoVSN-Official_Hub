@@ -1,8 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useConfirmModal } from '../../components/common/ConfirmModal';
 
 export default function AdminDraw() {
     const { token } = useAuth();
+    const { showConfirm, ModalComponent } = useConfirmModal();
 
     // Teams Management
     const [teams, setTeams] = useState([
@@ -46,10 +48,17 @@ export default function AdminDraw() {
     // ลบทีม
     const deleteTeam = (index) => {
         const teamName = teams[index];
-        if (confirm(`ต้องการลบทีม "${teamName}" ใช่หรือไม่?`)) {
-            setTeams(teams.filter((_, i) => i !== index));
-            setMessage({ type: 'success', text: `ลบทีม "${teamName}" สำเร็จ` });
-        }
+        showConfirm({
+            title: 'ลบทีม',
+            message: `ต้องการลบทีม "${teamName}" ใช่หรือไม่?`,
+            type: 'danger',
+            confirmText: 'ลบทีม',
+            cancelText: 'ยกเลิก',
+            onConfirm: () => {
+                setTeams(teams.filter((_, i) => i !== index));
+                setMessage({ type: 'success', text: `ลบทีม "${teamName}" สำเร็จ` });
+            }
+        });
     };
 
     // เริ่มแก้ไขชื่อทีม
@@ -201,35 +210,40 @@ export default function AdminDraw() {
     };
 
     // ล้าง Fixtures ทั้งหมด
-    const clearAllFixtures = async () => {
-        if (!confirm('⚠️ ต้องการลบตารางแข่งขันทั้งหมดใช่หรือไม่?\n\nการกระทำนี้ไม่สามารถย้อนกลับได้!')) {
-            return;
-        }
+    const clearAllFixtures = () => {
+        showConfirm({
+            title: 'ล้างตารางแข่งขัน',
+            message: 'ต้องการลบตารางแข่งขันทั้งหมดใช่หรือไม่? การกระทำนี้ไม่สามารถย้อนกลับได้!',
+            type: 'danger',
+            confirmText: 'ลบทั้งหมด',
+            cancelText: 'ยกเลิก',
+            onConfirm: async () => {
+                setClearing(true);
+                setMessage(null);
 
-        setClearing(true);
-        setMessage(null);
+                try {
+                    const response = await fetch(`${API_BASE_URL}/api/schedules/clear`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
 
-        try {
-            const response = await fetch(`${API_BASE_URL}/api/schedules/clear`, {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${token}`
+                    if (!response.ok) {
+                        throw new Error('Failed to clear fixtures');
+                    }
+
+                    setMessage({ type: 'success', text: '🗑️ ลบตารางแข่งขันทั้งหมดเรียบร้อยแล้ว!' });
+                    setDrawComplete(false);
+                    setMatchDays([]);
+                    setDisplayedMatches([]);
+                } catch (error) {
+                    setMessage({ type: 'error', text: `❌ ${error.message}` });
+                } finally {
+                    setClearing(false);
                 }
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to clear fixtures');
             }
-
-            setMessage({ type: 'success', text: '🗑️ ลบตารางแข่งขันทั้งหมดเรียบร้อยแล้ว!' });
-            setDrawComplete(false);
-            setMatchDays([]);
-            setDisplayedMatches([]);
-        } catch (error) {
-            setMessage({ type: 'error', text: `❌ ${error.message}` });
-        } finally {
-            setClearing(false);
-        }
+        });
     };
 
     // Reset การจับสลาก
@@ -244,6 +258,8 @@ export default function AdminDraw() {
 
     return (
         <div className="max-w-6xl mx-auto">
+            {/* Modal */}
+            <ModalComponent />
             {/* Header */}
             <div className="bg-white rounded-xl shadow-sm mb-8">
                 <div className="p-6 border-b border-gray-100">
@@ -450,8 +466,8 @@ export default function AdminDraw() {
                                                 <div
                                                     key={idx}
                                                     className={`flex items-center justify-between p-2 rounded-lg text-sm transition-all duration-300 ${isRevealed
-                                                            ? 'bg-white shadow border-l-4 border-cyan-aura'
-                                                            : 'bg-gray-200 opacity-30'
+                                                        ? 'bg-white shadow border-l-4 border-cyan-aura'
+                                                        : 'bg-gray-200 opacity-30'
                                                         }`}
                                                 >
                                                     <span className={`font-bold truncate flex-1 ${isRevealed ? 'text-blue-600' : 'text-gray-400'}`}>
