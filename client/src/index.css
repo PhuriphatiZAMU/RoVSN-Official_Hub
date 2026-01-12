@@ -1,12 +1,25 @@
 @import "tailwindcss";
 
-/* Custom Theme */
+/* ================================================
+   🎨 THEME: Echo of Destiny
+   Primary:   Cyan Aura  #15C8FF
+   Secondary: Echo White #E8F7FF
+   ================================================ */
+
 @theme {
+  /* Primary Colors */
   --color-cyan-aura: #15C8FF;
   --color-echo-white: #E8F7FF;
-  --color-deep-space: #0f172a;
-  --color-uefa-dark: #1e293b;
+  
+  /* Background Colors */
+  --color-deep-space: #0a1628;
+  --color-uefa-dark: #0f1f35;
+  
+  /* Accent Colors */
+  --color-cyan-light: #4dd9ff;
+  --color-cyan-dark: #0099cc;
 
+  /* Fonts */
   --font-family-sans: 'Kanit', sans-serif;
   --font-family-display: 'Oswald', sans-serif;
 }
@@ -20,24 +33,25 @@ body {
   font-family: 'Kanit', sans-serif;
 }
 
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
+h1, h2, h3, h4, h5, h6 {
   font-family: 'Oswald', sans-serif;
+}
+
+/* Selection highlight */
+::selection {
+  background-color: #15C8FF;
+  color: #0a1628;
 }
 
 /* --- NAVBAR --- */
 .navbar-custom {
-  background-color: #1e293b;
+  background: linear-gradient(180deg, #0f1f35 0%, #0a1628 100%);
   border-bottom: 3px solid #15C8FF;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 20px rgba(21, 200, 255, 0.15);
 }
 
 .nav-link {
-  color: white;
+  color: #E8F7FF;
   font-family: 'Oswald', sans-serif;
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -53,7 +67,7 @@ h6 {
   height: 3px;
   bottom: 0;
   left: 0;
-  background-color: #15C8FF;
+  background: linear-gradient(90deg, #15C8FF, #4dd9ff);
   transition: width 0.3s;
 }
 
@@ -62,43 +76,76 @@ h6 {
   width: 100%;
 }
 
+.nav-link:hover {
+  color: #15C8FF;
+}
+
 .nav-link.active {
   color: #15C8FF;
+  text-shadow: 0 0 10px rgba(21, 200, 255, 0.5);
+}
+
+/* --- BUTTONS --- */
+.btn-primary {
+  background: linear-gradient(135deg, #15C8FF 0%, #0099cc 100%);
+  color: #0a1628;
+  font-weight: bold;
+  transition: all 0.3s;
+  box-shadow: 0 4px 15px rgba(21, 200, 255, 0.3);
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, #4dd9ff 0%, #15C8FF 100%);
+  box-shadow: 0 6px 25px rgba(21, 200, 255, 0.5);
+  transform: translateY(-2px);
+}
+
+/* --- CARDS --- */
+.card-echo {
+  background: linear-gradient(135deg, rgba(232, 247, 255, 0.05) 0%, rgba(21, 200, 255, 0.05) 100%);
+  border: 1px solid rgba(21, 200, 255, 0.2);
+  backdrop-filter: blur(10px);
+}
+
+.card-echo:hover {
+  border-color: rgba(21, 200, 255, 0.4);
+  box-shadow: 0 0 30px rgba(21, 200, 255, 0.15);
 }
 
 /* --- TABLES --- */
 .uefa-table th {
-  background-color: #f1f5f9;
-  color: #64748b;
+  background: linear-gradient(180deg, #f8fafc 0%, #E8F7FF 100%);
+  color: #0f1f35;
   font-family: 'Oswald', sans-serif;
   text-transform: uppercase;
   font-size: 0.85rem;
   letter-spacing: 0.05em;
-  border-bottom: 2px solid #e2e8f0;
+  border-bottom: 2px solid #15C8FF;
 }
 
 .uefa-table tr {
   border-bottom: 1px solid #e2e8f0;
-  transition: background-color 0.2s;
+  transition: all 0.2s;
 }
 
 .uefa-table tr:hover {
-  background-color: #E8F7FF;
+  background: linear-gradient(90deg, #E8F7FF 0%, rgba(21, 200, 255, 0.1) 100%);
+}
+
+/* Qualification zone highlight */
+.uefa-table tr.qualification-zone {
+  background: linear-gradient(90deg, rgba(21, 200, 255, 0.1) 0%, transparent 100%);
+  border-left: 4px solid #15C8FF;
 }
 
 /* --- SKELETON LOADING --- */
 @keyframes skeleton-shimmer {
-  0% {
-    background-position: -200% 0;
-  }
-
-  100% {
-    background-position: 200% 0;
-  }
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
 }
 
 .skeleton {
-  background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+  background: linear-gradient(90deg, #e2e8f0 25%, #E8F7FF 50%, #e2e8f0 75%);
   background-size: 200% 100%;
   animation: skeleton-shimmer 1.5s ease-in-out infinite;
   border-radius: 4px;
@@ -116,14 +163,15 @@ h6 {
 /* --- RULE CARDS --- */
 .rule-card {
   border-left: 5px solid #15C8FF;
-  background: white;
+  background: linear-gradient(90deg, #E8F7FF 0%, white 100%);
   margin-bottom: 1.5rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  transition: transform 0.2s;
+  box-shadow: 0 2px 10px rgba(21, 200, 255, 0.1);
+  transition: all 0.3s;
 }
 
 .rule-card:hover {
   transform: translateX(5px);
+  box-shadow: 0 4px 20px rgba(21, 200, 255, 0.2);
 }
 
 /* --- CAROUSEL --- */
@@ -137,13 +185,43 @@ h6 {
   width: 100%;
 }
 
+/* --- GLOW EFFECTS --- */
+.glow-cyan {
+  box-shadow: 0 0 20px rgba(21, 200, 255, 0.4);
+}
+
+.glow-cyan-strong {
+  box-shadow: 0 0 40px rgba(21, 200, 255, 0.6);
+}
+
+.text-glow {
+  text-shadow: 0 0 10px rgba(21, 200, 255, 0.5);
+}
+
+/* --- GRADIENT BACKGROUNDS --- */
+.bg-echo-gradient {
+  background: linear-gradient(135deg, #0a1628 0%, #0f1f35 50%, #1a2f4a 100%);
+}
+
+.bg-echo-gradient-light {
+  background: linear-gradient(135deg, #E8F7FF 0%, #ffffff 50%, #E8F7FF 100%);
+}
+
+/* --- BORDERS --- */
+.border-echo {
+  border-color: rgba(21, 200, 255, 0.3);
+}
+
+.border-echo-strong {
+  border-color: #15C8FF;
+}
+
 /* --- MOBILE MENU ANIMATIONS --- */
 @keyframes slideIn {
   from {
     opacity: 0;
     transform: translateX(20px);
   }
-
   to {
     opacity: 1;
     transform: translateX(0);
@@ -151,16 +229,43 @@ h6 {
 }
 
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
 
-  to {
-    opacity: 1;
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(21, 200, 255, 0.4);
   }
+  50% {
+    box-shadow: 0 0 40px rgba(21, 200, 255, 0.6);
+  }
+}
+
+.pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
 }
 
 /* Prevent body scroll when menu is open */
 body.menu-open {
   overflow: hidden;
+}
+
+/* --- SCROLLBAR STYLING --- */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0a1628;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #15C8FF, #0099cc);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #4dd9ff;
 }
