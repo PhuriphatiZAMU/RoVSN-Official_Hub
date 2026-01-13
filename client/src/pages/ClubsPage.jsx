@@ -24,7 +24,7 @@ export default function ClubsPage() {
             <div className="bg-uefa-dark py-12 mb-8">
                 <div className="container mx-auto px-4">
                     <h1 className="text-4xl md:text-5xl font-display font-bold text-white uppercase">
-                        Clubs
+                        Teams
                     </h1>
                 </div>
             </div>

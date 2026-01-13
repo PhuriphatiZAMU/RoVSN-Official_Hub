@@ -116,7 +116,7 @@ function LeagueTable() {
                 <thead className="bg-gray-50">
                     <tr>
                         <th className="p-3 w-10 text-center">#</th>
-                        <th className="p-3">{t.standings.club}</th>
+                        <th className="p-3">{t.standings.team}</th>
                         <th className="p-3 text-center">{t.standings.played}</th>
                         <th className="p-3 text-center">{t.standings.gd}</th>
                         <th className="p-3 text-center font-bold">{t.standings.pts}</th>
@@ -134,7 +134,7 @@ function LeagueTable() {
             <thead className="bg-gray-50">
                 <tr>
                     <th className="p-3 w-10 text-center">#</th>
-                    <th className="p-3">{t.standings.club}</th>
+                    <th className="p-3">{t.standings.team}</th>
                     <th className="p-3 text-center">{t.standings.played}</th>
                     <th className="p-3 text-center">{t.standings.gd}</th>
                     <th className="p-3 text-center font-bold">{t.standings.pts}</th>
@@ -177,7 +177,7 @@ export default function HomePage() {
                     {/* Latest Matches */}
                     <div>
                         <div className="flex justify-between items-end mb-6 border-b border-gray-200 pb-4">
-                            <h2 className="text-3xl font-display font-bold uppercase text-uefa-dark border-l-4 border-cyan-aura pl-3">
+                            <h2 className="text-xl md:text-3xl font-display font-bold uppercase text-uefa-dark border-l-4 border-cyan-aura pl-3">
                                 {t.home.latestResults}
                             </h2>
                             <Link to="/fixtures" className="text-cyan-aura font-bold hover:underline text-sm">
@@ -190,7 +190,7 @@ export default function HomePage() {
                     {/* League Table */}
                     <div>
                         <div className="flex justify-between items-end mb-6 border-b border-gray-200 pb-4">
-                            <h2 className="text-3xl font-display font-bold uppercase text-uefa-dark border-l-4 border-cyan-aura pl-3">
+                            <h2 className="text-xl md:text-3xl font-display font-bold uppercase text-uefa-dark border-l-4 border-cyan-aura pl-3">
                                 {t.home.leagueTable}
                             </h2>
                             <Link to="/standings" className="text-cyan-aura font-bold hover:underline text-sm">

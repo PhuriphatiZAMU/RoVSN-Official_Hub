@@ -36,7 +36,7 @@ export default function StandingsPage() {
                     {/* Table Header Info */}
                     <div className="p-4 bg-gray-50 border-b border-gray-200 flex justify-between items-center flex-wrap gap-2">
                         <div>
-                            <h3 className="text-2xl font-display font-bold text-uefa-dark">League Phase</h3>
+                            <h3 className="text-lg md:text-2xl font-display font-bold text-uefa-dark">League Phase</h3>
                             <p className="text-sm text-gray-500">Overall Rankings</p>
                         </div>
                         <div className="flex items-center text-sm">
@@ -50,13 +50,13 @@ export default function StandingsPage() {
                         <table className="w-full text-left uefa-table">
                             <thead>
                                 <tr>
-                                    <th className="p-3 w-10 text-center">#</th>
-                                    <th className="p-3">{t.standings.club}</th>
-                                    <th className="p-3 text-center">{t.standings.played}</th>
-                                    <th className="p-3 text-center text-green-600">{t.standings.won}</th>
-                                    <th className="p-3 text-center text-red-500">{t.standings.lost}</th>
-                                    <th className="p-3 text-center">{t.standings.gd}</th>
-                                    <th className="p-3 text-center font-bold text-black">{t.standings.pts}</th>
+                                    <th className="p-2 md:p-3 w-8 md:w-10 text-center">#</th>
+                                    <th className="p-2 md:p-3">{t.standings.team}</th>
+                                    <th className="p-2 md:p-3 text-center">{t.standings.played}</th>
+                                    <th className="p-2 md:p-3 text-center text-green-600">{t.standings.won}</th>
+                                    <th className="p-2 md:p-3 text-center text-red-500">{t.standings.lost}</th>
+                                    <th className="p-2 md:p-3 text-center hide-mobile">{t.standings.gd}</th>
+                                    <th className="p-2 md:p-3 text-center font-bold text-black">{t.standings.pts}</th>
                                 </tr>
                             </thead>
                             {loading ? (
@@ -81,11 +81,11 @@ export default function StandingsPage() {
                                                     <TeamLogo teamName={d.name} size="md" />
                                                     {d.name}
                                                 </td>
-                                                <td className="p-3 text-center">{d.p}</td>
-                                                <td className="p-3 text-center text-green-600 font-bold">{d.w}</td>
-                                                <td className="p-3 text-center text-red-500">{d.l}</td>
-                                                <td className="p-3 text-center font-mono">{d.gd > 0 ? `+${d.gd}` : d.gd}</td>
-                                                <td className="p-3 text-center font-bold text-black text-lg">{d.pts}</td>
+                                                <td className="p-2 md:p-3 text-center">{d.p}</td>
+                                                <td className="p-2 md:p-3 text-center text-green-600 font-bold">{d.w}</td>
+                                                <td className="p-2 md:p-3 text-center text-red-500">{d.l}</td>
+                                                <td className="p-2 md:p-3 text-center font-mono hide-mobile">{d.gd > 0 ? `+${d.gd}` : d.gd}</td>
+                                                <td className="p-2 md:p-3 text-center font-bold text-black text-base md:text-lg">{d.pts}</td>
                                             </tr>
                                         );
                                     })}

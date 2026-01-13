@@ -30,21 +30,21 @@ function SeasonStats() {
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white p-6 rounded shadow border-t-4 border-cyan-aura">
+            <div className="bg-white p-4 md:p-6 rounded shadow border-t-4 border-cyan-aura">
                 <p className="text-gray-500 uppercase text-xs font-bold mb-2">{t.stats.totalKills}</p>
-                <div className="text-5xl font-display font-bold text-uefa-dark">
+                <div className="text-3xl md:text-5xl font-display font-bold text-uefa-dark">
                     {error ? <span className="text-gray-300 text-4xl">-</span> : (stats?.totalKills || 0).toLocaleString()}
                 </div>
             </div>
-            <div className="bg-white p-6 rounded shadow border-t-4 border-cyan-aura">
+            <div className="bg-white p-4 md:p-6 rounded shadow border-t-4 border-cyan-aura">
                 <p className="text-gray-500 uppercase text-xs font-bold mb-2">{t.stats.totalDeaths}</p>
-                <div className="text-5xl font-display font-bold text-uefa-dark">
+                <div className="text-3xl md:text-5xl font-display font-bold text-uefa-dark">
                     {error ? <span className="text-gray-300 text-4xl">-</span> : (stats?.totalDeaths || 0).toLocaleString()}
                 </div>
             </div>
-            <div className="bg-white p-6 rounded shadow border-t-4 border-cyan-aura">
+            <div className="bg-white p-4 md:p-6 rounded shadow border-t-4 border-cyan-aura">
                 <p className="text-gray-500 uppercase text-xs font-bold mb-2">{t.stats.avgGameTime}</p>
-                <div className="text-5xl font-display font-bold text-uefa-dark">
+                <div className="text-3xl md:text-5xl font-display font-bold text-uefa-dark">
                     {error ? <span className="text-gray-300 text-4xl">-</span> : timeStr}
                 </div>
             </div>
@@ -72,7 +72,7 @@ function TeamStats() {
             <table className="w-full uefa-table">
                 <thead>
                     <tr>
-                        <th className="p-4 text-left">{t.standings.club}</th>
+                        <th className="p-4 text-left">{t.standings.team}</th>
                         <th className="p-4 text-center">{t.stats.games}</th>
                         <th className="p-4 text-center">{t.stats.wins}</th>
                         <th className="p-4 text-center">{t.stats.losses}</th>
@@ -151,7 +151,7 @@ function PlayerStats() {
 
     return (
         <div className="bg-white shadow-sm rounded-lg overflow-hidden overflow-x-auto">
-            <table className="w-full uefa-table min-w-[900px]">
+            <table className="w-full uefa-table min-w-[600px]">
                 <thead>
                     <tr>
                         <th className="p-4 text-center w-16">#</th>
@@ -161,8 +161,8 @@ function PlayerStats() {
                         <th className="p-4 text-center text-blue-600" title="Total Kills">K</th>
                         <th className="p-4 text-center text-red-600" title="Total Deaths">D</th>
                         <th className="p-4 text-center text-green-600" title="Total Assists">A</th>
-                        <th className="p-4 text-right" title="Total Damage Dealt">{t.stats.damage}</th>
-                        <th className="p-4 text-right" title="Total Damage Taken">{t.stats.taken}</th>
+                        <th className="p-2 md:p-4 text-right hide-mobile" title="Total Damage Dealt">{t.stats.damage}</th>
+                        <th className="p-2 md:p-4 text-right hide-mobile" title="Total Damage Taken">{t.stats.taken}</th>
                         <th className="p-4 text-center font-bold text-cyan-aura" title="KDA Ratio">{t.stats.kda}</th>
                     </tr>
                 </thead>
@@ -198,10 +198,10 @@ function PlayerStats() {
                                     <td className="p-4 text-center font-mono">{p.totalKills}</td>
                                     <td className="p-4 text-center font-mono">{p.totalDeaths}</td>
                                     <td className="p-4 text-center font-mono">{p.totalAssists}</td>
-                                    <td className="p-4 text-right font-mono text-sm text-blue-600">
+                                    <td className="p-2 md:p-4 text-right font-mono text-sm text-blue-600 hide-mobile">
                                         {(p.totalDamage || 0).toLocaleString()}
                                     </td>
-                                    <td className="p-4 text-right font-mono text-sm text-red-600">
+                                    <td className="p-2 md:p-4 text-right font-mono text-sm text-red-600 hide-mobile">
                                         {(p.totalDamageTaken || 0).toLocaleString()}
                                     </td>
                                     <td className="p-4 text-center">
@@ -238,7 +238,7 @@ export default function StatsPage() {
                     </h1>
 
                     {/* Sub-nav */}
-                    <div className="flex space-x-6 mt-8 font-display text-gray-400 text-lg uppercase">
+                    <div className="flex space-x-3 md:space-x-6 mt-6 md:mt-8 font-display text-gray-400 text-sm md:text-lg uppercase">
                         {tabs.map(tab => (
                             <Link
                                 key={tab.path}
@@ -255,7 +255,7 @@ export default function StatsPage() {
             <div className="container mx-auto px-4 pb-12">
                 <h2 className="text-2xl font-display font-bold text-uefa-dark mb-6 border-l-4 border-cyan-aura pl-3">
                     {path === '/stats' && t.stats.kpi}
-                    {path === '/stats/team' && t.stats.club}
+                    {path === '/stats/team' && t.stats.team}
                     {path === '/stats/player' && t.stats.player}
                 </h2>
 

@@ -5,7 +5,7 @@ export const translations = {
             fixtures: "ตารางแข่ง",
             standings: "ตารางคะแนน",
             stats: "สถิติ",
-            clubs: "สโมสร",
+            teams: "ทีม",
             format: "รูปแบบแข่ง",
             admin: "ผู้ดูแลระบบ"
         },
@@ -28,7 +28,7 @@ export const translations = {
         },
         standings: {
             title: "ตารางคะแนน",
-            club: "สโมสร",
+            team: "ทีม",
             played: "แข่ง",
             won: "ชนะ",
             lost: "แพ้",
@@ -38,7 +38,7 @@ export const translations = {
         stats: {
             title: "สถิติการแข่งขัน",
             season: "ภาพรวมซีซั่น",
-            club: "อันดับทีม",
+            team: "อันดับทีม",
             player: "ผู้เล่นยอดเยี่ยม",
             kpi: "ข้อมูลเชิงลึกที่สำคัญ",
             games: "เกม",
@@ -72,7 +72,7 @@ export const translations = {
             fixtures: "Fixtures",
             standings: "Standings",
             stats: "Stats",
-            clubs: "Clubs",
+            teams: "Teams",
             format: "Format",
             admin: "Admin"
         },
@@ -95,7 +95,7 @@ export const translations = {
         },
         standings: {
             title: "League Standings",
-            club: "Club",
+            team: "Team",
             played: "P",
             won: "W",
             lost: "L",
@@ -112,7 +112,7 @@ export const translations = {
         stats: {
             title: "Statistics",
             season: "Season Overview",
-            club: "Club Rankings",
+            team: "Team Rankings",
             player: "Top Players",
             kpi: "Key Performance Indicators",
             games: "Games",

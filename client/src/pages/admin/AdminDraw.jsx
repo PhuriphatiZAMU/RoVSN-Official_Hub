@@ -284,6 +284,13 @@ export default function AdminDraw() {
             r.matches.map(m => ({ ...m, day: dayIndex + 1 }))
         );
 
+        // Add first match immediately
+        if (allMatches.length > 0) {
+            setDisplayedMatches([allMatches[0]]);
+            setCurrentStep(1);
+            step = 1;
+        }
+
         const interval = setInterval(() => {
             if (step < allMatches.length) {
                 setDisplayedMatches(prev => [...prev, allMatches[step]]);
@@ -623,9 +630,13 @@ export default function AdminDraw() {
 
                                     <div className="space-y-2">
                                         {round.matches.map((match, idx) => {
-                                            const isRevealed = displayedMatches.some(
-                                                m => m && m.day === round.day && m.blue === match.blue && m.red === match.red
-                                            );
+                                            // Calculate global match index for this match
+                                            const matchesBefore = matchDays
+                                                .filter(r => r.day < round.day)
+                                                .reduce((sum, r) => sum + r.matches.length, 0);
+                                            const globalIdx = matchesBefore + idx;
+                                            // Use displayedMatches.length for more reliable check
+                                            const isRevealed = drawComplete || globalIdx < displayedMatches.length;
 
                                             return (
                                                 <div

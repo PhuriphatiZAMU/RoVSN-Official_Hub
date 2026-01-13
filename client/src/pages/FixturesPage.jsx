@@ -18,18 +18,19 @@ function MatchCard({ match, result, date }) {
     const formattedDate = date ? new Date(date).toLocaleDateString(locale, { day: 'numeric', month: 'short' }) : '20:00';
 
     return (
-        <div className={`bg-white border border-gray-200 p-4 flex items-center justify-between hover:border-cyan-aura transition shadow-sm ${hasResult ? 'border-l-4 border-l-cyan-aura' : ''}`}>
+        <div className={`bg-white border border-gray-200 p-3 md:p-4 flex items-center justify-between hover:border-cyan-aura transition shadow-sm ${hasResult ? 'border-l-4 border-l-cyan-aura' : ''}`}>
             {/* Team Blue */}
-            <div className={`flex-1 flex items-center justify-end md:text-lg ${hasResult ? blueClass : 'text-uefa-dark'}`}>
-                <span className="mr-3 font-display">{match.blue}</span>
-                <TeamLogo teamName={match.blue} size="lg" />
+            <div className={`flex-1 flex items-center justify-end text-sm md:text-lg ${hasResult ? blueClass : 'text-uefa-dark'}`}>
+                <span className="mr-2 md:mr-3 font-display truncate max-w-[80px] md:max-w-none">{match.blue}</span>
+                <div className="hidden md:block"><TeamLogo teamName={match.blue} size="md" /></div>
+                <div className="block md:hidden"><TeamLogo teamName={match.blue} size="sm" /></div>
             </div>
 
             {/* Score / VS */}
-            <div className="px-6 flex flex-col items-center min-w-[100px]">
+            <div className="px-3 md:px-6 flex flex-col items-center min-w-[70px] md:min-w-[100px]">
                 {hasResult ? (
                     <>
-                        <div className="bg-uefa-dark text-white px-4 py-1 rounded text-xl font-bold flex items-center gap-2">
+                        <div className="bg-uefa-dark text-white px-3 md:px-4 py-1 rounded text-base md:text-xl font-bold flex items-center gap-1 md:gap-2">
                             <span>{result.scoreBlue}</span>
                             <span className="text-gray-400 text-sm">-</span>
                             <span>{result.scoreRed}</span>
@@ -45,9 +46,10 @@ function MatchCard({ match, result, date }) {
             </div>
 
             {/* Team Red */}
-            <div className={`flex-1 flex items-center justify-start md:text-lg ${hasResult ? redClass : 'text-uefa-dark'}`}>
-                <TeamLogo teamName={match.red} size="lg" />
-                <span className="ml-3 font-display">{match.red}</span>
+            <div className={`flex-1 flex items-center justify-start text-sm md:text-lg ${hasResult ? redClass : 'text-uefa-dark'}`}>
+                <div className="hidden md:block"><TeamLogo teamName={match.red} size="md" /></div>
+                <div className="block md:hidden"><TeamLogo teamName={match.red} size="sm" /></div>
+                <span className="ml-2 md:ml-3 font-display truncate max-w-[80px] md:max-w-none">{match.red}</span>
             </div>
         </div>
     );

@@ -11,7 +11,7 @@ export default function Navbar() {
         { path: '/fixtures', label: t.nav.fixtures },
         { path: '/standings', label: t.nav.standings },
         { path: '/stats', label: t.nav.stats },
-        { path: '/clubs', label: t.nav.clubs },
+        { path: '/clubs', label: t.nav.teams },
         { path: '/format', label: t.nav.format },
     ];
 
