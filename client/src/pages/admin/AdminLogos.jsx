@@ -47,7 +47,7 @@ export default function AdminLogos() {
                 const formData = new FormData();
                 formData.append('logo', logoFile);
 
-                const uploadRes = await fetch(`${API_BASE_URL}/api/upload`, {
+                const uploadRes = await fetch(`${API_BASE_URL}/upload`, {
                     method: 'POST',
                     headers: { 'Authorization': `Bearer ${token}` },
                     body: formData
@@ -83,7 +83,7 @@ export default function AdminLogos() {
             message: 'คุณต้องการลบโลโก้นี้ใช่หรือไม่? การกระทำนี้ไม่สามารถเรียกคืนได้',
             onConfirm: async () => {
                 try {
-                    const res = await fetch(`${API_BASE_URL}/api/team-logos/${encodeURIComponent(teamName)}`, {
+                    const res = await fetch(`${API_BASE_URL}/team-logos/${encodeURIComponent(teamName)}`, {
                         method: 'DELETE',
                         headers: { 'Authorization': `Bearer ${token}` }
                     });

@@ -16,7 +16,7 @@ export default function AdminDraw() {
     useEffect(() => {
         const fetchRosterTeams = async () => {
             try {
-                const res = await fetch(`${API_BASE_URL}/api/players`, {
+                const res = await fetch(`${API_BASE_URL}/players`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (res.ok) {
@@ -84,7 +84,7 @@ export default function AdminDraw() {
                 const formData = new FormData();
                 formData.append('logo', logoFile);
 
-                const uploadRes = await fetch(`${API_BASE_URL}/api/upload`, {
+                const uploadRes = await fetch(`${API_BASE_URL}/upload`, {
                     method: 'POST',
                     headers: { 'Authorization': `Bearer ${token}` },
                     body: formData
@@ -97,7 +97,7 @@ export default function AdminDraw() {
 
             // 2. Save Team Logo URL
             if (finalUrl) {
-                const res = await fetch(`${API_BASE_URL}/api/team-logos`, {
+                const res = await fetch(`${API_BASE_URL}/team-logos`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -309,7 +309,7 @@ export default function AdminDraw() {
                 teams: teams
             };
 
-            const response = await fetch(`${API_BASE_URL}/api/schedules`, {
+            const response = await fetch(`${API_BASE_URL}/schedules`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -348,7 +348,7 @@ export default function AdminDraw() {
                 setMessage(null);
 
                 try {
-                    const response = await fetch(`${API_BASE_URL}/api/schedules/clear`, {
+                    const response = await fetch(`${API_BASE_URL}/schedules/clear`, {
                         method: 'DELETE',
                         headers: {
                             'Authorization': `Bearer ${token}`

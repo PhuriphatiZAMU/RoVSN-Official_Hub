@@ -66,7 +66,7 @@ export default function AdminResults() {
         const fetchPlayersPool = async () => {
             try {
                 // Fetch players (no auth specific check needed for GET usually, but added if protected)
-                const res = await fetch(`${API_BASE_URL}/api/players`, {
+                const res = await fetch(`${API_BASE_URL}/players`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (res.ok) {
@@ -353,7 +353,7 @@ export default function AdminResults() {
             }));
 
             // 1. Save Match Result
-            const response = await fetch(`${API_BASE_URL}/api/results`, {
+            const response = await fetch(`${API_BASE_URL}/results`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -416,7 +416,7 @@ export default function AdminResults() {
             });
 
             if (allStats.length > 0) {
-                await fetch(`${API_BASE_URL}/api/stats`, {
+                await fetch(`${API_BASE_URL}/stats`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify(allStats)
