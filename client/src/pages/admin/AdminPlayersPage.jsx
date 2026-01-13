@@ -74,7 +74,9 @@ export default function AdminPlayersPage() {
         name: '', grade: '', team: '', inGameName: '', openId: ''
     });
 
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+    // Normalize API URL - ensure it ends with /api
+    const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+    const API_URL = baseUrl.endsWith('/api') ? baseUrl : `${baseUrl}/api`;
     // Use sessionStorage as AuthContext does
     const getToken = () => sessionStorage.getItem('token');
 

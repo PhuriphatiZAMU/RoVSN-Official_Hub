@@ -4,7 +4,8 @@ import { useConfirmModal } from '../../components/common/ConfirmModal';
 import TeamLogo from '../../components/common/TeamLogo';
 
 export default function AdminDraw() {
-    const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+    const envUrl = import.meta.env.VITE_API_URL || '';
+    const API_BASE_URL = envUrl ? (envUrl.endsWith('/api') ? envUrl : `${envUrl}/api`) : '/api';
     const { token } = useAuth();
     const { showConfirm } = useConfirmModal();
 

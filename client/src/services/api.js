@@ -1,6 +1,7 @@
 // API Configuration
 // ถ้ามี VITE_API_URL ให้ใช้ค่านั้น ถ้าไม่มี (dev) ให้ใช้ proxy
-const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+const envUrl = import.meta.env.VITE_API_URL || '';
+const API_BASE_URL = envUrl ? (envUrl.endsWith('/api') ? envUrl : `${envUrl}/api`) : '/api';
 
 // API Helper
 const api = {

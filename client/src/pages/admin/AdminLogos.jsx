@@ -18,7 +18,8 @@ export default function AdminLogos() {
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState(null);
 
-    const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+    const envUrl = import.meta.env.VITE_API_URL || '';
+    const API_BASE_URL = envUrl ? (envUrl.endsWith('/api') ? envUrl : `${envUrl}/api`) : '/api';
 
     const handleFileChange = (e) => {
         const file = e.target.files[0];
