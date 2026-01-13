@@ -59,29 +59,29 @@ const api = {
 };
 
 // API Endpoints
-export const fetchSchedules = () => api.get('/api/schedules');
-export const fetchResults = () => api.get('/api/results');
-export const fetchTeamLogos = () => api.get('/api/team-logos');
-export const fetchSeasonStats = () => api.get('/api/season-stats');
-export const fetchTeamStats = () => api.get('/api/team-stats');
-export const fetchPlayerStats = () => api.get('/api/player-stats');
+export const fetchSchedules = () => api.get('/schedules');
+export const fetchResults = () => api.get('/results');
+export const fetchTeamLogos = () => api.get('/team-logos');
+export const fetchSeasonStats = () => api.get('/season-stats');
+export const fetchTeamStats = () => api.get('/team-stats');
+export const fetchPlayerStats = () => api.get('/player-stats');
 
 // Auth
 export const login = (username, password) =>
-    api.post('/api/auth/login', { username, password });
+    api.post('/auth/login', { username, password });
 
 // Protected endpoints
 export const postResult = (data, token) =>
-    api.post('/api/results', data, token);
+    api.post('/results', data, token);
 export const postSchedule = (data, token) =>
-    api.post('/api/schedules', data, token);
+    api.post('/schedules', data, token);
 export const postTeamLogo = (data, token) =>
-    api.post('/api/team-logos', data, token);
+    api.post('/team-logos', data, token);
 
 export const resetResults = (day, token) =>
-    api.delete(`/api/results/reset/${day}`, token);
+    api.delete(`/results/reset/${day}`, token);
 
 export const deleteMatchResult = (matchId, token) =>
-    api.delete(`/api/results/${encodeURIComponent(matchId)}`, token);
+    api.delete(`/results/${encodeURIComponent(matchId)}`, token);
 
 export default api;
