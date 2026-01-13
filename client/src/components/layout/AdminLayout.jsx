@@ -10,7 +10,8 @@ export default function AdminLayout() {
         { path: '/admin', label: 'Dashboard', icon: 'fas fa-tachometer-alt', exact: true },
         { path: '/admin/draw', label: 'จับสลาก', icon: 'fas fa-random' },
         { path: '/admin/results', label: 'ผลการแข่งขัน', icon: 'fas fa-trophy' },
-        { path: '/admin/logos', label: 'โลโก้ทีม', icon: 'fas fa-image' },
+        { path: '/admin/players', label: 'ทะเบียนผู้เล่น', icon: 'fas fa-users' },
+
     ];
 
     const handleLogout = () => {

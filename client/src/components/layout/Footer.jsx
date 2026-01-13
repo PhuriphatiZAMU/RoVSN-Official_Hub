@@ -1,6 +1,9 @@
 import { Link } from 'react-router-dom';
+import { useLanguage } from '../../context/LanguageContext';
 
 export default function Footer() {
+    const { t } = useLanguage();
+
     return (
         <footer className="bg-uefa-dark text-white border-t-4 border-cyan-aura mt-auto">
             <div className="container mx-auto px-4 py-12">
@@ -53,7 +56,7 @@ export default function Footer() {
 
                 {/* Copyright */}
                 <div className="text-center text-gray-600 text-xs mt-4">
-                    © 2026 RoV SN Tournament. All rights reserved.
+                    {t.footer.rights}
                 </div>
             </div>
         </footer>

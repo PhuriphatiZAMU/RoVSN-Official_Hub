@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useData } from '../context/DataContext';
+import { useLanguage } from '../context/LanguageContext';
 import TeamLogo from '../components/common/TeamLogo';
 import { MatchSkeleton, TableSkeleton } from '../components/common/Skeleton';
 import { ErrorState } from '../components/common/States';
 
-// Hero Carousel Images
+// Hero Carousel Images... (unchanged)
 const heroImages = [
     '/images/key-visual/RoV-SN-TOURNAMENT-2023.png',
     '/images/key-visual/RoV-SN-TOURNAMENT-2024.png',
@@ -14,6 +15,7 @@ const heroImages = [
 ];
 
 function HeroCarousel() {
+    // ... (unchanged logic)
     const [currentSlide, setCurrentSlide] = useState(0);
 
     useEffect(() => {
@@ -62,6 +64,7 @@ function HeroCarousel() {
 }
 
 function LatestMatches() {
+    // ... (unchanged logic)
     const { schedule, results, loading, error } = useData();
 
     if (loading) return <MatchSkeleton count={4} />;
@@ -105,6 +108,7 @@ function LatestMatches() {
 
 function LeagueTable() {
     const { standings, loading, error } = useData();
+    const { t } = useLanguage();
 
     if (loading) {
         return (
@@ -112,10 +116,10 @@ function LeagueTable() {
                 <thead className="bg-gray-50">
                     <tr>
                         <th className="p-3 w-10 text-center">#</th>
-                        <th className="p-3">Club</th>
-                        <th className="p-3 text-center">P</th>
-                        <th className="p-3 text-center">GD</th>
-                        <th className="p-3 text-center font-bold">Pts</th>
+                        <th className="p-3">{t.standings.club}</th>
+                        <th className="p-3 text-center">{t.standings.played}</th>
+                        <th className="p-3 text-center">{t.standings.gd}</th>
+                        <th className="p-3 text-center font-bold">{t.standings.pts}</th>
                     </tr>
                 </thead>
                 <TableSkeleton rows={5} cols={5} />
@@ -130,10 +134,10 @@ function LeagueTable() {
             <thead className="bg-gray-50">
                 <tr>
                     <th className="p-3 w-10 text-center">#</th>
-                    <th className="p-3">Club</th>
-                    <th className="p-3 text-center">P</th>
-                    <th className="p-3 text-center">GD</th>
-                    <th className="p-3 text-center font-bold">Pts</th>
+                    <th className="p-3">{t.standings.club}</th>
+                    <th className="p-3 text-center">{t.standings.played}</th>
+                    <th className="p-3 text-center">{t.standings.gd}</th>
+                    <th className="p-3 text-center font-bold">{t.standings.pts}</th>
                 </tr>
             </thead>
             <tbody>
@@ -159,6 +163,8 @@ function LeagueTable() {
 }
 
 export default function HomePage() {
+    const { t } = useLanguage();
+
     return (
         <div>
             {/* Hero Carousel */}
@@ -172,10 +178,10 @@ export default function HomePage() {
                     <div>
                         <div className="flex justify-between items-end mb-6 border-b border-gray-200 pb-4">
                             <h2 className="text-3xl font-display font-bold uppercase text-uefa-dark border-l-4 border-cyan-aura pl-3">
-                                Latest Matches
+                                {t.home.latestResults}
                             </h2>
                             <Link to="/fixtures" className="text-cyan-aura font-bold hover:underline text-sm">
-                                View all <i className="fas fa-arrow-right ml-1"></i>
+                                {t.home.viewAll} <i className="fas fa-arrow-right ml-1"></i>
                             </Link>
                         </div>
                         <LatestMatches />
@@ -185,10 +191,10 @@ export default function HomePage() {
                     <div>
                         <div className="flex justify-between items-end mb-6 border-b border-gray-200 pb-4">
                             <h2 className="text-3xl font-display font-bold uppercase text-uefa-dark border-l-4 border-cyan-aura pl-3">
-                                League Table
+                                {t.home.leagueTable}
                             </h2>
                             <Link to="/standings" className="text-cyan-aura font-bold hover:underline text-sm">
-                                Full Table <i className="fas fa-arrow-right ml-1"></i>
+                                {t.home.fullTable} <i className="fas fa-arrow-right ml-1"></i>
                             </Link>
                         </div>
                         <div className="bg-white shadow-sm rounded-lg overflow-hidden border border-gray-100">

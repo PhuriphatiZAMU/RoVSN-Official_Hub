@@ -1,16 +1,18 @@
 import { useData } from '../context/DataContext';
+import { useLanguage } from '../context/LanguageContext';
 import TeamLogo from '../components/common/TeamLogo';
 import { TableSkeleton } from '../components/common/Skeleton';
 import { ErrorState } from '../components/common/States';
 
 export default function StandingsPage() {
     const { standings, loading, error } = useData();
+    const { t } = useLanguage();
 
     if (error) {
         return (
             <div className="container mx-auto px-4 py-12">
                 <ErrorState
-                    title="ไม่สามารถโหลดตารางคะแนนได้"
+                    title={t.common.error}
                     message={error}
                     onRetry={() => window.location.reload()}
                 />
@@ -24,7 +26,7 @@ export default function StandingsPage() {
             <div className="bg-uefa-dark py-12 mb-8">
                 <div className="container mx-auto px-4">
                     <h1 className="text-4xl md:text-5xl font-display font-bold text-white uppercase">
-                        Standings
+                        {t.standings.title}
                     </h1>
                 </div>
             </div>
@@ -49,12 +51,12 @@ export default function StandingsPage() {
                             <thead>
                                 <tr>
                                     <th className="p-3 w-10 text-center">#</th>
-                                    <th className="p-3">Club</th>
-                                    <th className="p-3 text-center">P</th>
-                                    <th className="p-3 text-center text-green-600">W</th>
-                                    <th className="p-3 text-center text-red-500">L</th>
-                                    <th className="p-3 text-center">GD</th>
-                                    <th className="p-3 text-center font-bold text-black">Pts</th>
+                                    <th className="p-3">{t.standings.club}</th>
+                                    <th className="p-3 text-center">{t.standings.played}</th>
+                                    <th className="p-3 text-center text-green-600">{t.standings.won}</th>
+                                    <th className="p-3 text-center text-red-500">{t.standings.lost}</th>
+                                    <th className="p-3 text-center">{t.standings.gd}</th>
+                                    <th className="p-3 text-center font-bold text-black">{t.standings.pts}</th>
                                 </tr>
                             </thead>
                             {loading ? (

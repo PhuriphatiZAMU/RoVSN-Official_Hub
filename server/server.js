@@ -502,5 +502,88 @@ app.post('/api/stats', authenticateToken, async (req, res) => {
     }
 });
 
+// 5. Player Pool Schema (ทะเบียนผู้เล่นสำหรับ Import/แก้ไข) [NEW]
+const PlayerPoolSchema = new mongoose.Schema({
+    name: String,           // ชื่อ-สกุล
+    grade: String,          // ชั้น (Class)
+    team: String,           // ทีม
+    inGameName: String,     // ชื่อในเกม
+    openId: String,         // OpenID
+    createdAt: { type: Date, default: Date.now }
+});
+const PlayerPool = mongoose.model('PlayerPool', PlayerPoolSchema, 'playerpool');
+
+// --- API Routes for Player Pool ---
+
+// GET: List all players in pool
+app.get('/api/players', async (req, res) => {
+    try {
+        const players = await PlayerPool.find().sort({ team: 1, name: 1 });
+        res.json(players);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// POST: Add single player (Protected)
+app.post('/api/players', authenticateToken, async (req, res) => {
+    try {
+        const newPlayer = new PlayerPool(req.body);
+        const saved = await newPlayer.save();
+        res.status(201).json(saved);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// POST: Batch Import Players (Protected)
+app.post('/api/players/import', authenticateToken, async (req, res) => {
+    try {
+        const players = req.body; // Array of player objects
+        if (!Array.isArray(players) || players.length === 0) {
+            return res.status(400).json({ error: "Invalid data format" });
+        }
+
+        // Clear existing pool if needed? For now, append or user clears manually.
+        // Or upsert based on OpenID? Let's use simple insert for speed as requested.
+        const result = await PlayerPool.insertMany(players);
+        res.status(201).json({ message: `Imported ${result.length} players`, count: result.length });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// PUT: Update player (Protected)
+app.put('/api/players/:id', authenticateToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const updated = await PlayerPool.findByIdAndUpdate(id, req.body, { new: true });
+        res.json(updated);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// DELETE: Delete single player (Protected)
+app.delete('/api/players/:id', authenticateToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+        await PlayerPool.findByIdAndDelete(id);
+        res.json({ message: "Player deleted" });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// DELETE: Clear all players (Protected)
+app.delete('/api/players/all/clear', authenticateToken, async (req, res) => {
+    try {
+        const result = await PlayerPool.deleteMany({});
+        res.json({ message: "All players cleared", deletedCount: result.deletedCount });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // Start Server
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));

@@ -1,17 +1,37 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useConfirmModal } from '../../components/common/ConfirmModal';
 import TeamLogo from '../../components/common/TeamLogo';
 
 export default function AdminDraw() {
+    const API_BASE_URL = import.meta.env.VITE_API_URL || '';
     const { token } = useAuth();
     const { showConfirm } = useConfirmModal();
 
     // Teams Management
-    const [teams, setTeams] = useState([
-        'ม.4/1', 'ม.4/2', 'ม.4/3', 'ม.4/4', 'ม.4/5',
-        'ม.5/1', 'ม.5/2', 'ม.5/3', 'ม.5/4', 'ม.5/5'
-    ]);
+    const [teams, setTeams] = useState([]);
+
+    // Auto-fetch teams from roster on mount
+    useEffect(() => {
+        const fetchRosterTeams = async () => {
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/players`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    const players = await res.json();
+                    const rosterTeams = [...new Set(players.map(p => p.team).filter(t => t))].sort();
+                    if (rosterTeams.length > 0) {
+                        setTeams(rosterTeams);
+                    }
+                }
+            } catch (err) {
+                console.error("Failed to auto-load teams:", err);
+            }
+        };
+        fetchRosterTeams();
+    }, [API_BASE_URL, token]);
+
     const [newTeamName, setNewTeamName] = useState('');
     const [editingIndex, setEditingIndex] = useState(null);
     const [editingName, setEditingName] = useState('');
@@ -25,8 +45,6 @@ export default function AdminDraw() {
     const [saving, setSaving] = useState(false);
     const [clearing, setClearing] = useState(false);
     const [message, setMessage] = useState(null);
-
-    const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
     // Schema: Logo Logic
     const [logoModalOpen, setLogoModalOpen] = useState(false);
@@ -409,6 +427,7 @@ export default function AdminDraw() {
                                 <i className="fas fa-plus mr-1"></i>
                                 เพิ่มทีม
                             </button>
+
                         </div>
 
                         {/* Teams List */}

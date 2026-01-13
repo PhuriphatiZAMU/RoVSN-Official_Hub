@@ -1,16 +1,18 @@
 import { useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
+import { useLanguage } from '../../context/LanguageContext';
 
 export default function Navbar() {
     const [isOpen, setIsOpen] = useState(false);
+    const { t, language, toggleLanguage } = useLanguage();
 
     const navItems = [
-        { path: '/', label: 'Home' },
-        { path: '/fixtures', label: 'Fixtures' },
-        { path: '/standings', label: 'Standings' },
-        { path: '/stats', label: 'Stats' },
-        { path: '/clubs', label: 'Clubs' },
-        { path: '/format', label: 'Format' },
+        { path: '/', label: t.nav.home },
+        { path: '/fixtures', label: t.nav.fixtures },
+        { path: '/standings', label: t.nav.standings },
+        { path: '/stats', label: t.nav.stats },
+        { path: '/clubs', label: t.nav.clubs },
+        { path: '/format', label: t.nav.format },
     ];
 
     const closeMenu = () => setIsOpen(false);
@@ -38,7 +40,7 @@ export default function Navbar() {
                     </div>
                 </Link>
 
-                {/* Desktop Navigation */}
+                {/* Desktop Navigation & Actions */}
                 <div className="hidden md:flex items-center gap-6">
                     {navItems.map(item => (
                         <NavLink
@@ -51,29 +53,43 @@ export default function Navbar() {
                             {item.label}
                         </NavLink>
                     ))}
+
+                    {/* Language Switcher (Desktop) */}
+                    <button
+                        onClick={toggleLanguage}
+                        className="ml-4 px-3 py-1 border border-cyan-aura/30 rounded text-xs font-bold text-cyan-aura hover:bg-cyan-aura hover:text-uefa-dark transition-all"
+                    >
+                        {language === 'th' ? 'EN' : 'TH'}
+                    </button>
+
+                    {/* Admin Link (Optional/Hidden for public) - maybe keep hidden or icon? */}
                 </div>
 
                 {/* Mobile Menu Button */}
-                <button
-                    className="md:hidden text-cyan-aura p-2 hover:bg-white/10 rounded-lg transition-colors"
-                    onClick={() => setIsOpen(!isOpen)}
-                    aria-label="Toggle menu"
-                >
-                    <div className="w-6 h-5 relative flex flex-col justify-between">
-                        <span
-                            className={`block h-0.5 bg-current transform transition-all duration-300 origin-center ${isOpen ? 'rotate-45 translate-y-2' : ''
-                                }`}
-                        />
-                        <span
-                            className={`block h-0.5 bg-current transition-all duration-300 ${isOpen ? 'opacity-0 scale-0' : ''
-                                }`}
-                        />
-                        <span
-                            className={`block h-0.5 bg-current transform transition-all duration-300 origin-center ${isOpen ? '-rotate-45 -translate-y-2' : ''
-                                }`}
-                        />
-                    </div>
-                </button>
+                <div className="md:hidden flex items-center gap-4">
+                    {/* Language Switcher (Mobile Header - Visible even if menu closed? No, let's put inside menu or generic header) */}
+                    {/* Keep Simple: Just Toggle Button here */}
+                    <button
+                        className="text-cyan-aura p-2 hover:bg-white/10 rounded-lg transition-colors"
+                        onClick={() => setIsOpen(!isOpen)}
+                        aria-label="Toggle menu"
+                    >
+                        <div className="w-6 h-5 relative flex flex-col justify-between">
+                            <span
+                                className={`block h-0.5 bg-current transform transition-all duration-300 origin-center ${isOpen ? 'rotate-45 translate-y-2' : ''
+                                    }`}
+                            />
+                            <span
+                                className={`block h-0.5 bg-current transition-all duration-300 ${isOpen ? 'opacity-0 scale-0' : ''
+                                    }`}
+                            />
+                            <span
+                                className={`block h-0.5 bg-current transform transition-all duration-300 origin-center ${isOpen ? '-rotate-45 -translate-y-2' : ''
+                                    }`}
+                            />
+                        </div>
+                    </button>
+                </div>
             </div>
 
             {/* Mobile Menu Overlay */}
@@ -91,15 +107,26 @@ export default function Navbar() {
                 {/* Mobile Menu Header */}
                 <div className="flex items-center justify-between p-4 border-b border-gray-700">
                     <span className="font-display font-bold text-white text-lg">Menu</span>
-                    <button
-                        onClick={closeMenu}
-                        className="text-gray-400 hover:text-white p-2 hover:bg-white/10 rounded-lg transition-colors"
-                        aria-label="Close menu"
-                    >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
+
+                    <div className="flex items-center gap-3">
+                        {/* Language Switcher (Mobile Panel) */}
+                        <button
+                            onClick={toggleLanguage}
+                            className="px-3 py-1 border border-cyan-aura/30 rounded text-xs font-bold text-cyan-aura hover:bg-cyan-aura hover:text-uefa-dark transition-all"
+                        >
+                            {language === 'th' ? 'EN' : 'TH'}
+                        </button>
+
+                        <button
+                            onClick={closeMenu}
+                            className="text-gray-400 hover:text-white p-2 hover:bg-white/10 rounded-lg transition-colors"
+                            aria-label="Close menu"
+                        >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
                 </div>
 
                 {/* Mobile Menu Items */}

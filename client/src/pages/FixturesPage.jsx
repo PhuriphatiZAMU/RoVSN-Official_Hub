@@ -1,17 +1,21 @@
 import { useState } from 'react';
 import { useData } from '../context/DataContext';
+import { useLanguage } from '../context/LanguageContext';
 import TeamLogo from '../components/common/TeamLogo';
 import { MatchSkeleton } from '../components/common/Skeleton';
 import { ErrorState, EmptyState } from '../components/common/States';
 
+// ... (MatchCard remains mostly UI-focused, but date formatting might need locale 'th-TH'/'en-US' - small optimization for later)
 function MatchCard({ match, result, date }) {
+    const { language } = useLanguage();
     const hasResult = !!result;
 
     const blueClass = hasResult && result.scoreBlue > result.scoreRed ? 'text-cyan-aura font-bold' : 'text-gray-500';
     const redClass = hasResult && result.scoreRed > result.scoreBlue ? 'text-cyan-aura font-bold' : 'text-gray-500';
 
-    // Format Date (e.g., "14 ก.พ.") or fallback
-    const formattedDate = date ? new Date(date).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' }) : '20:00';
+    // Format Date based on current language
+    const locale = language === 'th' ? 'th-TH' : 'en-US';
+    const formattedDate = date ? new Date(date).toLocaleDateString(locale, { day: 'numeric', month: 'short' }) : '20:00';
 
     return (
         <div className={`bg-white border border-gray-200 p-4 flex items-center justify-between hover:border-cyan-aura transition shadow-sm ${hasResult ? 'border-l-4 border-l-cyan-aura' : ''}`}>
@@ -56,13 +60,14 @@ const STAGE_MAPPING = {
 
 export default function FixturesPage() {
     const { schedule, results, loading, error } = useData();
+    const { t } = useLanguage();
     const [activeDay, setActiveDay] = useState(1);
 
     if (error) {
         return (
             <div className="container mx-auto px-4 py-12">
                 <ErrorState
-                    title="ไม่สามารถโหลดข้อมูลการแข่งขันได้"
+                    title={t.common.error}
                     message={error}
                     onRetry={() => window.location.reload()}
                 />
@@ -78,7 +83,7 @@ export default function FixturesPage() {
             <div className="bg-uefa-dark py-12 mb-8">
                 <div className="container mx-auto px-4">
                     <h1 className="text-4xl md:text-5xl font-display font-bold text-white uppercase">
-                        Fixtures & Results
+                        {t.fixtures.title}
                     </h1>
                 </div>
             </div>
@@ -100,7 +105,7 @@ export default function FixturesPage() {
                                     : 'bg-white text-gray-500 border border-gray-200 hover:bg-gray-100'
                                     }`}
                             >
-                                {STAGE_MAPPING[round.day] || `Matchday ${round.day}`}
+                                {STAGE_MAPPING[round.day] || `${t.fixtures.day} ${round.day}`}
                             </button>
                         ))
                     )}

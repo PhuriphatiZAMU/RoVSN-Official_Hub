@@ -104,10 +104,7 @@ export default function AdminDashboard() {
                         <i className="fas fa-plus-circle text-2xl text-gray-400 group-hover:text-cyan-aura"></i>
                         <span className="text-sm text-gray-600">เพิ่มผลการแข่งขัน</span>
                     </a>
-                    <a href="/admin/logos" className="flex flex-col items-center gap-2 p-4 bg-gray-50 rounded-lg hover:bg-cyan-aura/10 transition-colors group">
-                        <i className="fas fa-upload text-2xl text-gray-400 group-hover:text-cyan-aura"></i>
-                        <span className="text-sm text-gray-600">อัปโหลดโลโก้</span>
-                    </a>
+
                     <a href="/fixtures" target="_blank" className="flex flex-col items-center gap-2 p-4 bg-gray-50 rounded-lg hover:bg-cyan-aura/10 transition-colors group">
                         <i className="fas fa-eye text-2xl text-gray-400 group-hover:text-cyan-aura"></i>
                         <span className="text-sm text-gray-600">ดูตารางแข่ง</span>

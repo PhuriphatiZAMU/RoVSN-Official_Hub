@@ -1,7 +1,11 @@
 import { useState, useEffect } from 'react';
 
-export default function GameStatsModal({ isOpen, onClose, teamBlue, teamRed, gameNumber, initialData, onSave }) {
+export default function GameStatsModal({ isOpen, onClose, teamBlue, teamRed, gameNumber, initialData, onSave, allPlayers = [] }) {
     if (!isOpen) return null;
+
+    // Filter Rosters for Autocomplete
+    const blueRoster = allPlayers.filter(p => p.team === teamBlue);
+    const redRoster = allPlayers.filter(p => p.team === teamRed);
 
     // Default structure: 5 players per team
     const createEmptyPlayers = () => Array(5).fill(null).map(() => ({
@@ -42,6 +46,7 @@ export default function GameStatsModal({ isOpen, onClose, teamBlue, teamRed, gam
             <td className="p-2">
                 <input
                     type="text"
+                    list={`roster-${team}`}
                     placeholder={`ผู้เล่น ${index + 1}`}
                     value={player.name}
                     onChange={(e) => handleChange(team, index, 'name', e.target.value)}
@@ -75,6 +80,22 @@ export default function GameStatsModal({ isOpen, onClose, teamBlue, teamRed, gam
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm overflow-y-auto py-10">
             <div className="bg-white rounded-xl w-full max-w-7xl p-6 shadow-2xl m-4 animate-fade-in">
+                {/* Datalists for Autocomplete */}
+                <datalist id="roster-blue">
+                    {blueRoster.map(p => {
+                        const val = p.inGameName || p.name;
+                        const label = p.inGameName ? `(${p.name})` : ''; // Show Real Name in parens as hint, Value is InGameName
+                        return <option key={p._id} value={val}>{label}</option>;
+                    })}
+                </datalist>
+                <datalist id="roster-red">
+                    {redRoster.map(p => {
+                        const val = p.inGameName || p.name;
+                        const label = p.inGameName ? `(${p.name})` : '';
+                        return <option key={p._id} value={val}>{label}</option>;
+                    })}
+                </datalist>
+
                 <div className="flex justify-between items-center mb-6 border-b pb-4">
                     <h3 className="text-2xl font-bold font-display text-uefa-dark flex items-center gap-3">
                         <i className="fas fa-chart-bar text-cyan-aura"></i>

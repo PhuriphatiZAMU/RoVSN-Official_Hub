@@ -58,6 +58,27 @@ export default function AdminResults() {
     const [confirmModal, setConfirmModal] = useState({ isOpen: false, type: null, title: '', details: '', dateInput: false });
     const [generatedDate, setGeneratedDate] = useState('');
 
+    // --- NEW: Player Pool Data for Auto-complete ---
+    const [allPlayers, setAllPlayers] = useState([]);
+
+    useEffect(() => {
+        const fetchPlayersPool = async () => {
+            try {
+                // Fetch players (no auth specific check needed for GET usually, but added if protected)
+                const res = await fetch(`${API_BASE_URL}/api/players`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    setAllPlayers(data);
+                }
+            } catch (err) {
+                console.error("Failed to load player pool:", err);
+            }
+        };
+        if (token) fetchPlayersPool();
+    }, [API_BASE_URL, token]);
+
     const handleDeleteResult = (match, e) => {
         e.stopPropagation();
         const matchKey = `${selectedDay}_${match.blue}_vs_${match.red}`.replace(/\s+/g, '');
@@ -607,72 +628,107 @@ export default function AdminResults() {
                                     </h4>
 
                                     {/* Render BO3 (3 games) or BO5 (5 games) */}
-                                    {Array(isBO5 ? 5 : 3).fill(0).map((_, i) => i).map((index) => (
-                                        <div key={index} className={`p-4 rounded-lg border ${gameDetails[index].winner ? 'border-green-200 bg-green-50' : 'border-gray-200'}`}>
-                                            <div className="flex items-center justify-between mb-3">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="w-8 h-8 bg-cyan-aura text-white rounded-full flex items-center justify-center font-bold text-sm">
-                                                        {index + 1}
-                                                    </span>
-                                                    <span className="font-bold text-gray-700">เกมที่ {index + 1}</span>
-                                                    {index + 1 > totalGamesNeeded && (
-                                                        <span className="text-xs text-gray-400">(ไม่จำเป็น)</span>
-                                                    )}
-                                                </div>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => openStatsModal(index)}
-                                                    className={`text-sm px-3 py-1 rounded border transition-colors ${gamesStats[index]
-                                                        ? 'bg-green-100 text-green-700 border-green-200 hover:bg-green-200'
-                                                        : 'bg-white text-gray-500 border-gray-300 hover:text-cyan-aura hover:border-cyan-aura'}`}
-                                                >
-                                                    <i className={`fas ${gamesStats[index] ? 'fa-check-circle' : 'fa-chart-bar'} mr-1`}></i>
-                                                    {gamesStats[index] ? 'บันทึกสถิติแล้ว' : 'บันทึกสถิติผู้เล่น'}
-                                                </button>
-                                            </div>
+                                    {Array(isBO5 ? 5 : 3).fill(0).map((_, i) => i).map((index) => {
+                                        const winnerName = gameDetails[index].winner;
+                                        // Filter MVP candidates based on winner (or both teams if unknown, but better unknown)
+                                        const winnerRoster = winnerName ? allPlayers.filter(p => p.team === winnerName) : [];
 
-                                            <div className="grid md:grid-cols-3 gap-3">
-                                                {/* Winner Selection */}
-                                                <div>
-                                                    <label className="block text-xs text-gray-500 mb-1">ผู้ชนะ</label>
-                                                    <select
-                                                        value={gameDetails[index].winner}
-                                                        onChange={(e) => updateGameDetail(index, 'winner', e.target.value)}
-                                                        className="w-full p-2 border border-gray-300 rounded-lg focus:border-cyan-aura focus:outline-none"
+                                        return (
+                                            <div key={index} className={`p-4 rounded-lg border ${gameDetails[index].winner ? 'border-green-200 bg-green-50' : 'border-gray-200'}`}>
+                                                <div className="flex items-center justify-between mb-3">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="w-8 h-8 bg-cyan-aura text-white rounded-full flex items-center justify-center font-bold text-sm">
+                                                            {index + 1}
+                                                        </span>
+                                                        <span className="font-bold text-gray-700">เกมที่ {index + 1}</span>
+                                                        {index + 1 > totalGamesNeeded && (
+                                                            <span className="text-xs text-gray-400">(ไม่จำเป็น)</span>
+                                                        )}
+                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => openStatsModal(index)}
+                                                        className={`text-sm px-3 py-1 rounded border transition-colors ${gamesStats[index]
+                                                            ? 'bg-green-100 text-green-700 border-green-200 hover:bg-green-200'
+                                                            : 'bg-white text-gray-500 border-gray-300 hover:text-cyan-aura hover:border-cyan-aura'}`}
                                                     >
-                                                        <option value="">-- เลือก --</option>
-                                                        <option value={formData.teamBlue}>{formData.teamBlue}</option>
-                                                        <option value={formData.teamRed}>{formData.teamRed}</option>
-                                                    </select>
+                                                        <i className={`fas ${gamesStats[index] ? 'fa-check-circle' : 'fa-chart-bar'} mr-1`}></i>
+                                                        {gamesStats[index] ? 'บันทึกสถิติแล้ว' : 'บันทึกสถิติผู้เล่น'}
+                                                    </button>
                                                 </div>
 
-                                                {/* Duration */}
-                                                <div>
-                                                    <label className="block text-xs text-gray-500 mb-1">ระยะเวลา (นาที)</label>
-                                                    <input
-                                                        type="number"
-                                                        min="5"
-                                                        max="60"
-                                                        value={gameDetails[index].duration}
-                                                        onChange={(e) => updateGameDetail(index, 'duration', e.target.value)}
-                                                        className="w-full p-2 border border-gray-300 rounded-lg focus:border-cyan-aura focus:outline-none"
-                                                    />
-                                                </div>
+                                                <div className="grid md:grid-cols-3 gap-3">
+                                                    {/* Winner Selection */}
+                                                    <div>
+                                                        <label className="block text-xs text-gray-500 mb-1">ผู้ชนะ</label>
+                                                        <select
+                                                            value={gameDetails[index].winner}
+                                                            onChange={(e) => updateGameDetail(index, 'winner', e.target.value)}
+                                                            className="w-full p-2 border border-gray-300 rounded-lg focus:border-cyan-aura focus:outline-none"
+                                                        >
+                                                            <option value="">-- เลือก --</option>
+                                                            <option value={formData.teamBlue}>{formData.teamBlue}</option>
+                                                            <option value={formData.teamRed}>{formData.teamRed}</option>
+                                                        </select>
+                                                    </div>
 
-                                                {/* MVP Player */}
-                                                <div>
-                                                    <label className="block text-xs text-gray-500 mb-1">MVP (ชื่อผู้เล่น)</label>
-                                                    <input
-                                                        type="text"
-                                                        placeholder="ชื่อผู้เล่น MVP"
-                                                        value={gameDetails[index].mvpPlayer}
-                                                        onChange={(e) => updateGameDetail(index, 'mvpPlayer', e.target.value)}
-                                                        className="w-full p-2 border border-gray-300 rounded-lg focus:border-cyan-aura focus:outline-none"
-                                                    />
+                                                    {/* Duration */}
+                                                    <div>
+                                                        <label className="block text-xs text-gray-500 mb-1">ระยะเวลา (นาที)</label>
+                                                        <input
+                                                            type="number"
+                                                            min="5"
+                                                            max="60"
+                                                            value={gameDetails[index].duration}
+                                                            onChange={(e) => updateGameDetail(index, 'duration', e.target.value)}
+                                                            className="w-full p-2 border border-gray-300 rounded-lg focus:border-cyan-aura focus:outline-none"
+                                                        />
+                                                    </div>
+
+                                                    {/* MVP Player Select */}
+                                                    <div>
+                                                        <label className="block text-xs text-gray-500 mb-1">MVP (ชื่อในเกม)</label>
+                                                        {winnerName && winnerRoster.length > 0 ? (
+                                                            <select
+                                                                value={gameDetails[index].mvpPlayer}
+                                                                onChange={(e) => updateGameDetail(index, 'mvpPlayer', e.target.value)}
+                                                                className="w-full p-2 border border-gray-300 rounded-lg focus:border-cyan-aura focus:outline-none"
+                                                            >
+                                                                <option value="">-- เลือก MVP ({winnerName}) --</option>
+                                                                {winnerRoster.map(p => {
+                                                                    const val = p.inGameName || p.name;
+                                                                    const label = p.inGameName ? `${p.inGameName} (${p.name})` : p.name;
+                                                                    return (
+                                                                        <option key={p._id} value={val}>{label}</option>
+                                                                    );
+                                                                })}
+                                                                <option value="Manual">-- พิมพ์เอง --</option>
+                                                            </select>
+                                                        ) : (
+                                                            <input
+                                                                type="text"
+                                                                placeholder="เลือกทีมชนะก่อน..."
+                                                                disabled={!winnerName}
+                                                                value={gameDetails[index].mvpPlayer}
+                                                                onChange={(e) => updateGameDetail(index, 'mvpPlayer', e.target.value)}
+                                                                className="w-full p-2 border border-gray-300 rounded-lg focus:border-cyan-aura focus:outline-none disabled:bg-gray-100"
+                                                            />
+                                                        )}
+                                                        {gameDetails[index].mvpPlayer === 'Manual' && (
+                                                            <input
+                                                                type="text"
+                                                                placeholder="พิมพ์ชื่อในเกม..."
+                                                                value=""
+                                                                onChange={(e) => updateGameDetail(index, 'mvpPlayer', e.target.value)}
+                                                                className="w-full p-2 mt-1 border border-gray-300 rounded-lg focus:border-cyan-aura focus:outline-none"
+                                                                autoFocus
+                                                            />
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    ))}
+                                        )
+                                    })}
                                 </div>
                             )}
 
@@ -714,6 +770,7 @@ export default function AdminResults() {
                 gameNumber={editingGameIndex + 1}
                 initialData={gamesStats[editingGameIndex]}
                 onSave={handleStatsSave}
+                allPlayers={allPlayers}
             />
 
 

@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { fetchSeasonStats, fetchTeamStats, fetchPlayerStats } from '../services/api';
+import { useLanguage } from '../context/LanguageContext';
 import TeamLogo from '../components/common/TeamLogo';
 import { StatsSkeleton, TableSkeleton } from '../components/common/Skeleton';
 import { ErrorState, EmptyState } from '../components/common/States';
 
 function SeasonStats() {
+    const { t } = useLanguage();
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -18,10 +20,10 @@ function SeasonStats() {
     }, []);
 
     if (loading) return <StatsSkeleton />;
-    if (error) return <ErrorState title="ไม่สามารถโหลดสถิติได้" message={error} />;
-    if (!stats) return <EmptyState title="ยังไม่มีข้อมูล" message="ยังไม่มีสถิติในระบบ" />;
+    // Error handled in render
+    if (!stats && !loading && !error) return <EmptyState title={t.common.noData} message="" />;
 
-    const duration = stats.avgGameDuration || 0;
+    const duration = stats?.avgGameDuration || 0;
     const minutes = Math.floor(duration / 60);
     const seconds = Math.round(duration % 60);
     const timeStr = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
@@ -29,26 +31,29 @@ function SeasonStats() {
     return (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="bg-white p-6 rounded shadow border-t-4 border-cyan-aura">
-                <p className="text-gray-500 uppercase text-xs font-bold mb-2">Total Kills</p>
+                <p className="text-gray-500 uppercase text-xs font-bold mb-2">{t.stats.totalKills}</p>
                 <div className="text-5xl font-display font-bold text-uefa-dark">
-                    {(stats.totalKills || 0).toLocaleString()}
+                    {error ? <span className="text-gray-300 text-4xl">-</span> : (stats?.totalKills || 0).toLocaleString()}
                 </div>
             </div>
             <div className="bg-white p-6 rounded shadow border-t-4 border-cyan-aura">
-                <p className="text-gray-500 uppercase text-xs font-bold mb-2">Total Deaths</p>
+                <p className="text-gray-500 uppercase text-xs font-bold mb-2">{t.stats.totalDeaths}</p>
                 <div className="text-5xl font-display font-bold text-uefa-dark">
-                    {(stats.totalDeaths || 0).toLocaleString()}
+                    {error ? <span className="text-gray-300 text-4xl">-</span> : (stats?.totalDeaths || 0).toLocaleString()}
                 </div>
             </div>
             <div className="bg-white p-6 rounded shadow border-t-4 border-cyan-aura">
-                <p className="text-gray-500 uppercase text-xs font-bold mb-2">Avg Game Time</p>
-                <div className="text-5xl font-display font-bold text-uefa-dark">{timeStr}</div>
+                <p className="text-gray-500 uppercase text-xs font-bold mb-2">{t.stats.avgGameTime}</p>
+                <div className="text-5xl font-display font-bold text-uefa-dark">
+                    {error ? <span className="text-gray-300 text-4xl">-</span> : timeStr}
+                </div>
             </div>
         </div>
     );
 }
 
 function TeamStats() {
+    const { t } = useLanguage();
     const [stats, setStats] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -60,27 +65,36 @@ function TeamStats() {
             .finally(() => setLoading(false));
     }, []);
 
-    if (error) return <ErrorState title="ไม่สามารถโหลดสถิติทีมได้" message={error} />;
+    // Error logic moved to table render
 
     return (
         <div className="bg-white shadow-sm rounded-lg overflow-hidden">
             <table className="w-full uefa-table">
                 <thead>
                     <tr>
-                        <th className="p-4 text-left">Club</th>
-                        <th className="p-4 text-center">Games</th>
-                        <th className="p-4 text-center">Win</th>
-                        <th className="p-4 text-center">Lose</th>
-                        <th className="p-4 text-center">Win Rate</th>
-                        <th className="p-4 text-center" title="(Total Kills + Assists) / Total Deaths">Team KDA</th>
+                        <th className="p-4 text-left">{t.standings.club}</th>
+                        <th className="p-4 text-center">{t.stats.games}</th>
+                        <th className="p-4 text-center">{t.stats.wins}</th>
+                        <th className="p-4 text-center">{t.stats.losses}</th>
+                        <th className="p-4 text-center">{t.stats.winRate}</th>
+                        <th className="p-4 text-center" title="(Total Kills + Assists) / Total Deaths">Team {t.stats.kda}</th>
                     </tr>
                 </thead>
                 {loading ? (
                     <TableSkeleton rows={8} cols={6} />
+                ) : error ? (
+                    <tbody>
+                        <tr>
+                            <td colSpan="6" className="p-8 text-center text-red-500 font-bold">
+                                <i className="fas fa-exclamation-triangle mr-2"></i>
+                                {t.common.error}: {error}
+                            </td>
+                        </tr>
+                    </tbody>
                 ) : (
                     <tbody>
                         {stats.length === 0 ? (
-                            <tr><td colSpan="6" className="p-8 text-center text-gray-500">ยังไม่มีข้อมูลสถิติทีม</td></tr>
+                            <tr><td colSpan="6" className="p-8 text-center text-gray-500">{t.common.noData}</td></tr>
                         ) : (
                             stats.map(t => {
                                 // Team KDA Calculation
@@ -120,6 +134,7 @@ function TeamStats() {
 }
 
 function PlayerStats() {
+    const { t } = useLanguage();
     const [stats, setStats] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -132,7 +147,7 @@ function PlayerStats() {
             .finally(() => setLoading(false));
     }, []);
 
-    if (error) return <ErrorState title="ไม่สามารถโหลดสถิติผู้เล่นได้" message={error} />;
+    // Error logic moved to table render
 
     return (
         <div className="bg-white shadow-sm rounded-lg overflow-hidden overflow-x-auto">
@@ -140,23 +155,32 @@ function PlayerStats() {
                 <thead>
                     <tr>
                         <th className="p-4 text-center w-16">#</th>
-                        <th className="p-4 text-left">Player</th>
-                        <th className="p-4 text-left">Team</th>
-                        <th className="p-4 text-center" title="Games Played">G</th>
+                        <th className="p-4 text-left">{t.stats.playerShort}</th>
+                        <th className="p-4 text-left">{t.stats.team}</th>
+                        <th className="p-4 text-center" title="Games Played">{t.stats.games}</th>
                         <th className="p-4 text-center text-blue-600" title="Total Kills">K</th>
                         <th className="p-4 text-center text-red-600" title="Total Deaths">D</th>
                         <th className="p-4 text-center text-green-600" title="Total Assists">A</th>
-                        <th className="p-4 text-right" title="Total Damage Dealt">Damage</th>
-                        <th className="p-4 text-right" title="Total Damage Taken">Taken</th>
-                        <th className="p-4 text-center font-bold text-cyan-aura" title="KDA Ratio">KDA</th>
+                        <th className="p-4 text-right" title="Total Damage Dealt">{t.stats.damage}</th>
+                        <th className="p-4 text-right" title="Total Damage Taken">{t.stats.taken}</th>
+                        <th className="p-4 text-center font-bold text-cyan-aura" title="KDA Ratio">{t.stats.kda}</th>
                     </tr>
                 </thead>
                 {loading ? (
                     <TableSkeleton rows={10} cols={10} />
+                ) : error ? (
+                    <tbody>
+                        <tr>
+                            <td colSpan="10" className="p-8 text-center text-red-500 font-bold">
+                                <i className="fas fa-exclamation-triangle mr-2"></i>
+                                {t.common.error}: {error}
+                            </td>
+                        </tr>
+                    </tbody>
                 ) : (
                     <tbody>
                         {stats.length === 0 ? (
-                            <tr><td colSpan="10" className="p-8 text-center text-gray-500">ยังไม่มีข้อมูลสถิติผู้เล่น</td></tr>
+                            <tr><td colSpan="10" className="p-8 text-center text-gray-500">{t.common.noData}</td></tr>
                         ) : (
                             stats.slice(0, 50).map((p, idx) => (
                                 <tr key={`${p.teamName}-${p.playerName}`} className={`hover:bg-echo-white transition ${idx < 3 ? 'bg-yellow-50/40' : ''}`}>
@@ -194,13 +218,14 @@ function PlayerStats() {
 }
 
 export default function StatsPage() {
+    const { t } = useLanguage();
     const location = useLocation();
     const path = location.pathname;
 
     const tabs = [
-        { path: '/stats', label: 'Season' },
-        { path: '/stats/team', label: 'Club' },
-        { path: '/stats/player', label: 'Player' },
+        { path: '/stats', label: t.stats.season },
+        { path: '/stats/team', label: t.stats.team },
+        { path: '/stats/player', label: t.stats.playerShort },
     ];
 
     return (
@@ -209,7 +234,7 @@ export default function StatsPage() {
             <div className="bg-uefa-dark py-12 mb-8">
                 <div className="container mx-auto px-4">
                     <h1 className="text-4xl md:text-5xl font-display font-bold text-white uppercase">
-                        Statistics
+                        {t.stats.title}
                     </h1>
 
                     {/* Sub-nav */}
@@ -229,9 +254,9 @@ export default function StatsPage() {
 
             <div className="container mx-auto px-4 pb-12">
                 <h2 className="text-2xl font-display font-bold text-uefa-dark mb-6 border-l-4 border-cyan-aura pl-3">
-                    {path === '/stats' && 'Key Performance Indicators'}
-                    {path === '/stats/team' && 'Club Rankings'}
-                    {path === '/stats/player' && 'Top Players'}
+                    {path === '/stats' && t.stats.kpi}
+                    {path === '/stats/team' && t.stats.club}
+                    {path === '/stats/player' && t.stats.player}
                 </h2>
 
                 {path === '/stats' && <SeasonStats />}
