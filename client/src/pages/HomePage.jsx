@@ -64,44 +64,74 @@ function HeroCarousel() {
 }
 
 function LatestMatches() {
-    // ... (unchanged logic)
     const { schedule, results, loading, error } = useData();
 
     if (loading) return <MatchSkeleton count={4} />;
     if (error) return <ErrorState title="ไม่สามารถโหลดข้อมูลได้" message={error} onRetry={() => window.location.reload()} />;
 
-    const dayData = schedule.find(r => r.day === 1);
-    if (!dayData) return null;
+    // Get all matches with results, sorted by matchDay descending (most recent first)
+    const matchesWithResults = [];
+    schedule.forEach(round => {
+        (round.matches || []).forEach(m => {
+            const matchKey = `${round.day}_${m.blue}_vs_${m.red}`.replace(/\s+/g, '');
+            const result = results.find(r => r.matchId === matchKey);
+            if (result) {
+                matchesWithResults.push({ match: m, result, day: round.day });
+            }
+        });
+    });
 
-    return (
-        <div className="space-y-3">
-            {dayData.matches.slice(0, 4).map((m, i) => {
-                const matchKey = `${dayData.day}_${m.blue}_vs_${m.red}`.replace(/\s+/g, '');
-                const result = results.find(r => r.matchId === matchKey);
+    // Sort by day descending and take latest 4
+    const latestMatches = matchesWithResults
+        .sort((a, b) => b.day - a.day)
+        .slice(0, 4);
 
-                return (
-                    <div
-                        key={i}
-                        className={`bg-white border border-gray-100 p-3 flex items-center justify-between shadow-sm hover:shadow-md transition ${result ? 'border-l-4 border-l-cyan-aura' : ''}`}
-                    >
+    // If no results yet, show first scheduled matches
+    if (latestMatches.length === 0) {
+        const dayData = schedule.find(r => r.day === 1);
+        if (!dayData) return null;
+
+        return (
+            <div className="space-y-3">
+                {dayData.matches.slice(0, 4).map((m, i) => (
+                    <div key={i} className="bg-white border border-gray-100 p-3 flex items-center justify-between shadow-sm hover:shadow-md transition">
                         <div className="flex-1 flex items-center justify-end font-bold text-sm text-gray-700">
                             <span className="mr-2">{m.blue}</span>
                             <TeamLogo teamName={m.blue} size="sm" />
                         </div>
                         <div className="px-3 flex items-center justify-center bg-gray-50 rounded mx-2 h-8 min-w-[60px]">
-                            {result ? (
-                                <span className="font-bold text-uefa-dark">{result.scoreBlue} - {result.scoreRed}</span>
-                            ) : (
-                                <span className="text-xs text-gray-400 font-bold">VS</span>
-                            )}
+                            <span className="text-xs text-gray-400 font-bold">VS</span>
                         </div>
                         <div className="flex-1 flex items-center justify-start font-bold text-sm text-gray-700">
                             <TeamLogo teamName={m.red} size="sm" />
                             <span className="ml-2">{m.red}</span>
                         </div>
                     </div>
-                );
-            })}
+                ))}
+            </div>
+        );
+    }
+
+    return (
+        <div className="space-y-3">
+            {latestMatches.map(({ match: m, result }, i) => (
+                <div
+                    key={i}
+                    className={`bg-white border border-gray-100 p-3 flex items-center justify-between shadow-sm hover:shadow-md transition ${result ? 'border-l-4 border-l-cyan-aura' : ''}`}
+                >
+                    <div className="flex-1 flex items-center justify-end font-bold text-sm text-gray-700">
+                        <span className="mr-2">{m.blue}</span>
+                        <TeamLogo teamName={m.blue} size="sm" />
+                    </div>
+                    <div className="px-3 flex items-center justify-center bg-gray-50 rounded mx-2 h-8 min-w-[60px]">
+                        <span className="font-bold text-uefa-dark">{result.scoreBlue} - {result.scoreRed}</span>
+                    </div>
+                    <div className="flex-1 flex items-center justify-start font-bold text-sm text-gray-700">
+                        <TeamLogo teamName={m.red} size="sm" />
+                        <span className="ml-2">{m.red}</span>
+                    </div>
+                </div>
+            ))}
         </div>
     );
 }
