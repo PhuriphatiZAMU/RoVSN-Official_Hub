@@ -48,6 +48,92 @@ h6 {
   color: #0a1628;
 }
 
+/* ================================================
+   🌙 DARK MODE STYLES
+   Applied when html has .dark class
+   ================================================ */
+
+/* Dark Mode - Global */
+.dark body {
+  background-color: #0a1628;
+  color: #E8F7FF;
+}
+
+/* Dark Mode - Main content backgrounds */
+.dark .bg-white {
+  background-color: #0f1f35 !important;
+}
+
+.dark .bg-gray-50 {
+  background-color: #0a1628 !important;
+}
+
+.dark .bg-gray-100 {
+  background-color: #0f1f35 !important;
+}
+
+/* Dark Mode - Text colors */
+.dark .text-gray-700,
+.dark .text-gray-600,
+.dark .text-gray-500 {
+  color: #94a3b8 !important;
+}
+
+.dark .text-gray-400 {
+  color: #64748b !important;
+}
+
+.dark .text-uefa-dark {
+  color: #E8F7FF !important;
+}
+
+.dark .text-black {
+  color: #E8F7FF !important;
+}
+
+/* Dark Mode - Borders */
+.dark .border-gray-100,
+.dark .border-gray-200 {
+  border-color: #1e3a5f !important;
+}
+
+/* Dark Mode - Tables */
+.dark .uefa-table th {
+  background: linear-gradient(180deg, #0f1f35 0%, #0a1628 100%);
+  color: #E8F7FF;
+}
+
+.dark .uefa-table tr {
+  border-bottom-color: #1e3a5f;
+}
+
+.dark .uefa-table tr:hover {
+  background: linear-gradient(90deg, rgba(21, 200, 255, 0.1) 0%, transparent 100%);
+}
+
+.dark .uefa-table td:first-child {
+  background-color: #0f1f35 !important;
+}
+
+/* Dark Mode - Cards */
+.dark .shadow-sm {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+}
+
+.dark .shadow-md {
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* Dark Mode - Scrollbar */
+.dark ::-webkit-scrollbar-track {
+  background: #0a1628;
+}
+
+/* Dark Mode - Skeleton loading */
+.dark .skeleton {
+  background: linear-gradient(90deg, #1e3a5f 25%, #2d4a6f 50%, #1e3a5f 75%);
+}
+
 /* --- NAVBAR --- */
 .navbar-custom {
   background: linear-gradient(180deg, #0f1f35 0%, #0a1628 100%);

@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { useLanguage } from '../../context/LanguageContext';
+import { useTheme } from '../../context/ThemeContext';
 
 export default function Navbar() {
     const [isOpen, setIsOpen] = useState(false);
     const { t, language, toggleLanguage } = useLanguage();
+    const { isDark, toggleTheme } = useTheme();
 
     const navItems = [
         { path: '/', label: t.nav.home },
@@ -54,10 +56,23 @@ export default function Navbar() {
                         </NavLink>
                     ))}
 
+                    {/* Theme Toggle (Desktop) */}
+                    <button
+                        onClick={toggleTheme}
+                        className="p-2 rounded-full border border-cyan-aura/30 text-cyan-aura hover:bg-cyan-aura hover:text-uefa-dark transition-all"
+                        aria-label="Toggle dark mode"
+                    >
+                        {isDark ? (
+                            <i className="fas fa-sun text-sm"></i>
+                        ) : (
+                            <i className="fas fa-moon text-sm"></i>
+                        )}
+                    </button>
+
                     {/* Language Switcher (Desktop) */}
                     <button
                         onClick={toggleLanguage}
-                        className="ml-4 px-3 py-1 border border-cyan-aura/30 rounded text-xs font-bold text-cyan-aura hover:bg-cyan-aura hover:text-uefa-dark transition-all"
+                        className="px-3 py-1 border border-cyan-aura/30 rounded text-xs font-bold text-cyan-aura hover:bg-cyan-aura hover:text-uefa-dark transition-all"
                     >
                         {language === 'th' ? 'EN' : 'TH'}
                     </button>
@@ -109,6 +124,19 @@ export default function Navbar() {
                     <span className="font-display font-bold text-white text-lg">Menu</span>
 
                     <div className="flex items-center gap-3">
+                        {/* Theme Toggle (Mobile) */}
+                        <button
+                            onClick={toggleTheme}
+                            className="p-2 rounded-full border border-cyan-aura/30 text-cyan-aura hover:bg-cyan-aura hover:text-uefa-dark transition-all"
+                            aria-label="Toggle dark mode"
+                        >
+                            {isDark ? (
+                                <i className="fas fa-sun text-sm"></i>
+                            ) : (
+                                <i className="fas fa-moon text-sm"></i>
+                            )}
+                        </button>
+
                         {/* Language Switcher (Mobile Panel) */}
                         <button
                             onClick={toggleLanguage}
