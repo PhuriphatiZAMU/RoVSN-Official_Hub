@@ -61,6 +61,7 @@ export default function AdminResults() {
 
     // --- NEW: Player Pool Data for Auto-complete ---
     const [allPlayers, setAllPlayers] = useState([]);
+    const [allHeroes, setAllHeroes] = useState([]);
 
     useEffect(() => {
         const fetchPlayersPool = async () => {
@@ -75,6 +76,17 @@ export default function AdminResults() {
                 }
             } catch (err) {
                 console.error("Failed to load player pool:", err);
+            }
+
+            // Fetch heroes
+            try {
+                const heroRes = await fetch(`${API_BASE_URL}/heroes`);
+                if (heroRes.ok) {
+                    const heroData = await heroRes.json();
+                    setAllHeroes(heroData);
+                }
+            } catch (err) {
+                console.error("Failed to load heroes:", err);
             }
         };
         if (token) fetchPlayersPool();
@@ -388,10 +400,11 @@ export default function AdminResults() {
                             gameNumber: gameNum,
                             teamName: formData.teamBlue,
                             playerName: p.name,
+                            heroName: p.hero || '',  // Hero selection [NEW]
                             kills: p.k, deaths: p.d, assists: p.a,
                             damage: p.damage, damageTaken: p.damageTaken,
                             gold: p.gold || 0,
-                            mvp: gameDetails[gameIndex]?.mvpPlayer === p.name, // Auto check MVP based on name match
+                            mvp: gameDetails[gameIndex]?.mvpPlayer === p.name,
                             gameDuration: parseInt(gameDetails[gameIndex]?.duration) || 15,
                             win: gameDetails[gameIndex]?.winner === formData.teamBlue
                         });
@@ -404,6 +417,7 @@ export default function AdminResults() {
                             gameNumber: gameNum,
                             teamName: formData.teamRed,
                             playerName: p.name,
+                            heroName: p.hero || '',  // Hero selection [NEW]
                             kills: p.k, deaths: p.d, assists: p.a,
                             damage: p.damage, damageTaken: p.damageTaken,
                             gold: p.gold || 0,
@@ -772,6 +786,7 @@ export default function AdminResults() {
                 initialData={gamesStats[editingGameIndex]}
                 onSave={handleStatsSave}
                 allPlayers={allPlayers}
+                allHeroes={allHeroes}
             />
 
 

@@ -80,6 +80,7 @@ const GameStatSchema = new mongoose.Schema({
     gameNumber: Number,
     teamName: String,
     playerName: String,
+    heroName: String,        // ชื่อฮีโร่ที่ใช้ [NEW]
     kills: Number,
     deaths: Number,
     assists: Number,
@@ -102,6 +103,14 @@ const TeamLogoSchema = new mongoose.Schema({
 // บังคับชื่อ Collection ว่า 'teamlogo' ตามที่คุณระบุ
 const TeamLogo = mongoose.model('TeamLogo', TeamLogoSchema, 'teamlogo');
 
+// 5. Hero Schema (เก็บข้อมูลฮีโร่) [NEW]
+const HeroSchema = new mongoose.Schema({
+    name: { type: String, required: true, unique: true },   // ชื่อฮีโร่ (ดึงจากชื่อไฟล์)
+    imageUrl: String,     // URL รูปภาพฮีโร่
+    createdAt: { type: Date, default: Date.now }
+});
+const Hero = mongoose.model('Hero', HeroSchema, 'heroes');
+
 // --- File Upload Config ---
 const uploadDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadDir)) {
@@ -114,16 +123,29 @@ app.use('/uploads', express.static(uploadDir));
 // Multer Storage
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        cb(null, 'uploads/')
+        cb(null, uploadDir)  // Use absolute path
     },
     filename: function (req, file, cb) {
-        // Safe filename: teamname-timestamp.ext
+        // Safe filename: hero-timestamp.ext
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, 'logo-' + uniqueSuffix + path.extname(file.originalname));
+        cb(null, 'hero-' + uniqueSuffix + path.extname(file.originalname));
     }
 });
 
-const upload = multer({ storage: storage });
+// File filter for images only
+const fileFilter = (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+        cb(null, true);
+    } else {
+        cb(new Error('Only image files are allowed'), false);
+    }
+};
+
+const upload = multer({
+    storage: storage,
+    fileFilter: fileFilter,
+    limits: { fileSize: 10 * 1024 * 1024 } // 10MB max per file
+});
 
 // Upload Endpoint
 
@@ -583,6 +605,160 @@ app.delete('/api/players/all/clear', authenticateToken, async (req, res) => {
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
+});
+
+// ==================== HERO API ====================
+
+// GET: List all heroes
+app.get('/api/heroes', async (req, res) => {
+    try {
+        const heroes = await Hero.find().sort({ name: 1 });
+        res.json(heroes);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// POST: Upload multiple hero images (Protected)
+app.post('/api/heroes/upload', authenticateToken, upload.any(), async (req, res) => {
+    try {
+        if (!req.files || req.files.length === 0) {
+            return res.status(400).json({ error: 'No files uploaded' });
+        }
+
+        const results = [];
+        const errors = [];
+
+        for (const file of req.files) {
+            // Extract hero name from filename (remove extension)
+            const heroName = path.basename(file.originalname, path.extname(file.originalname));
+            const imageUrl = `${req.protocol}://${req.get('host')}/uploads/${file.filename}`;
+
+            try {
+                // Upsert: Update if exists, create if not
+                const hero = await Hero.findOneAndUpdate(
+                    { name: heroName },
+                    { name: heroName, imageUrl: imageUrl },
+                    { upsert: true, new: true }
+                );
+                results.push(hero);
+            } catch (err) {
+                errors.push({ file: file.originalname, error: err.message });
+            }
+        }
+
+        res.status(201).json({
+            message: `Uploaded ${results.length} heroes`,
+            heroes: results,
+            errors: errors.length > 0 ? errors : undefined
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// PUT: Update hero (Protected)
+app.put('/api/heroes/:id', authenticateToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const updated = await Hero.findByIdAndUpdate(id, req.body, { new: true });
+        if (!updated) {
+            return res.status(404).json({ error: 'Hero not found' });
+        }
+        res.json(updated);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// DELETE: Delete single hero (Protected)
+app.delete('/api/heroes/:id', authenticateToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const deleted = await Hero.findByIdAndDelete(id);
+        if (!deleted) {
+            return res.status(404).json({ error: 'Hero not found' });
+        }
+        res.json({ message: 'Hero deleted', hero: deleted });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// DELETE: Clear all heroes (Protected)
+app.delete('/api/heroes/all/clear', authenticateToken, async (req, res) => {
+    try {
+        const result = await Hero.deleteMany({});
+        res.json({ message: 'All heroes cleared', deletedCount: result.deletedCount });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// GET: Player hero stats (most played heroes per player)
+app.get('/api/player-hero-stats', async (req, res) => {
+    try {
+        const stats = await GameStat.aggregate([
+            { $match: { heroName: { $exists: true, $ne: null, $ne: '' } } },
+            {
+                $group: {
+                    _id: { playerName: "$playerName", heroName: "$heroName" },
+                    gamesPlayed: { $sum: 1 },
+                    wins: { $sum: { $cond: ["$win", 1, 0] } },
+                    totalKills: { $sum: "$kills" },
+                    totalDeaths: { $sum: "$deaths" },
+                    totalAssists: { $sum: "$assists" }
+                }
+            },
+            {
+                $group: {
+                    _id: "$_id.playerName",
+                    heroes: {
+                        $push: {
+                            heroName: "$_id.heroName",
+                            gamesPlayed: "$gamesPlayed",
+                            wins: "$wins",
+                            winRate: { $multiply: [{ $divide: ["$wins", "$gamesPlayed"] }, 100] },
+                            kda: {
+                                $cond: [
+                                    { $eq: ["$totalDeaths", 0] },
+                                    { $add: ["$totalKills", "$totalAssists"] },
+                                    { $divide: [{ $add: ["$totalKills", "$totalAssists"] }, "$totalDeaths"] }
+                                ]
+                            }
+                        }
+                    }
+                }
+            },
+            {
+                $project: {
+                    playerName: "$_id",
+                    topHeroes: {
+                        $slice: [
+                            { $sortArray: { input: "$heroes", sortBy: { gamesPlayed: -1 } } },
+                            3
+                        ]
+                    }
+                }
+            }
+        ]);
+        res.json(stats);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Global Error Handler (for Multer and other errors)
+app.use((err, req, res, next) => {
+    console.error('Error:', err);
+    if (err instanceof multer.MulterError) {
+        // Multer-specific error
+        return res.status(400).json({ error: `Upload error: ${err.message}` });
+    } else if (err) {
+        // General error
+        return res.status(500).json({ error: err.message });
+    }
+    next();
 });
 
 // Start Server

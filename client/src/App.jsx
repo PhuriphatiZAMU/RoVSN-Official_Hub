@@ -23,6 +23,7 @@ import AdminDraw from './pages/admin/AdminDraw';
 import AdminResults from './pages/admin/AdminResults';
 import AdminLogos from './pages/admin/AdminLogos';
 import AdminPlayersPage from './pages/admin/AdminPlayersPage';
+import AdminHeroesPage from './pages/admin/AdminHeroesPage';
 
 // Auth
 import ProtectedRoute from './components/auth/ProtectedRoute';
@@ -63,6 +64,7 @@ function App() {
                   <Route path="draw" element={<AdminDraw />} />
                   <Route path="results" element={<AdminResults />} />
                   <Route path="players" element={<AdminPlayersPage />} />
+                  <Route path="heroes" element={<AdminHeroesPage />} />
                   <Route path="logos" element={<AdminLogos />} />
                 </Route>
               </Routes>

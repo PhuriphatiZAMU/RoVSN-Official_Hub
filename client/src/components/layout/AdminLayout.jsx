@@ -11,7 +11,7 @@ export default function AdminLayout() {
         { path: '/admin/draw', label: 'จับสลาก', icon: 'fas fa-random' },
         { path: '/admin/results', label: 'ผลการแข่งขัน', icon: 'fas fa-trophy' },
         { path: '/admin/players', label: 'ทะเบียนผู้เล่น', icon: 'fas fa-users' },
-
+        { path: '/admin/heroes', label: 'ฮีโร่', icon: 'fas fa-mask' },
     ];
 
     const handleLogout = () => {

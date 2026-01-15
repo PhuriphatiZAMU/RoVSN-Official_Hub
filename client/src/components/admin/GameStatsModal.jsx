@@ -1,19 +1,21 @@
 import { useState, useEffect } from 'react';
 
-export default function GameStatsModal({ isOpen, onClose, teamBlue, teamRed, gameNumber, initialData, onSave, allPlayers = [] }) {
+export default function GameStatsModal({ isOpen, onClose, teamBlue, teamRed, gameNumber, initialData, onSave, allPlayers = [], allHeroes = [] }) {
     if (!isOpen) return null;
 
     // Filter Rosters for Autocomplete
     const blueRoster = allPlayers.filter(p => p.team === teamBlue);
     const redRoster = allPlayers.filter(p => p.team === teamRed);
 
-    // Default structure: 5 players per team
+    // Default structure: 5 players per team (now includes hero)
     const createEmptyPlayers = () => Array(5).fill(null).map(() => ({
-        name: '', k: 0, d: 0, a: 0, damage: 0, damageTaken: 0, gold: 0
+        name: '', hero: '', k: 0, d: 0, a: 0, damage: 0, damageTaken: 0, gold: 0
     }));
 
     const [bluePlayers, setBluePlayers] = useState([]);
     const [redPlayers, setRedPlayers] = useState([]);
+    const [heroPickerOpen, setHeroPickerOpen] = useState({ open: false, team: null, index: null });
+    const [heroSearch, setHeroSearch] = useState('');
 
     // Reset state when modal opens
     useEffect(() => {
@@ -40,9 +42,52 @@ export default function GameStatsModal({ isOpen, onClose, teamBlue, teamRed, gam
         onClose();
     };
 
+    // Open hero picker
+    const openHeroPicker = (team, index) => {
+        setHeroPickerOpen({ open: true, team, index });
+        setHeroSearch('');
+    };
+
+    // Select hero
+    const selectHero = (heroName) => {
+        handleChange(heroPickerOpen.team, heroPickerOpen.index, 'hero', heroName);
+        setHeroPickerOpen({ open: false, team: null, index: null });
+    };
+
+    // Get hero image URL
+    const getHeroImage = (heroName) => {
+        const hero = allHeroes.find(h => h.name === heroName);
+        return hero?.imageUrl || null;
+    };
+
+    // Filter heroes by search
+    const filteredHeroes = allHeroes.filter(h =>
+        h.name.toLowerCase().includes(heroSearch.toLowerCase())
+    );
+
     // Table Row Component
     const PlayerRow = ({ player, index, team }) => (
         <tr className="border-b hover:bg-gray-50">
+            {/* Hero Selection */}
+            <td className="p-2">
+                <button
+                    type="button"
+                    onClick={() => openHeroPicker(team, index)}
+                    className={`w-10 h-10 rounded-lg border-2 overflow-hidden transition-all hover:scale-105 ${player.hero ? 'border-cyan-aura' : 'border-gray-300 border-dashed bg-gray-100'}`}
+                    title={player.hero || 'เลือกฮีโร่'}
+                >
+                    {player.hero && getHeroImage(player.hero) ? (
+                        <img
+                            src={getHeroImage(player.hero)}
+                            alt={player.hero}
+                            className="w-full h-full object-cover"
+                            onError={(e) => { e.target.parentNode.innerHTML = '<i class="fas fa-mask text-gray-400"></i>'; }}
+                        />
+                    ) : (
+                        <i className="fas fa-plus text-gray-400 text-xs"></i>
+                    )}
+                </button>
+            </td>
             <td className="p-2">
                 <input
                     type="text"
@@ -55,23 +100,23 @@ export default function GameStatsModal({ isOpen, onClose, teamBlue, teamRed, gam
                 />
             </td>
             <td className="p-2">
-                <input type="number" min="0" className="w-16 px-1 py-1 border border-gray-300 rounded text-center focus:border-cyan-aura focus:outline-none"
+                <input type="number" min="0" className="w-14 px-1 py-1 border border-gray-300 rounded text-center focus:border-cyan-aura focus:outline-none"
                     value={player.k} onChange={(e) => handleChange(team, index, 'k', parseInt(e.target.value) || 0)} />
             </td>
             <td className="p-2">
-                <input type="number" min="0" className="w-16 px-1 py-1 border border-gray-300 rounded text-center focus:border-cyan-aura focus:outline-none"
+                <input type="number" min="0" className="w-14 px-1 py-1 border border-gray-300 rounded text-center focus:border-cyan-aura focus:outline-none"
                     value={player.d} onChange={(e) => handleChange(team, index, 'd', parseInt(e.target.value) || 0)} />
             </td>
             <td className="p-2">
-                <input type="number" min="0" className="w-16 px-1 py-1 border border-gray-300 rounded text-center focus:border-cyan-aura focus:outline-none"
+                <input type="number" min="0" className="w-14 px-1 py-1 border border-gray-300 rounded text-center focus:border-cyan-aura focus:outline-none"
                     value={player.a} onChange={(e) => handleChange(team, index, 'a', parseInt(e.target.value) || 0)} />
             </td>
             <td className="p-2">
-                <input type="number" min="0" className="w-24 px-1 py-1 border border-gray-300 rounded text-center focus:border-cyan-aura focus:outline-none"
+                <input type="number" min="0" className="w-20 px-1 py-1 border border-gray-300 rounded text-center focus:border-cyan-aura focus:outline-none"
                     value={player.damage} onChange={(e) => handleChange(team, index, 'damage', parseInt(e.target.value) || 0)} />
             </td>
             <td className="p-2">
-                <input type="number" min="0" className="w-24 px-1 py-1 border border-gray-300 rounded text-center focus:border-cyan-aura focus:outline-none"
+                <input type="number" min="0" className="w-20 px-1 py-1 border border-gray-300 rounded text-center focus:border-cyan-aura focus:outline-none"
                     value={player.damageTaken} onChange={(e) => handleChange(team, index, 'damageTaken', parseInt(e.target.value) || 0)} />
             </td>
         </tr>
@@ -84,7 +129,7 @@ export default function GameStatsModal({ isOpen, onClose, teamBlue, teamRed, gam
                 <datalist id="roster-blue">
                     {blueRoster.map(p => {
                         const val = p.inGameName || p.name;
-                        const label = p.inGameName ? `(${p.name})` : ''; // Show Real Name in parens as hint, Value is InGameName
+                        const label = p.inGameName ? `(${p.name})` : '';
                         return <option key={p._id} value={val}>{label}</option>;
                     })}
                 </datalist>
@@ -117,7 +162,8 @@ export default function GameStatsModal({ isOpen, onClose, teamBlue, teamRed, gam
                             <table className="w-full text-sm">
                                 <thead>
                                     <tr className="text-gray-500 border-b border-blue-200">
-                                        <th className="p-2 text-left w-40">ชื่อผู้เล่น</th>
+                                        <th className="p-2 text-center w-12">Hero</th>
+                                        <th className="p-2 text-left w-32">ชื่อผู้เล่น</th>
                                         <th className="p-2 text-center text-green-600">K</th>
                                         <th className="p-2 text-center text-red-500">D</th>
                                         <th className="p-2 text-center text-blue-500">A</th>
@@ -142,7 +188,8 @@ export default function GameStatsModal({ isOpen, onClose, teamBlue, teamRed, gam
                             <table className="w-full text-sm">
                                 <thead>
                                     <tr className="text-gray-500 border-b border-red-200">
-                                        <th className="p-2 text-left w-40">ชื่อผู้เล่น</th>
+                                        <th className="p-2 text-center w-12">Hero</th>
+                                        <th className="p-2 text-left w-32">ชื่อผู้เล่น</th>
                                         <th className="p-2 text-center text-green-600">K</th>
                                         <th className="p-2 text-center text-red-500">D</th>
                                         <th className="p-2 text-center text-blue-500">A</th>
@@ -174,6 +221,78 @@ export default function GameStatsModal({ isOpen, onClose, teamBlue, teamRed, gam
                     </button>
                 </div>
             </div>
+
+            {/* Hero Picker Modal */}
+            {heroPickerOpen.open && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50">
+                    <div className="bg-white rounded-xl w-full max-w-2xl p-6 shadow-2xl m-4 max-h-[80vh] flex flex-col">
+                        <div className="flex justify-between items-center mb-4">
+                            <h4 className="text-xl font-bold text-gray-800">
+                                <i className="fas fa-mask mr-2 text-cyan-aura"></i>
+                                เลือกฮีโร่
+                            </h4>
+                            <button
+                                onClick={() => setHeroPickerOpen({ open: false, team: null, index: null })}
+                                className="text-gray-400 hover:text-gray-600"
+                            >
+                                <i className="fas fa-times text-xl"></i>
+                            </button>
+                        </div>
+
+                        {/* Search */}
+                        <div className="relative mb-4">
+                            <i className="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                            <input
+                                type="text"
+                                placeholder="ค้นหาฮีโร่..."
+                                value={heroSearch}
+                                onChange={(e) => setHeroSearch(e.target.value)}
+                                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                                autoFocus
+                            />
+                        </div>
+
+                        {/* Hero Grid */}
+                        <div className="overflow-y-auto flex-1">
+                            {allHeroes.length === 0 ? (
+                                <div className="text-center py-8 text-gray-500">
+                                    <i className="fas fa-ghost text-4xl mb-2"></i>
+                                    <p>ยังไม่มีฮีโร่ในระบบ</p>
+                                    <p className="text-sm">ไปหน้า Admin → ฮีโร่ เพื่ออัปโหลด</p>
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-6 md:grid-cols-8 gap-2">
+                                    {/* Clear selection option */}
+                                    <button
+                                        onClick={() => selectHero('')}
+                                        className="aspect-square rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center hover:border-red-400 hover:bg-red-50 transition"
+                                        title="ไม่เลือกฮีโร่"
+                                    >
+                                        <i className="fas fa-times text-gray-400"></i>
+                                    </button>
+                                    {filteredHeroes.map(hero => (
+                                        <button
+                                            key={hero._id}
+                                            onClick={() => selectHero(hero.name)}
+                                            className="aspect-square rounded-lg overflow-hidden border-2 border-transparent hover:border-cyan-aura hover:scale-105 transition-all"
+                                            title={hero.name}
+                                        >
+                                            <img
+                                                src={hero.imageUrl}
+                                                alt={hero.name}
+                                                className="w-full h-full object-cover"
+                                                onError={(e) => {
+                                                    e.target.src = 'https://via.placeholder.com/60?text=' + encodeURIComponent(hero.name);
+                                                }}
+                                            />
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

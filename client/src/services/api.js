@@ -65,6 +65,8 @@ export const fetchTeamLogos = () => api.get('/team-logos');
 export const fetchSeasonStats = () => api.get('/season-stats');
 export const fetchTeamStats = () => api.get('/team-stats');
 export const fetchPlayerStats = () => api.get('/player-stats');
+export const fetchHeroes = () => api.get('/heroes');
+export const fetchPlayerHeroStats = () => api.get('/player-hero-stats');
 
 // Auth
 export const login = (username, password) =>

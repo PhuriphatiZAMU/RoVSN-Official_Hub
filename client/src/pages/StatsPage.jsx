@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { fetchSeasonStats, fetchTeamStats, fetchPlayerStats } from '../services/api';
+import { fetchSeasonStats, fetchTeamStats, fetchPlayerStats, fetchPlayerHeroStats, fetchHeroes } from '../services/api';
 import { useLanguage } from '../context/LanguageContext';
 import TeamLogo from '../components/common/TeamLogo';
 import { StatsSkeleton, TableSkeleton } from '../components/common/Skeleton';
@@ -136,18 +136,37 @@ function TeamStats() {
 function PlayerStats() {
     const { t } = useLanguage();
     const [stats, setStats] = useState([]);
+    const [heroStats, setHeroStats] = useState([]);
+    const [heroes, setHeroes] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
     useEffect(() => {
-        fetchPlayerStats()
-            .then(data => setStats(data || []))
-            // Sort by KDA Ratio (highest first) as default ranking
+        Promise.all([
+            fetchPlayerStats(),
+            fetchPlayerHeroStats(),
+            fetchHeroes()
+        ])
+            .then(([playerData, heroStatData, heroData]) => {
+                setStats(playerData || []);
+                setHeroStats(heroStatData || []);
+                setHeroes(heroData || []);
+            })
             .catch(err => setError(err.message))
             .finally(() => setLoading(false));
     }, []);
 
-    // Error logic moved to table render
+    // Get hero image URL
+    const getHeroImage = (heroName) => {
+        const hero = heroes.find(h => h.name === heroName);
+        return hero?.imageUrl || null;
+    };
+
+    // Get top heroes for a player
+    const getPlayerTopHeroes = (playerName) => {
+        const playerHeroStat = heroStats.find(h => h.playerName === playerName);
+        return playerHeroStat?.topHeroes || [];
+    };
 
     return (
         <div className="bg-white shadow-sm rounded-lg overflow-hidden overflow-x-auto">
@@ -157,6 +176,7 @@ function PlayerStats() {
                         <th className="p-4 text-center w-16">#</th>
                         <th className="p-4 text-left">{t.stats.playerShort}</th>
                         <th className="p-4 text-left">{t.stats.team}</th>
+                        <th className="p-2 md:p-4 text-center hide-mobile" title="Top Heroes">Heroes</th>
                         <th className="p-4 text-center" title="Games Played">{t.stats.games}</th>
                         <th className="p-4 text-center text-blue-600" title="Total Kills">K</th>
                         <th className="p-4 text-center text-red-600" title="Total Deaths">D</th>
@@ -167,11 +187,11 @@ function PlayerStats() {
                     </tr>
                 </thead>
                 {loading ? (
-                    <TableSkeleton rows={10} cols={10} />
+                    <TableSkeleton rows={10} cols={11} />
                 ) : error ? (
                     <tbody>
                         <tr>
-                            <td colSpan="10" className="p-8 text-center text-red-500 font-bold">
+                            <td colSpan="11" className="p-8 text-center text-red-500 font-bold">
                                 <i className="fas fa-exclamation-triangle mr-2"></i>
                                 {t.common.error}: {error}
                             </td>
@@ -180,35 +200,68 @@ function PlayerStats() {
                 ) : (
                     <tbody>
                         {stats.length === 0 ? (
-                            <tr><td colSpan="10" className="p-8 text-center text-gray-500">{t.common.noData}</td></tr>
+                            <tr><td colSpan="11" className="p-8 text-center text-gray-500">{t.common.noData}</td></tr>
                         ) : (
-                            stats.slice(0, 50).map((p, idx) => (
-                                <tr key={`${p.teamName}-${p.playerName}`} className={`hover:bg-echo-white transition ${idx < 3 ? 'bg-yellow-50/40' : ''}`}>
-                                    <td className={`p-4 text-center font-bold ${idx < 3 ? 'text-amber-500 text-lg' : 'text-gray-400'}`}>
-                                        {idx + 1}
-                                    </td>
-                                    <td className="p-4 font-bold text-uefa-dark">{p.playerName}</td>
-                                    <td className="p-4">
-                                        <div className="flex items-center gap-2">
-                                            <TeamLogo teamName={p.teamName} size="sm" />
-                                            <span className="text-sm text-gray-600">{p.teamName}</span>
-                                        </div>
-                                    </td>
-                                    <td className="p-4 text-center font-mono text-gray-600">{p.gamesPlayed}</td>
-                                    <td className="p-4 text-center font-mono">{p.totalKills}</td>
-                                    <td className="p-4 text-center font-mono">{p.totalDeaths}</td>
-                                    <td className="p-4 text-center font-mono">{p.totalAssists}</td>
-                                    <td className="p-2 md:p-4 text-right font-mono text-sm text-blue-600 hide-mobile">
-                                        {(p.totalDamage || 0).toLocaleString()}
-                                    </td>
-                                    <td className="p-2 md:p-4 text-right font-mono text-sm text-red-600 hide-mobile">
-                                        {(p.totalDamageTaken || 0).toLocaleString()}
-                                    </td>
-                                    <td className="p-4 text-center">
-                                        <span className="text-lg font-bold text-cyan-aura">{p.kda.toFixed(2)}</span>
-                                    </td>
-                                </tr>
-                            ))
+                            stats.slice(0, 50).map((p, idx) => {
+                                const topHeroes = getPlayerTopHeroes(p.playerName);
+                                return (
+                                    <tr key={`${p.teamName}-${p.playerName}`} className={`hover:bg-echo-white transition ${idx < 3 ? 'bg-yellow-50/40' : ''}`}>
+                                        <td className={`p-4 text-center font-bold ${idx < 3 ? 'text-amber-500 text-lg' : 'text-gray-400'}`}>
+                                            {idx + 1}
+                                        </td>
+                                        <td className="p-4 font-bold text-uefa-dark">{p.playerName}</td>
+                                        <td className="p-4">
+                                            <div className="flex items-center gap-2">
+                                                <TeamLogo teamName={p.teamName} size="sm" />
+                                                <span className="text-sm text-gray-600">{p.teamName}</span>
+                                            </div>
+                                        </td>
+                                        <td className="p-2 md:p-4 hide-mobile">
+                                            <div className="flex gap-1 justify-center">
+                                                {topHeroes.length > 0 ? (
+                                                    topHeroes.map((hero, i) => (
+                                                        <div
+                                                            key={i}
+                                                            className="relative group"
+                                                            title={`${hero.heroName} (${hero.gamesPlayed} games, ${hero.winRate?.toFixed(0)}% WR)`}
+                                                        >
+                                                            {getHeroImage(hero.heroName) ? (
+                                                                <img
+                                                                    src={getHeroImage(hero.heroName)}
+                                                                    alt={hero.heroName}
+                                                                    className="w-7 h-7 rounded-md border border-gray-200 object-cover"
+                                                                />
+                                                            ) : (
+                                                                <div className="w-7 h-7 rounded-md bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-500">
+                                                                    {hero.heroName?.charAt(0)}
+                                                                </div>
+                                                            )}
+                                                            <span className="absolute -bottom-1 -right-1 bg-cyan-aura text-white text-[8px] px-1 rounded-full font-bold">
+                                                                {hero.gamesPlayed}
+                                                            </span>
+                                                        </div>
+                                                    ))
+                                                ) : (
+                                                    <span className="text-gray-300 text-xs">-</span>
+                                                )}
+                                            </div>
+                                        </td>
+                                        <td className="p-4 text-center font-mono text-gray-600">{p.gamesPlayed}</td>
+                                        <td className="p-4 text-center font-mono">{p.totalKills}</td>
+                                        <td className="p-4 text-center font-mono">{p.totalDeaths}</td>
+                                        <td className="p-4 text-center font-mono">{p.totalAssists}</td>
+                                        <td className="p-2 md:p-4 text-right font-mono text-sm text-blue-600 hide-mobile">
+                                            {(p.totalDamage || 0).toLocaleString()}
+                                        </td>
+                                        <td className="p-2 md:p-4 text-right font-mono text-sm text-red-600 hide-mobile">
+                                            {(p.totalDamageTaken || 0).toLocaleString()}
+                                        </td>
+                                        <td className="p-4 text-center">
+                                            <span className="text-lg font-bold text-cyan-aura">{p.kda.toFixed(2)}</span>
+                                        </td>
+                                    </tr>
+                                );
+                            })
                         )}
                     </tbody>
                 )}
