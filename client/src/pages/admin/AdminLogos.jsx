@@ -112,14 +112,14 @@ export default function AdminLogos() {
                 </div>
 
                 <form onSubmit={handleSubmit} className="p-6">
-                    <div className="grid md:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {/* Team Select */}
                         <div>
                             <label className="block text-sm font-bold text-gray-700 mb-2">เลือกทีม</label>
                             <select
                                 value={selectedTeam}
                                 onChange={(e) => setSelectedTeam(e.target.value)}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-cyan-aura focus:outline-none"
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-cyan-aura focus:outline-none text-base"
                                 required
                             >
                                 <option value="">-- เลือกทีม --</option>
@@ -132,18 +132,18 @@ export default function AdminLogos() {
                         {/* Logo URL */}
                         {/* Upload Mode Toggle */}
                         <div className="md:col-span-2">
-                            <div className="flex gap-2 mb-4 bg-gray-100 p-1 rounded-lg w-fit mx-auto md:mx-0">
+                            <div className="flex flex-col sm:flex-row gap-2 mb-4 bg-gray-100 p-1 rounded-lg w-full sm:w-fit mx-auto md:mx-0">
                                 <button
                                     type="button"
                                     onClick={() => setUploadMode('file')}
-                                    className={`py-1 px-4 rounded text-sm font-bold transition-colors ${uploadMode === 'file' ? 'bg-white text-cyan-aura shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                                    className={`py-2 sm:py-1 px-4 rounded text-sm font-bold transition-colors w-full sm:w-auto ${uploadMode === 'file' ? 'bg-white text-cyan-aura shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                                 >
                                     อัปโหลดไฟล์
                                 </button>
                                 <button
                                     type="button"
                                     onClick={() => setUploadMode('url')}
-                                    className={`py-1 px-4 rounded text-sm font-bold transition-colors ${uploadMode === 'url' ? 'bg-white text-cyan-aura shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                                    className={`py-2 sm:py-1 px-4 rounded text-sm font-bold transition-colors w-full sm:w-auto ${uploadMode === 'url' ? 'bg-white text-cyan-aura shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                                 >
                                     ใช้ URL
                                 </button>
@@ -153,7 +153,7 @@ export default function AdminLogos() {
                         {/* File Upload / URL Input */}
                         <div className="md:col-span-2">
                             {uploadMode === 'file' ? (
-                                <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-cyan-aura transition-colors cursor-pointer relative bg-gray-50">
+                                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 sm:p-8 text-center hover:border-cyan-aura transition-colors cursor-pointer relative bg-gray-50 admin-upload-area">
                                     <input
                                         type="file"
                                         accept="image/*"
@@ -161,10 +161,10 @@ export default function AdminLogos() {
                                         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                                     />
                                     <i className="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-3"></i>
-                                    <p className="text-gray-600 font-medium">คลิกหรือลากไฟล์มาวางที่นี่</p>
-                                    <p className="text-sm text-gray-400 mt-1">PNG, JPG, SVG (Max 2MB)</p>
+                                    <p className="text-gray-600 font-medium text-sm sm:text-base">คลิกหรือลากไฟล์มาวางที่นี่</p>
+                                    <p className="text-xs sm:text-sm text-gray-400 mt-1">PNG, JPG, SVG (Max 2MB)</p>
                                     {logoFile && (
-                                        <div className="mt-4 text-cyan-aura font-bold">
+                                        <div className="mt-4 text-cyan-aura font-bold break-all">
                                             <i className="fas fa-check mr-2"></i>
                                             {logoFile.name}
                                         </div>
@@ -174,7 +174,7 @@ export default function AdminLogos() {
                                 <div>
                                     <label className="block text-sm font-bold text-gray-700 mb-2">
                                         URL โลโก้
-                                        <span className="font-normal text-gray-500 ml-2">(รองรับรูปจาก URL ภายนอก)</span>
+                                        <span className="font-normal text-gray-500 ml-2 hidden sm:inline">(รองรับรูปจาก URL ภายนอก)</span>
                                     </label>
                                     <input
                                         type="url"
@@ -184,7 +184,7 @@ export default function AdminLogos() {
                                             setLogoPreview(e.target.value);
                                         }}
                                         placeholder="https://example.com/logo.png"
-                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-cyan-aura focus:outline-none"
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-cyan-aura focus:outline-none text-base"
                                         required={uploadMode === 'url'}
                                     />
                                 </div>
@@ -196,7 +196,7 @@ export default function AdminLogos() {
                     {(logoPreview) && (
                         <div className="mt-6 p-4 bg-gray-50 rounded-lg">
                             <label className="block text-sm font-bold text-gray-700 mb-2">ตัวอย่างโลโก้</label>
-                            <div className="flex items-center gap-4">
+                            <div className="flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
                                 <img
                                     src={logoPreview}
                                     alt="Preview"
@@ -206,7 +206,7 @@ export default function AdminLogos() {
                                 <div>
                                     <p className="font-bold text-lg text-uefa-dark">{selectedTeam || 'ทีมที่เลือก'}</p>
                                     {uploadMode === 'url' && <p className="text-sm text-gray-500 break-all">{logoUrl}</p>}
-                                    {uploadMode === 'file' && <p className="text-sm text-gray-500">{logoFile?.name}</p>}
+                                    {uploadMode === 'file' && <p className="text-sm text-gray-500 break-all">{logoFile?.name}</p>}
                                 </div>
                             </div>
                         </div>
@@ -223,7 +223,7 @@ export default function AdminLogos() {
                     <button
                         type="submit"
                         disabled={loading || !selectedTeam || (uploadMode === 'url' && !logoUrl) || (uploadMode === 'file' && !logoFile)}
-                        className="mt-6 w-full bg-cyan-aura text-uefa-dark font-bold py-3 rounded-lg hover:bg-cyan-400 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                        className="mt-6 w-full bg-cyan-aura text-uefa-dark font-bold py-3 rounded-lg hover:bg-cyan-400 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 text-lg"
                     >
                         {loading ? (
                             <>
@@ -249,8 +249,8 @@ export default function AdminLogos() {
                     </h2>
                 </div>
 
-                <div className="p-6">
-                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                <div className="p-4 sm:p-6">
+                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4 team-logo-grid">
                         {teams.map(team => (
                             <div
                                 key={team}

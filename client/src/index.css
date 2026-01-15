@@ -392,3 +392,118 @@ body.menu-open {
     display: none !important;
   }
 }
+
+/* ================================================
+   🎛️ ADMIN PANEL RESPONSIVE STYLES
+   ================================================ */
+
+/* iPad / Tablet Portrait */
+@media (max-width: 1024px) and (min-width: 769px) {
+
+  /* Admin cards grid */
+  .admin-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  /* Admin form layout */
+  .admin-form-row {
+    flex-direction: column;
+  }
+
+  .admin-form-row>div {
+    width: 100%;
+  }
+}
+
+/* Mobile Admin Styles */
+@media (max-width: 768px) {
+
+  /* Admin cards - single column */
+  .admin-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1rem;
+  }
+
+  /* Admin tables */
+  .admin-table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .admin-table {
+    min-width: 600px;
+  }
+
+  /* Admin form inputs */
+  .admin-input {
+    font-size: 16px !important;
+    /* Prevent zoom on iOS */
+    padding: 0.75rem !important;
+  }
+
+  /* Admin buttons - full width on mobile */
+  .admin-btn-row {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .admin-btn-row button {
+    width: 100%;
+  }
+
+  /* Admin select dropdowns */
+  .admin-select {
+    font-size: 16px !important;
+    padding: 0.75rem !important;
+  }
+
+  /* Admin modal - full screen on mobile */
+  .admin-modal {
+    width: 95vw !important;
+    max-width: none !important;
+    margin: 0.5rem !important;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+
+  /* Admin logo upload area */
+  .admin-upload-area {
+    padding: 1.5rem !important;
+  }
+
+  /* Team logo grid - more compact */
+  .team-logo-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.75rem;
+  }
+}
+
+/* Small Mobile Admin */
+@media (max-width: 480px) {
+
+  /* Even more compact grid */
+  .team-logo-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.5rem;
+  }
+
+  /* Smaller team logo cards */
+  .team-logo-card {
+    padding: 0.5rem !important;
+  }
+
+  .team-logo-card img,
+  .team-logo-card .logo-placeholder {
+    width: 3rem !important;
+    height: 3rem !important;
+  }
+
+  /* Admin stats cards */
+  .admin-stat-card {
+    padding: 0.75rem !important;
+  }
+
+  .admin-stat-card h3 {
+    font-size: 1.25rem !important;
+  }
+}

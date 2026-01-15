@@ -25,5 +25,9 @@
   "bugs": {
     "url": "https://github.com/PhuriphatiZAMU/RoV-SN-Tournament-Official/issues"
   },
-  "homepage": "https://github.com/PhuriphatiZAMU/RoV-SN-Tournament-Official#readme"
+  "homepage": "https://github.com/PhuriphatiZAMU/RoV-SN-Tournament-Official#readme",
+  "dependencies": {
+    "cloudinary": "^1.41.3",
+    "multer-storage-cloudinary": "^4.0.0"
+  }
 }

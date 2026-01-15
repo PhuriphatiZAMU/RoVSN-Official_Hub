@@ -21,13 +21,11 @@ export default function TeamLogo({ teamName, size = 'md' }) {
                 alt={teamName}
                 className={`${sizeClass} object-contain`}
                 onError={(e) => {
-                    e.target.onerror = null;
-                    e.target.style.display = 'none';
-                    e.target.parentElement.innerHTML = `
-            <div class="${sizeClass} bg-gray-100 rounded-full flex items-center justify-center">
-              <i class="fas fa-shield-alt text-gray-400"></i>
-            </div>
-          `;
+                    // แทนที่เฉพาะ img ด้วย fallback div, ไม่แก้ไข parent เพื่อรักษา sibling elements
+                    const fallbackEl = document.createElement('div');
+                    fallbackEl.className = `${sizeClass} bg-gray-100 rounded-full flex items-center justify-center`;
+                    fallbackEl.innerHTML = '<i class="fas fa-shield-alt text-gray-400"></i>';
+                    e.target.replaceWith(fallbackEl);
                 }}
             />
         );

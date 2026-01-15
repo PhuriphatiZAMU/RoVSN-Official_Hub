@@ -38,6 +38,7 @@ export default function StandingsPage() {
                         <div>
                             <h3 className="text-lg md:text-2xl font-display font-bold text-uefa-dark">League Phase</h3>
                             <p className="text-sm text-gray-500">Overall Rankings</p>
+                            {/* Debug removed */}
                         </div>
                         <div className="flex items-center text-sm">
                             <span className="w-3 h-3 bg-green-100 border border-green-300 mr-2"></span>
@@ -77,9 +78,11 @@ export default function StandingsPage() {
                                                         {rank}
                                                     </div>
                                                 </td>
-                                                <td className="p-3 font-bold text-uefa-dark flex items-center gap-2">
-                                                    <TeamLogo teamName={d.name} size="md" />
-                                                    {d.name}
+                                                <td className="p-3 font-bold text-uefa-dark">
+                                                    <div className="flex items-center gap-2">
+                                                        <TeamLogo teamName={d.name} size="md" />
+                                                        <span>{d.name}</span> {/* Team name display */}
+                                                    </div>
                                                 </td>
                                                 <td className="p-2 md:p-3 text-center">{d.p}</td>
                                                 <td className="p-2 md:p-3 text-center text-green-600 font-bold">{d.w}</td>

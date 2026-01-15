@@ -8,6 +8,8 @@ const bcrypt = require('bcryptjs');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const { v2: cloudinary } = require('cloudinary');
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -111,45 +113,48 @@ const HeroSchema = new mongoose.Schema({
 });
 const Hero = mongoose.model('Hero', HeroSchema, 'heroes');
 
-// --- File Upload Config ---
-const uploadDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir);
+// --- Cloudinary Config ---
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET
+});
+
+// Cloudinary Storage for Multer
+const cloudinaryStorage = new CloudinaryStorage({
+    cloudinary: cloudinary,
+    params: {
+        folder: 'rov-heroes', // Folder name in Cloudinary
+        allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
+        transformation: [{ width: 200, height: 200, crop: 'fill' }] // Auto resize
+    }
+});
+
+// Local fallback for development (if Cloudinary not configured)
+const localUploadDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(localUploadDir)) {
+    fs.mkdirSync(localUploadDir);
 }
+app.use('/uploads', express.static(localUploadDir));
 
-// Serve static files (uploads)
-app.use('/uploads', express.static(uploadDir));
-
-// Multer Storage
-const storage = multer.diskStorage({
+const localStorage = multer.diskStorage({
     destination: function (req, file, cb) {
-        cb(null, uploadDir)  // Use absolute path
+        cb(null, localUploadDir);
     },
     filename: function (req, file, cb) {
-        // Safe filename: hero-timestamp.ext
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
         cb(null, 'hero-' + uniqueSuffix + path.extname(file.originalname));
     }
 });
 
-// File filter for images only
-const fileFilter = (req, file, cb) => {
-    if (file.mimetype.startsWith('image/')) {
-        cb(null, true);
-    } else {
-        cb(new Error('Only image files are allowed'), false);
-    }
-};
-
+// Use Cloudinary if configured, otherwise local storage
+const useCloudinary = process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY;
 const upload = multer({
-    storage: storage,
-    fileFilter: fileFilter,
+    storage: useCloudinary ? cloudinaryStorage : localStorage,
     limits: { fileSize: 10 * 1024 * 1024 } // 10MB max per file
 });
 
-// Upload Endpoint
-
-
+console.log(`📁 Image Storage: ${useCloudinary ? 'Cloudinary ☁️' : 'Local Disk 💾'}`);
 
 // --- AUTH MIDDLEWARE ---
 const authenticateToken = (req, res, next) => {
@@ -175,10 +180,15 @@ app.post('/api/upload', authenticateToken, upload.single('logo'), (req, res) => 
         return res.status(400).send({ message: 'No file uploaded' });
     }
     // Return the URL to access the file
-    // Note: Assuming server is running on same host/port reachable by client
-    // For localhost, req.protocol + '://' + req.get('host') works.
-    // For production behind proxy, might need adjustment (but fine for now)
-    const fileUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+    // Check if Cloudinary was used (req.file.path contains the Cloudinary URL)
+    let fileUrl;
+    if (useCloudinary && req.file.path) {
+        fileUrl = req.file.path;
+    } else {
+        // Local storage fallback
+        fileUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+    }
+
     res.json({ url: fileUrl });
 });
 
@@ -632,7 +642,9 @@ app.post('/api/heroes/upload', authenticateToken, upload.any(), async (req, res)
         for (const file of req.files) {
             // Extract hero name from filename (remove extension)
             const heroName = path.basename(file.originalname, path.extname(file.originalname));
-            const imageUrl = `${req.protocol}://${req.get('host')}/uploads/${file.filename}`;
+
+            // Use Cloudinary URL if available, otherwise local URL
+            const imageUrl = file.path || `${req.protocol}://${req.get('host')}/uploads/${file.filename}`;
 
             try {
                 // Upsert: Update if exists, create if not
