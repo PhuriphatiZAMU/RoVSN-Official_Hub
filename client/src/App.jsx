@@ -16,7 +16,6 @@ import StandingsPage from './pages/StandingsPage';
 import StatsPage from './pages/StatsPage';
 import ClubsPage from './pages/ClubsPage';
 import FormatPage from './pages/FormatPage';
-import LeaderboardPage from './pages/LeaderboardPage';
 
 // Admin Pages
 import LoginPage from './pages/admin/LoginPage';
@@ -44,7 +43,6 @@ function App() {
                     <Route index element={<HomePage />} />
                     <Route path="fixtures" element={<FixturesPage />} />
                     <Route path="standings" element={<StandingsPage />} />
-                    <Route path="leaderboard" element={<LeaderboardPage />} />
                     <Route path="stats" element={<StatsPage />} />
                     <Route path="stats/team" element={<StatsPage />} />
                     <Route path="stats/player" element={<StatsPage />} />

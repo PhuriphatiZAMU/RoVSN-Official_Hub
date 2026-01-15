@@ -17,6 +17,11 @@ export const translations = {
             loading: "กำลังโหลด...",
             error: "เกิดข้อผิดพลาด",
             noData: "ไม่มีข้อมูล",
+            share: "แชร์",
+            heroes: "ฮีโร่",
+            summary: "สรุป",
+            total: "รวม",
+            rank: "อันดับ"
         },
         home: {
             heroTitle: "การแข่งขัน RoV ที่ยิ่งใหญ่ที่สุดในรั้ว SN",
@@ -55,8 +60,12 @@ export const translations = {
             longestGame: "เกมยืดเยื้อสุด",
             highestKillGame: "เกมสังหารโหดสุด",
             kda: "KDA",
-            team: "ทีม",
-            playerShort: "ผู้เล่น"
+            playerShort: "ผู้เล่น",
+            heroes: "ฮีโร่",
+            kills: "สังหาร",
+            assists: "แอสซิสต์",
+            mvp: "MVP",
+            topPlayers: "ผู้เล่น Top 10"
         },
         fixtures: {
             title: "ตารางการแข่งขัน",
@@ -84,6 +93,11 @@ export const translations = {
             loading: "Loading...",
             error: "Error occurred",
             noData: "No Data",
+            share: "Share",
+            heroes: "Heroes",
+            summary: "Summary",
+            total: "Total",
+            rank: "Rank"
         },
         home: {
             heroTitle: "The Greatest RoV Tournament in SN",
@@ -129,8 +143,13 @@ export const translations = {
             longestGame: "Longest Game",
             highestKillGame: "Bloodiest Game",
             kda: "KDA",
-            team: "Team",
-            playerShort: "Player"
+            playerShort: "Player",
+            heroes: "Heroes",
+            kills: "Kills",
+            assists: "Assists",
+            mvp: "MVP",
+            topPlayers: "Top 10 Players"
         },
     }
 };
+
