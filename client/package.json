@@ -18,8 +18,6 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
-    "@realfavicongenerator/generate-favicon": "^0.6.0",
-    "@realfavicongenerator/image-adapter-node": "^0.6.1",
     "@tailwindcss/vite": "^4.1.18",
     "@types/react": "^19.2.5",
     "@types/react-dom": "^19.2.3",
@@ -28,7 +26,6 @@
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
     "globals": "^16.5.0",
-    "sharp": "^0.34.5",
     "tailwindcss": "^4.1.18",
     "vite": "^7.2.4"
   }

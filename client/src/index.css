@@ -55,83 +55,135 @@ h6 {
 
 /* Dark Mode - Global */
 .dark body {
-  background-color: #0a1628;
-  color: #E8F7FF;
+  background-color: #111827;
+  color: #f3f4f6;
 }
 
 /* Dark Mode - Main content backgrounds */
 .dark .bg-white {
-  background-color: #0f1f35 !important;
+  background-color: #1f2937 !important;
 }
 
 .dark .bg-gray-50 {
-  background-color: #0a1628 !important;
+  background-color: #111827 !important;
 }
 
 .dark .bg-gray-100 {
-  background-color: #0f1f35 !important;
+  background-color: #1f2937 !important;
+}
+
+.dark .bg-gray-200 {
+  background-color: #374151 !important;
 }
 
 /* Dark Mode - Text colors */
-.dark .text-gray-700,
-.dark .text-gray-600,
+.dark .text-gray-900 {
+  color: #f9fafb !important;
+}
+
+.dark .text-gray-800 {
+  color: #f3f4f6 !important;
+}
+
+.dark .text-gray-700 {
+  color: #e5e7eb !important;
+}
+
+.dark .text-gray-600 {
+  color: #d1d5db !important;
+}
+
 .dark .text-gray-500 {
-  color: #94a3b8 !important;
+  color: #9ca3af !important;
 }
 
 .dark .text-gray-400 {
-  color: #64748b !important;
+  color: #6b7280 !important;
 }
 
 .dark .text-uefa-dark {
-  color: #E8F7FF !important;
+  color: #f9fafb !important;
 }
 
 .dark .text-black {
-  color: #E8F7FF !important;
+  color: #f9fafb !important;
 }
 
 /* Dark Mode - Borders */
-.dark .border-gray-100,
+.dark .border-gray-100 {
+  border-color: #374151 !important;
+}
+
 .dark .border-gray-200 {
-  border-color: #1e3a5f !important;
+  border-color: #4b5563 !important;
+}
+
+.dark .border-gray-300 {
+  border-color: #6b7280 !important;
+}
+
+/* Dark Mode - Form inputs */
+.dark input,
+.dark select,
+.dark textarea {
+  background-color: #374151 !important;
+  border-color: #4b5563 !important;
+  color: #f3f4f6 !important;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #9ca3af !important;
 }
 
 /* Dark Mode - Tables */
 .dark .uefa-table th {
-  background: linear-gradient(180deg, #0f1f35 0%, #0a1628 100%);
-  color: #E8F7FF;
+  background: linear-gradient(180deg, #1f2937 0%, #111827 100%);
+  color: #f9fafb;
 }
 
 .dark .uefa-table tr {
-  border-bottom-color: #1e3a5f;
+  border-bottom-color: #374151;
 }
 
 .dark .uefa-table tr:hover {
   background: linear-gradient(90deg, rgba(21, 200, 255, 0.1) 0%, transparent 100%);
 }
 
-.dark .uefa-table td:first-child {
-  background-color: #0f1f35 !important;
+.dark .uefa-table td {
+  color: #e5e7eb;
 }
 
-/* Dark Mode - Cards */
+.dark .uefa-table td:first-child {
+  background-color: #1f2937 !important;
+}
+
+/* Dark Mode - Cards & Shadows */
 .dark .shadow-sm {
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4) !important;
 }
 
 .dark .shadow-md {
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.4) !important;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5) !important;
+}
+
+.dark .shadow-lg {
+  box-shadow: 0 10px 15px rgba(0, 0, 0, 0.6) !important;
 }
 
 /* Dark Mode - Scrollbar */
 .dark ::-webkit-scrollbar-track {
-  background: #0a1628;
+  background: #111827;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #374151;
 }
 
 /* Dark Mode - Skeleton loading */
-.dark .skeleton {
-  background: linear-gradient(90deg, #1e3a5f 25%, #2d4a6f 50%, #1e3a5f 75%);
+.dark .skeleton,
+.dark .animate-pulse {
+  background: linear-gradient(90deg, #374151 25%, #4b5563 50%, #374151 75%) !important;
 }
 
 /* --- NAVBAR --- */

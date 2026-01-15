@@ -12,7 +12,7 @@ export default function Navbar() {
         { path: '/', label: t.nav.home },
         { path: '/fixtures', label: t.nav.fixtures },
         { path: '/standings', label: t.nav.standings },
-        { path: '/leaderboard', label: '🏆 Leaderboard' },
+        { path: '/leaderboard', label: language === 'th' ? 'อันดับผู้เล่น' : 'Leaderboard' },
         { path: '/stats', label: t.nav.stats },
         { path: '/clubs', label: t.nav.teams },
         { path: '/format', label: t.nav.format },
