@@ -8,6 +8,7 @@ const bcrypt = require('bcryptjs');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const compression = require('compression'); // เพิ่ม compression
 const { v2: cloudinary } = require('cloudinary');
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 
@@ -21,6 +22,9 @@ const JWT_EXPIRES_IN = '24h';
 // Admin Credentials (ต้องตั้งใน .env)
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
 const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH; // bcrypt hash
+
+// --- Middleware ---
+app.use(compression()); // Compress all responses
 app.use(bodyParser.json());
 app.use(cors({
     origin: [
@@ -33,6 +37,12 @@ app.use(cors({
     ],
     credentials: true
 }));
+
+// Cache middleware for read-only API endpoints (5 minutes)
+const cacheControl = (duration = 300) => (req, res, next) => {
+    res.set('Cache-Control', `public, max-age=${duration}`);
+    next();
+};
 
 // --- Database Connection ---
 // ใช้ Environment Variable เท่านั้น (ดูไฟล์ .env.example สำหรับตัวอย่าง)
@@ -270,8 +280,8 @@ app.post('/api/auth/hash', async (req, res) => {
     }
 });
 
-// GET: Schedules
-app.get('/api/schedules', async (req, res) => {
+// GET: Schedules (cached 2 min)
+app.get('/api/schedules', cacheControl(120), async (req, res) => {
     try {
         const latest = await Schedule.findOne().sort({ createdAt: -1 });
         if (!latest) return res.status(404).json({ message: "No schedule found" });
@@ -309,8 +319,8 @@ app.delete('/api/schedules/clear', authenticateToken, async (req, res) => {
     }
 });
 
-// GET: Results
-app.get('/api/results', async (req, res) => {
+// GET: Results (cached 1 min)
+app.get('/api/results', cacheControl(60), async (req, res) => {
     try {
         const results = await Result.find().sort({ matchDay: 1 });
         res.json(results);
@@ -474,8 +484,8 @@ app.get('/api/season-stats', async (req, res) => {
     }
 });
 
-// GET: ดึงข้อมูลโลโก้ทั้งหมด
-app.get('/api/team-logos', async (req, res) => {
+// GET: ดึงข้อมูลโลโก้ทั้งหมด (cached 5 min)
+app.get('/api/team-logos', cacheControl(300), async (req, res) => {
     try {
         const logos = await TeamLogo.find();
         res.json(logos);
@@ -619,8 +629,8 @@ app.delete('/api/players/all/clear', authenticateToken, async (req, res) => {
 
 // ==================== HERO API ====================
 
-// GET: List all heroes
-app.get('/api/heroes', async (req, res) => {
+// GET: List all heroes (cached 10 min - heroes rarely change)
+app.get('/api/heroes', cacheControl(600), async (req, res) => {
     try {
         const heroes = await Hero.find().sort({ name: 1 });
         res.json(heroes);
