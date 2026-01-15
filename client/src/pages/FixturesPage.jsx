@@ -4,6 +4,7 @@ import { useLanguage } from '../context/LanguageContext';
 import TeamLogo from '../components/common/TeamLogo';
 import { MatchSkeleton } from '../components/common/Skeleton';
 import { ErrorState, EmptyState } from '../components/common/States';
+import ShareButton from '../components/common/ShareButton';
 
 // ... (MatchCard remains mostly UI-focused, but date formatting might need locale 'th-TH'/'en-US' - small optimization for later)
 function MatchCard({ match, result, date }) {
@@ -83,10 +84,11 @@ export default function FixturesPage() {
         <div className="flex-grow bg-gray-50">
             {/* Header */}
             <div className="bg-uefa-dark py-12 mb-8">
-                <div className="container mx-auto px-4">
+                <div className="container mx-auto px-4 flex justify-between items-center">
                     <h1 className="text-4xl md:text-5xl font-display font-bold text-white uppercase">
                         {t.fixtures.title}
                     </h1>
+                    <ShareButton title="โปรแกรมการแข่งขัน RoV SN Tournament" />
                 </div>
             </div>
 

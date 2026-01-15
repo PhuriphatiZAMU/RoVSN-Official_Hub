@@ -3,6 +3,7 @@ import { useLanguage } from '../context/LanguageContext';
 import TeamLogo from '../components/common/TeamLogo';
 import { TableSkeleton } from '../components/common/Skeleton';
 import { ErrorState } from '../components/common/States';
+import ShareButton from '../components/common/ShareButton';
 
 export default function StandingsPage() {
     const { standings, loading, error } = useData();
@@ -24,10 +25,11 @@ export default function StandingsPage() {
         <div className="flex-grow">
             {/* Header */}
             <div className="bg-uefa-dark py-12 mb-8">
-                <div className="container mx-auto px-4">
+                <div className="container mx-auto px-4 flex justify-between items-center">
                     <h1 className="text-4xl md:text-5xl font-display font-bold text-white uppercase">
                         {t.standings.title}
                     </h1>
+                    <ShareButton title="ตารางคะแนน RoV SN Tournament" />
                 </div>
             </div>
 
@@ -38,7 +40,6 @@ export default function StandingsPage() {
                         <div>
                             <h3 className="text-lg md:text-2xl font-display font-bold text-uefa-dark">League Phase</h3>
                             <p className="text-sm text-gray-500">Overall Rankings</p>
-                            {/* Debug removed */}
                         </div>
                         <div className="flex items-center text-sm">
                             <span className="w-3 h-3 bg-green-100 border border-green-300 mr-2"></span>
