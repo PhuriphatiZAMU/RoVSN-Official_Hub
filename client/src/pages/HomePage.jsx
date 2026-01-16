@@ -155,10 +155,6 @@ function LeagueTable() {
     const { standings, loading, error } = useData();
     const { t } = useLanguage();
 
-    if (loading) {
-        return <TableSkeleton rows={5} cols={5} />;
-    }
-
     if (error) return <ErrorState title="ไม่สามารถโหลดตารางได้" message={error} />;
 
     return (
@@ -173,24 +169,28 @@ function LeagueTable() {
                         <th className="p-4 text-center font-bold text-uefa-dark uppercase text-xs tracking-wider">{t.standings.pts}</th>
                     </tr>
                 </thead>
-                <tbody>
-                    {standings.slice(0, 5).map((d, i) => (
-                        <tr key={d.name} className="border-b border-gray-100 hover:bg-echo-white transition group">
-                            <td className="p-4 text-center">
-                                <div className={`w-6 h-6 ${i < 4 ? 'bg-cyan-aura text-uefa-dark shadow-cyan-aura/20 shadow-lg' : 'bg-gray-200 text-gray-500'} rounded-full flex items-center justify-center font-bold text-xs mx-auto transition-transform group-hover:scale-110`}>
-                                    {i + 1}
-                                </div>
-                            </td>
-                            <td className="p-4 font-bold text-uefa-dark text-sm md:text-base flex items-center gap-3">
-                                <TeamLogo teamName={d.name} size="sm" />
-                                <span className="truncate max-w-[120px] md:max-w-none">{d.name}</span>
-                            </td>
-                            <td className="p-4 text-center text-sm text-gray-600 font-medium">{d.p}</td>
-                            <td className="p-4 text-center text-sm font-mono text-gray-600">{d.gd > 0 ? `+${d.gd}` : d.gd}</td>
-                            <td className="p-4 text-center font-bold text-uefa-dark text-lg">{d.pts}</td>
-                        </tr>
-                    ))}
-                </tbody>
+                {loading ? (
+                    <TableSkeleton rows={5} cols={5} />
+                ) : (
+                    <tbody>
+                        {standings.slice(0, 5).map((d, i) => (
+                            <tr key={d.name} className="border-b border-gray-100 hover:bg-echo-white transition group">
+                                <td className="p-4 text-center">
+                                    <div className={`w-6 h-6 ${i < 4 ? 'bg-cyan-aura text-uefa-dark shadow-cyan-aura/20 shadow-lg' : 'bg-gray-200 text-gray-500'} rounded-full flex items-center justify-center font-bold text-xs mx-auto transition-transform group-hover:scale-110`}>
+                                        {i + 1}
+                                    </div>
+                                </td>
+                                <td className="p-4 font-bold text-uefa-dark text-sm md:text-base flex items-center gap-3">
+                                    <TeamLogo teamName={d.name} size="sm" />
+                                    <span className="truncate max-w-[120px] md:max-w-none">{d.name}</span>
+                                </td>
+                                <td className="p-4 text-center text-sm text-gray-600 font-medium">{d.p}</td>
+                                <td className="p-4 text-center text-sm font-mono text-gray-600">{d.gd > 0 ? `+${d.gd}` : d.gd}</td>
+                                <td className="p-4 text-center font-bold text-uefa-dark text-lg">{d.pts}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                )}
             </table>
         </div>
     );
