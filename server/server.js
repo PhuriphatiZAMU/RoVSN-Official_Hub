@@ -82,25 +82,24 @@ const ResultSchema = new mongoose.Schema({
     winner: String,
     loser: String,
     gameDetails: Array,
+    isByeWin: { type: Boolean, default: false }, // Win by Bye (ชนะบาย)
     createdAt: { type: Date, default: Date.now }
 });
 const Result = mongoose.model('Result', ResultSchema, 'results');
 
-// 3. Game Stat Schema (ต้องประกาศหลังจาก mongoose ถูก import แล้วเช่นกัน)
+// 3. Game Stat Schema - เก็บสถิติผู้เล่นแต่ละเกม
 const GameStatSchema = new mongoose.Schema({
     matchId: String,
     gameNumber: Number,
     teamName: String,
     playerName: String,
-    heroName: String,        // ชื่อฮีโร่ที่ใช้ [NEW]
+    heroName: String,        // ชื่อฮีโร่ที่ใช้
     kills: Number,
     deaths: Number,
     assists: Number,
-    gold: Number,
-    damage: Number,
-    damageTaken: Number,
+    gold: Number,            // Gold (ใช้คำนวณ GPM = Gold / gameDuration)
     mvp: Boolean,
-    gameDuration: Number,
+    gameDuration: Number,    // ระยะเวลาเกม (วินาที)
     win: Boolean,
     createdAt: { type: Date, default: Date.now }
 });
@@ -361,7 +360,7 @@ app.delete('/api/results/:matchId', authenticateToken, async (req, res) => {
 // POST: Results (Protected)
 app.post('/api/results', authenticateToken, async (req, res) => {
     try {
-        const { matchDay, teamBlue, teamRed, scoreBlue, scoreRed } = req.body;
+        const { matchDay, teamBlue, teamRed, scoreBlue, scoreRed, gameDetails, isByeWin } = req.body;
 
         let winner = null;
         let loser = null;
@@ -376,7 +375,9 @@ app.post('/api/results', authenticateToken, async (req, res) => {
         const matchId = `${matchDay}_${teamBlue}_vs_${teamRed}`.replace(/\s+/g, '');
 
         const resultData = {
-            matchId, matchDay, teamBlue, teamRed, scoreBlue, scoreRed, winner, loser
+            matchId, matchDay, teamBlue, teamRed, scoreBlue, scoreRed, winner, loser,
+            gameDetails: gameDetails || [],
+            isByeWin: isByeWin || false, // Win by Bye flag
         };
 
         const result = await Result.findOneAndUpdate(
@@ -402,10 +403,10 @@ app.get('/api/player-stats', async (req, res) => {
                     totalDeaths: { $sum: "$deaths" },
                     totalAssists: { $sum: "$assists" },
                     totalGold: { $sum: "$gold" },
-                    totalDamage: { $sum: "$damage" },
-                    totalDamageTaken: { $sum: "$damageTaken" },
+                    totalGameDuration: { $sum: "$gameDuration" }, // Total time in seconds
                     gamesPlayed: { $sum: 1 },
-                    mvpCount: { $sum: { $cond: ["$mvp", 1, 0] } }
+                    mvpCount: { $sum: { $cond: ["$mvp", 1, 0] } },
+                    wins: { $sum: { $cond: ["$win", 1, 0] } }
                 }
             },
             {
@@ -413,15 +414,23 @@ app.get('/api/player-stats', async (req, res) => {
                     playerName: "$_id.playerName",
                     teamName: "$_id.teamName",
                     totalKills: 1, totalDeaths: 1, totalAssists: 1, totalGold: 1,
-                    totalDamage: 1, totalDamageTaken: 1, gamesPlayed: 1, mvpCount: 1,
+                    gamesPlayed: 1, mvpCount: 1, wins: 1,
                     kda: {
                         $cond: [
                             { $eq: ["$totalDeaths", 0] },
                             { $add: ["$totalKills", "$totalAssists"] },
-                            { $divide: [{ $add: ["$totalKills", "$totalAssists"] }, "$totalDeaths"] }
+                            { $round: [{ $divide: [{ $add: ["$totalKills", "$totalAssists"] }, "$totalDeaths"] }, 2] }
                         ]
                     },
-                    gpm: { $divide: ["$totalGold", "$gamesPlayed"] }
+                    // GPM = Total Gold / Total Game Time (in minutes)
+                    // totalGameDuration is in seconds, divide by 60 to get minutes
+                    gpm: {
+                        $cond: [
+                            { $eq: ["$totalGameDuration", 0] },
+                            0, // Avoid division by zero
+                            { $round: [{ $divide: ["$totalGold", { $divide: ["$totalGameDuration", 60] }] }, 0] }
+                        ]
+                    }
                 }
             },
             { $sort: { kda: -1 } }
@@ -484,6 +493,78 @@ app.get('/api/season-stats', async (req, res) => {
     }
 });
 
+// GET: Season Stats (Bloodiest Game, Longest Game)
+app.get('/api/season-stats', async (req, res) => {
+    try {
+        // Get all results with gameDetails
+        const results = await Result.find({ 'gameDetails.0': { $exists: true }, isByeWin: { $ne: true } });
+
+        let highestKillGame = { match: '-', kills: 0 };
+        let longestGame = { match: '-', duration: 0 };
+        let totalKills = 0;
+        let totalDeaths = 0;
+        let totalGames = 0;
+        let totalDuration = 0;
+
+        // Get kill stats per game from gamestats
+        const gameStats = await GameStat.aggregate([
+            {
+                $group: {
+                    _id: { matchId: "$matchId", gameNumber: "$gameNumber" },
+                    totalKills: { $sum: "$kills" },
+                    totalDeaths: { $sum: "$deaths" },
+                    gameDuration: { $first: "$gameDuration" },
+                    matchId: { $first: "$matchId" }
+                }
+            }
+        ]);
+
+        // Process gameStats for bloodiest game
+        gameStats.forEach(game => {
+            totalKills += game.totalKills || 0;
+            totalDeaths += game.totalDeaths || 0;
+            if (game.gameDuration) {
+                totalGames++;
+                totalDuration += game.gameDuration;
+            }
+
+            if (game.totalKills > highestKillGame.kills) {
+                highestKillGame = {
+                    match: game.matchId?.replace(/_/g, ' ').replace('vs', 'vs.') || 'Unknown',
+                    kills: game.totalKills
+                };
+            }
+        });
+
+        // Process results for longest game (from gameDetails)
+        results.forEach(result => {
+            if (result.gameDetails && result.gameDetails.length > 0) {
+                result.gameDetails.forEach(game => {
+                    if (game.duration && game.duration > longestGame.duration) {
+                        longestGame = {
+                            match: `${result.teamBlue} vs ${result.teamRed}`,
+                            duration: game.duration
+                        };
+                    }
+                });
+            }
+        });
+
+        // Calculate avgGameDuration
+        const avgGameDuration = totalGames > 0 ? Math.round(totalDuration / totalGames) : 0;
+
+        res.json({
+            totalKills,
+            totalDeaths,
+            avgGameDuration,
+            highestKillGame,
+            longestGame
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // GET: ดึงข้อมูลโลโก้ทั้งหมด (cached 5 min)
 app.get('/api/team-logos', cacheControl(300), async (req, res) => {
     try {
@@ -530,15 +611,42 @@ app.delete('/api/team-logos/:teamName', authenticateToken, async (req, res) => {
     }
 });
 
-// POST: Stats (Batch Insert) (Protected)
+// POST: Stats (Batch Insert/Update) (Protected)
+// IMPORTANT: Deletes existing stats for the match first, then inserts new ones
 app.post('/api/stats', authenticateToken, async (req, res) => {
     try {
         const statsArray = req.body;
-        if (!Array.isArray(statsArray)) {
-            return res.status(400).json({ error: "Data must be an array of player stats" });
+        if (!Array.isArray(statsArray) || statsArray.length === 0) {
+            return res.status(400).json({ error: "Data must be a non-empty array of player stats" });
         }
+
+        // Get unique matchIds from the incoming stats
+        const matchIds = [...new Set(statsArray.map(s => s.matchId))];
+
+        // Delete ALL existing stats for these matchIds first (prevents duplicates on re-save)
+        await GameStat.deleteMany({ matchId: { $in: matchIds } });
+
+        // Insert the new stats
         const savedStats = await GameStat.insertMany(statsArray);
-        res.status(201).json(savedStats);
+        res.status(201).json({
+            message: `Saved ${savedStats.length} stats (replaced existing data for ${matchIds.length} match(es))`,
+            count: savedStats.length
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// GET: Stats for a specific match (for editing)
+// Use query param instead of route param to handle matchIds with special characters like "/"
+app.get('/api/stats/match', async (req, res) => {
+    try {
+        const { matchId } = req.query;
+        if (!matchId) {
+            return res.status(400).json({ error: 'matchId query parameter is required' });
+        }
+        const stats = await GameStat.find({ matchId }).sort({ gameNumber: 1, teamName: 1 });
+        res.json(stats);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }

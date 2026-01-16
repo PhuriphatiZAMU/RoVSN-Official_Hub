@@ -49,6 +49,10 @@ export default function AdminResults() {
 
     const [showAdvanced, setShowAdvanced] = useState(false);
 
+    // Win by Bye (ชนะบาย) - ทีมชนะโดยไม่ต้องแข่ง
+    const [isByeWin, setIsByeWin] = useState(false);
+    const [byeWinner, setByeWinner] = useState(''); // 'blue' or 'red'
+
     const envUrl = import.meta.env.VITE_API_URL || '';
     const API_BASE_URL = envUrl ? (envUrl.endsWith('/api') ? envUrl : `${envUrl}/api`) : '/api';
     const dayData = schedule.find(r => parseInt(r.day) === parseInt(selectedDay));
@@ -290,29 +294,126 @@ export default function AdminResults() {
         }
     };
 
-    const handleMatchSelect = (match) => {
+    const handleMatchSelect = async (match) => {
         // Recalculate isBO5 based on CURRENT selectedDay
-        // Note: 'isBO5' variable from outer scope might be stale if selectedDay changed recently?
-        // Better to check explicitly against selectedDay state
         const checkBO5 = parseInt(selectedDay) >= 90;
+        const maxGames = checkBO5 ? 5 : 3;
 
-        setFormData({
-            teamBlue: match.blue,
-            teamRed: match.red,
-            scoreBlue: 0,
-            scoreRed: 0,
-        });
+        // Check if result already exists for this match
+        const matchKey = `${selectedDay}_${match.blue}_vs_${match.red}`.replace(/\s+/g, '');
+        const existingResult = results.find(r => r.matchId === matchKey);
 
-        setGameDetails([
-            { gameNumber: 1, winner: '', durationMin: 15, durationSec: 0, mvpPlayer: '', mvpTeam: '' },
-            { gameNumber: 2, winner: '', durationMin: 15, durationSec: 0, mvpPlayer: '', mvpTeam: '' },
-            { gameNumber: 3, winner: '', durationMin: 15, durationSec: 0, mvpPlayer: '', mvpTeam: '' },
-            { gameNumber: 4, winner: '', durationMin: 15, durationSec: 0, mvpPlayer: '', mvpTeam: '' },
-            { gameNumber: 5, winner: '', durationMin: 15, durationSec: 0, mvpPlayer: '', mvpTeam: '' },
-        ].slice(0, checkBO5 ? 5 : 3));
+        if (existingResult) {
+            console.log('🔍 [DEBUG] existingResult:', existingResult);
+            console.log('🔍 [DEBUG] gameDetails from DB:', existingResult.gameDetails);
 
-        setGamesStats({});
-        setMessage(null);
+            // Load existing scores
+            setFormData({
+                teamBlue: match.blue,
+                teamRed: match.red,
+                scoreBlue: existingResult.scoreBlue || 0,
+                scoreRed: existingResult.scoreRed || 0,
+            });
+
+            // Load existing game details
+            const existingGameDetails = existingResult.gameDetails || [];
+            console.log('🔍 [DEBUG] existingGameDetails array:', existingGameDetails);
+
+            const newGameDetails = Array.from({ length: maxGames }, (_, i) => {
+                const game = existingGameDetails.find(g => g.gameNumber === i + 1);
+                console.log(`🔍 [DEBUG] Game ${i + 1} found:`, game);
+                if (game) {
+                    const totalSec = game.duration || 0;
+                    return {
+                        gameNumber: i + 1,
+                        winner: game.winner || '',
+                        durationMin: Math.floor(totalSec / 60),
+                        durationSec: totalSec % 60,
+                        mvpPlayer: game.mvpPlayer || '',
+                        mvpTeam: game.mvpTeam || game.winner || '',
+                    };
+                }
+                return { gameNumber: i + 1, winner: '', durationMin: 15, durationSec: 0, mvpPlayer: '', mvpTeam: '' };
+            });
+            console.log('🔍 [DEBUG] newGameDetails to set:', newGameDetails);
+            setGameDetails(newGameDetails);
+
+            // Load existing player stats from API
+            try {
+                const statsUrl = `${API_BASE_URL}/stats/match?matchId=${encodeURIComponent(matchKey)}`;
+                console.log('🔍 [DEBUG] Fetching stats from:', statsUrl);
+                const statsRes = await fetch(statsUrl, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                console.log('🔍 [DEBUG] Stats response status:', statsRes.status);
+
+                if (statsRes.ok) {
+                    const statsData = await statsRes.json();
+                    console.log('🔍 [DEBUG] Stats data from API:', statsData);
+
+                    // Convert flat stats array to gamesStats format: { 0: { blue: [], red: [] }, ... }
+                    const loadedGamesStats = {};
+                    statsData.forEach(stat => {
+                        const gameIndex = stat.gameNumber - 1;
+                        if (!loadedGamesStats[gameIndex]) {
+                            loadedGamesStats[gameIndex] = { blue: [], red: [] };
+                        }
+                        const side = stat.teamName === match.blue ? 'blue' : 'red';
+                        loadedGamesStats[gameIndex][side].push({
+                            name: stat.playerName,
+                            hero: stat.heroName || '',
+                            k: stat.kills || 0,
+                            d: stat.deaths || 0,
+                            a: stat.assists || 0,
+                            gold: stat.gold || 0,
+                        });
+                    });
+                    console.log('🔍 [DEBUG] Converted gamesStats:', loadedGamesStats);
+                    setGamesStats(loadedGamesStats);
+                } else {
+                    console.log('🔍 [DEBUG] Stats API returned non-OK status');
+                    setGamesStats({});
+                }
+            } catch (err) {
+                console.error('🔍 [DEBUG] Failed to load match stats:', err);
+                setGamesStats({});
+            }
+
+            // Load bye win flag
+            if (existingResult.isByeWin) {
+                setIsByeWin(true);
+                setByeWinner(existingResult.winner === match.blue ? 'blue' : 'red');
+            } else {
+                setIsByeWin(false);
+                setByeWinner('');
+            }
+
+            setShowAdvanced(!existingResult.isByeWin); // Hide advanced if bye win
+            setMessage({ type: 'info', text: existingResult.isByeWin ? '📝 ผลชนะบาย - ไม่มีสถิติ' : '📝 กำลังแก้ไขผลการแข่งขันที่บันทึกไว้แล้ว' });
+        } else {
+            // No existing result - create fresh form
+            setFormData({
+                teamBlue: match.blue,
+                teamRed: match.red,
+                scoreBlue: 0,
+                scoreRed: 0,
+            });
+
+            setGameDetails(
+                Array.from({ length: maxGames }, (_, i) => ({
+                    gameNumber: i + 1,
+                    winner: '',
+                    durationMin: 15,
+                    durationSec: 0,
+                    mvpPlayer: '',
+                    mvpTeam: ''
+                }))
+            );
+            setGamesStats({});
+            setIsByeWin(false);
+            setByeWinner('');
+            setMessage(null);
+        }
     };
 
     const updateGameDetail = (index, field, value) => {
@@ -352,6 +453,53 @@ export default function AdminResults() {
         setMessage(null);
 
         try {
+            // Handle Win by Bye (ชนะบาย)
+            if (isByeWin) {
+                // Validate bye winner is selected
+                if (!byeWinner) {
+                    setMessage({ type: 'error', text: '❌ กรุณาเลือกทีมที่ชนะบาย' });
+                    setLoading(false);
+                    return;
+                }
+
+                const winnerTeam = byeWinner === 'blue' ? formData.teamBlue : formData.teamRed;
+
+                console.log('🔍 [DEBUG BYE] Saving bye win for:', winnerTeam);
+
+                const response = await fetch(`${API_BASE_URL}/results`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        matchDay: selectedDay,
+                        teamBlue: formData.teamBlue,
+                        teamRed: formData.teamRed,
+                        scoreBlue: 0, // Bye win = 0-0 (ไม่มีผลได้เสีย)
+                        scoreRed: 0,
+                        gameDetails: [],
+                        isByeWin: true,
+                    })
+                });
+
+                console.log('🔍 [DEBUG BYE] Response status:', response.status);
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    console.error('🔍 [DEBUG BYE] Error:', errorData);
+                    throw new Error(errorData.error || 'Failed to save result');
+                }
+
+                setLoading(false);
+                setMessage({ type: 'success', text: `✅ บันทึกผลชนะบาย: ${winnerTeam}` });
+
+                // Refresh data
+                setTimeout(() => window.location.reload(), 1500);
+                return;
+            }
+
+            // Normal match result
             const scoreBlue = parseInt(formData.scoreBlue);
             const scoreRed = parseInt(formData.scoreRed);
 
@@ -380,6 +528,7 @@ export default function AdminResults() {
                     scoreBlue,
                     scoreRed,
                     gameDetails: playedGames,
+                    isByeWin: false,
                 })
             });
 
@@ -391,9 +540,13 @@ export default function AdminResults() {
             const matchId = `${selectedDay}_${formData.teamBlue}_vs_${formData.teamRed}`.replace(/\s+/g, '');
             const allStats = [];
 
+            console.log('🔍 [DEBUG SAVE] gamesStats object:', gamesStats);
+            console.log('🔍 [DEBUG SAVE] gamesStats keys:', Object.keys(gamesStats));
+
             Object.keys(gamesStats).forEach(gameIndex => {
                 const gameStat = gamesStats[gameIndex]; // { blue: [], red: [] }
                 const gameNum = parseInt(gameIndex) + 1;
+                console.log(`🔍 [DEBUG SAVE] Game ${gameNum} stats:`, gameStat);
 
                 if (gameStat.blue) {
                     gameStat.blue.forEach(p => {
@@ -402,9 +555,8 @@ export default function AdminResults() {
                             gameNumber: gameNum,
                             teamName: formData.teamBlue,
                             playerName: p.name,
-                            heroName: p.hero || '',  // Hero selection [NEW]
+                            heroName: p.hero || '',
                             kills: p.k, deaths: p.d, assists: p.a,
-                            damage: p.damage, damageTaken: p.damageTaken,
                             gold: p.gold || 0,
                             mvp: gameDetails[gameIndex]?.mvpPlayer === p.name,
                             gameDuration: (parseInt(gameDetails[gameIndex]?.durationMin) || 0) * 60 + (parseInt(gameDetails[gameIndex]?.durationSec) || 0),
@@ -419,9 +571,8 @@ export default function AdminResults() {
                             gameNumber: gameNum,
                             teamName: formData.teamRed,
                             playerName: p.name,
-                            heroName: p.hero || '',  // Hero selection [NEW]
+                            heroName: p.hero || '',
                             kills: p.k, deaths: p.d, assists: p.a,
-                            damage: p.damage, damageTaken: p.damageTaken,
                             gold: p.gold || 0,
                             mvp: gameDetails[gameIndex]?.mvpPlayer === p.name,
                             gameDuration: (parseInt(gameDetails[gameIndex]?.durationMin) || 0) * 60 + (parseInt(gameDetails[gameIndex]?.durationSec) || 0),
@@ -431,12 +582,19 @@ export default function AdminResults() {
                 }
             });
 
+            console.log('🔍 [DEBUG SAVE] allStats to save:', allStats.length, 'records');
+            console.log('🔍 [DEBUG SAVE] allStats content:', allStats);
+
             if (allStats.length > 0) {
-                await fetch(`${API_BASE_URL}/stats`, {
+                const statsResponse = await fetch(`${API_BASE_URL}/stats`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify(allStats)
                 });
+                const statsResult = await statsResponse.json();
+                console.log('🔍 [DEBUG SAVE] Stats save response:', statsResult);
+            } else {
+                console.log('🔍 [DEBUG SAVE] No player stats to save (gamesStats is empty)');
             }
 
             setMessage({ type: 'success', text: '✅ บันทึกผลการแข่งขันและสถิติสำเร็จ!' });
@@ -566,9 +724,15 @@ export default function AdminResults() {
                                             </div>
                                             {result ? (
                                                 <div className="flex items-center gap-3">
-                                                    <span className="bg-green-500 text-white px-3 py-1 rounded font-bold">
-                                                        {result.scoreBlue} - {result.scoreRed}
-                                                    </span>
+                                                    {result.isByeWin ? (
+                                                        <span className="bg-yellow-500 text-white px-3 py-1 rounded font-bold">
+                                                            BYE → {result.winner}
+                                                        </span>
+                                                    ) : (
+                                                        <span className="bg-green-500 text-white px-3 py-1 rounded font-bold">
+                                                            {result.scoreBlue} - {result.scoreRed}
+                                                        </span>
+                                                    )}
                                                     <div
                                                         onClick={(e) => handleDeleteResult(match, e)}
                                                         className="w-8 h-8 flex items-center justify-center bg-red-100 text-red-500 rounded-full hover:bg-red-500 hover:text-white transition-colors"
@@ -596,47 +760,101 @@ export default function AdminResults() {
                                 <span className="text-red-600">{formData.teamRed}</span>
                             </h3>
 
-                            {/* Quick Score Input */}
-                            <div className="flex items-center justify-center gap-6 mb-6">
-                                <div className="text-center">
-                                    <label className="block text-sm text-gray-600 mb-2">{formData.teamBlue}</label>
+                            {/* Win by Bye Toggle */}
+                            <div className="mb-6 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                                <label className="flex items-center justify-center gap-3 cursor-pointer">
                                     <input
-                                        type="number"
-                                        min="0"
-                                        max={isBO5 ? 3 : 2}
-                                        value={formData.scoreBlue}
-                                        onChange={(e) => setFormData({ ...formData, scoreBlue: e.target.value })}
-                                        className="w-20 h-20 text-center text-3xl font-bold border-2 border-blue-300 bg-blue-50 rounded-xl focus:border-cyan-aura focus:outline-none"
+                                        type="checkbox"
+                                        checked={isByeWin}
+                                        onChange={(e) => {
+                                            setIsByeWin(e.target.checked);
+                                            if (!e.target.checked) setByeWinner('');
+                                        }}
+                                        className="w-5 h-5 text-yellow-500 border-gray-300 rounded focus:ring-yellow-400"
                                     />
-                                </div>
-                                <div className="text-4xl text-gray-300 font-bold">-</div>
-                                <div className="text-center">
-                                    <label className="block text-sm text-gray-600 mb-2">{formData.teamRed}</label>
-                                    <input
-                                        type="number"
-                                        min="0"
-                                        max={isBO5 ? 3 : 2}
-                                        value={formData.scoreRed}
-                                        onChange={(e) => setFormData({ ...formData, scoreRed: e.target.value })}
-                                        className="w-20 h-20 text-center text-3xl font-bold border-2 border-red-300 bg-red-50 rounded-xl focus:border-cyan-aura focus:outline-none"
-                                    />
-                                </div>
+                                    <span className="font-bold text-yellow-700">
+                                        <i className="fas fa-flag-checkered mr-2"></i>
+                                        ชนะบาย (Win by Bye)
+                                    </span>
+                                </label>
+                                <p className="text-xs text-yellow-600 text-center mt-2">
+                                    เลือกเมื่อทีมหนึ่งชนะโดยไม่ต้องแข่ง (ไม่มี score ไม่มี stats)
+                                </p>
+
+                                {/* Bye Winner Selection */}
+                                {isByeWin && (
+                                    <div className="mt-4 flex justify-center gap-4">
+                                        <button
+                                            type="button"
+                                            onClick={() => setByeWinner('blue')}
+                                            className={`px-6 py-3 rounded-lg font-bold transition-all ${byeWinner === 'blue'
+                                                ? 'bg-blue-500 text-white shadow-lg scale-105'
+                                                : 'bg-blue-100 text-blue-600 hover:bg-blue-200'
+                                                }`}
+                                        >
+                                            <i className="fas fa-trophy mr-2"></i>
+                                            {formData.teamBlue}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setByeWinner('red')}
+                                            className={`px-6 py-3 rounded-lg font-bold transition-all ${byeWinner === 'red'
+                                                ? 'bg-red-500 text-white shadow-lg scale-105'
+                                                : 'bg-red-100 text-red-600 hover:bg-red-200'
+                                                }`}
+                                        >
+                                            <i className="fas fa-trophy mr-2"></i>
+                                            {formData.teamRed}
+                                        </button>
+                                    </div>
+                                )}
                             </div>
 
-                            {/* Advanced Details Toggle */}
-                            <div className="mb-4">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowAdvanced(!showAdvanced)}
-                                    className="w-full flex items-center justify-center gap-2 text-gray-600 hover:text-cyan-aura transition-colors py-2"
-                                >
-                                    <i className={`fas fa-chevron-${showAdvanced ? 'up' : 'down'}`}></i>
-                                    {showAdvanced ? 'ซ่อนรายละเอียดเกม' : 'แสดงรายละเอียดเกม (สำหรับ Statistics)'}
-                                </button>
-                            </div>
+                            {/* Quick Score Input - Hidden when Bye Win */}
+                            {!isByeWin && (
+                                <div className="flex items-center justify-center gap-6 mb-6">
+                                    <div className="text-center">
+                                        <label className="block text-sm text-gray-600 mb-2">{formData.teamBlue}</label>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            max={isBO5 ? 3 : 2}
+                                            value={formData.scoreBlue}
+                                            onChange={(e) => setFormData({ ...formData, scoreBlue: e.target.value })}
+                                            className="w-20 h-20 text-center text-3xl font-bold border-2 border-blue-300 bg-blue-50 rounded-xl focus:border-cyan-aura focus:outline-none"
+                                        />
+                                    </div>
+                                    <div className="text-4xl text-gray-300 font-bold">-</div>
+                                    <div className="text-center">
+                                        <label className="block text-sm text-gray-600 mb-2">{formData.teamRed}</label>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            max={isBO5 ? 3 : 2}
+                                            value={formData.scoreRed}
+                                            onChange={(e) => setFormData({ ...formData, scoreRed: e.target.value })}
+                                            className="w-20 h-20 text-center text-3xl font-bold border-2 border-red-300 bg-red-50 rounded-xl focus:border-cyan-aura focus:outline-none"
+                                        />
+                                    </div>
+                                </div>
+                            )}
 
-                            {/* Game Details */}
-                            {showAdvanced && (
+                            {/* Advanced Details Toggle - Hidden when Bye Win */}
+                            {!isByeWin && (
+                                <div className="mb-4">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowAdvanced(!showAdvanced)}
+                                        className="w-full flex items-center justify-center gap-2 text-gray-600 hover:text-cyan-aura transition-colors py-2"
+                                    >
+                                        <i className={`fas fa-chevron-${showAdvanced ? 'up' : 'down'}`}></i>
+                                        {showAdvanced ? 'ซ่อนรายละเอียดเกม' : 'แสดงรายละเอียดเกม (สำหรับ Statistics)'}
+                                    </button>
+                                </div>
+                            )}
+
+                            {/* Game Details - Hidden when Bye Win */}
+                            {!isByeWin && showAdvanced && (
                                 <div className="space-y-4 mb-6 p-4 bg-white rounded-lg border border-gray-200">
 
                                     <h4 className="font-bold text-gray-700">
@@ -769,15 +987,17 @@ export default function AdminResults() {
                             )}
 
                             {message && (
-                                <div className={`mb-4 p-3 rounded-lg text-center ${message.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                <div className={`mb-4 p-3 rounded-lg text-center ${message.type === 'success' ? 'bg-green-100 text-green-700' :
+                                    message.type === 'info' ? 'bg-blue-100 text-blue-700' :
+                                        'bg-red-100 text-red-700'
+                                    }`}>
                                     {message.text}
                                 </div>
                             )}
 
                             <button
                                 type="submit"
-                                // Logic for enabling submit button: must implement more complex check for BO5 if needed, but for now simple check is ok
-                                disabled={loading || (parseInt(formData.scoreBlue) === 0 && parseInt(formData.scoreRed) === 0)}
+                                disabled={loading || (!isByeWin && parseInt(formData.scoreBlue) === 0 && parseInt(formData.scoreRed) === 0) || (isByeWin && !byeWinner)}
                                 className="w-full bg-gradient-to-r from-cyan-aura to-blue-600 text-white font-bold py-3 rounded-lg hover:shadow-lg transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                             >
                                 {loading ? (

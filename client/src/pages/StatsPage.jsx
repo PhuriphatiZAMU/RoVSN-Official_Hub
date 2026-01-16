@@ -219,12 +219,12 @@ function PlayerStats() {
                                 {t.stats.playerShort}
                             </th>
                             <th className="p-4 text-left bg-gray-50 text-uefa-dark border-b border-gray-200">{t.stats.team}</th>
-                            <th className="p-2 md:p-4 text-center hide-mobile bg-gray-50 text-uefa-dark border-b border-gray-200" title="Top Heroes">{t.stats.heroes}</th>
+                            <th className="p-2 md:p-4 text-center bg-gray-50 text-uefa-dark border-b border-gray-200" title="Top Heroes">{t.stats.heroes}</th>
                             <th className="p-4 text-center bg-gray-50 text-uefa-dark border-b border-gray-200" title="Games Played">{t.stats.games}</th>
                             <th className="p-4 text-center text-blue-600 bg-gray-50 border-b border-gray-200" title="Total Kills">K</th>
                             <th className="p-4 text-center text-red-600 bg-gray-50 border-b border-gray-200" title="Total Deaths">D</th>
                             <th className="p-4 text-center text-green-600 bg-gray-50 border-b border-gray-200" title="Total Assists">A</th>
-                            <th className="p-2 md:p-4 text-right hide-mobile bg-gray-50 text-uefa-dark border-b border-gray-200" title="Total Damage Dealt">{t.stats.damage}</th>
+                            <th className="p-2 md:p-4 text-center bg-gray-50 text-yellow-600 border-b border-gray-200" title="Gold per Minute">GPM</th>
                             <th className="p-4 text-center font-bold text-cyan-aura bg-gray-50 border-b border-gray-200" title="KDA Ratio">{t.stats.kda}</th>
                         </tr>
                     </thead>
@@ -247,7 +247,7 @@ function PlayerStats() {
                                 stats.slice(0, 50).map((p, idx) => {
                                     const topHeroes = getPlayerTopHeroes(p.playerName);
                                     return (
-                                        <tr key={`${p.teamName}-${p.playerName}`} className={`hover:bg-gray-50 transition border-b border-gray-100 last:border-0 ${idx < 3 ? 'bg-yellow-50/50' : ''}`}>
+                                        <tr key={`${p.teamName}-${p.playerName}`} className={`hover:bg-gray-50 transition border-b border-gray-100 last:border-0 ${idx < 3 ? 'bg-yellow-50' : 'bg-white'}`}>
                                             <td className="p-4 text-center text-gray-500">
                                                 {idx < 3 ? (
                                                     <div className={`w-8 h-8 rounded-full flex items-center justify-center mx-auto font-bold text-white ${idx === 0 ? 'bg-gradient-to-br from-yellow-400 to-yellow-600' :
@@ -269,7 +269,7 @@ function PlayerStats() {
                                                     <span className="text-sm text-gray-600 truncate max-w-[100px]">{p.teamName}</span>
                                                 </div>
                                             </td>
-                                            <td className="p-2 md:p-4 hide-mobile max-w-[150px]">
+                                            <td className="p-2 md:p-4 max-w-[150px]">
                                                 <div className="flex gap-1 justify-center flex-wrap">
                                                     {topHeroes.length > 0 ? (
                                                         topHeroes.slice(0, 3).map((hero, i) => (
@@ -292,8 +292,8 @@ function PlayerStats() {
                                             <td className="p-4 text-center font-mono font-bold text-gray-800">{p.totalKills}</td>
                                             <td className="p-4 text-center font-mono font-bold text-gray-800">{p.totalDeaths}</td>
                                             <td className="p-4 text-center font-mono font-bold text-gray-800">{p.totalAssists}</td>
-                                            <td className="p-2 md:p-4 text-right font-mono text-sm text-blue-600 hide-mobile w-24">
-                                                {(p.totalDamage || 0).toLocaleString()}
+                                            <td className="p-2 md:p-4 text-center font-mono text-sm text-yellow-600 font-bold w-24">
+                                                {(p.gpm || 0).toLocaleString()}
                                             </td>
                                             <td className="p-4 text-center">
                                                 <span className="text-lg font-bold text-cyan-aura bg-cyan-aura/10 px-2 py-1 rounded inline-block min-w-[60px]">
