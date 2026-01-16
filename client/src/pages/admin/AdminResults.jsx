@@ -1048,6 +1048,7 @@ export default function AdminResults() {
             {/* Player Stats Modal */}
             <GameStatsModal
                 isOpen={isStatsModalOpen}
+                token={token}
                 onClose={() => setIsStatsModalOpen(false)}
                 teamBlue={formData.teamBlue}
                 teamRed={formData.teamRed}

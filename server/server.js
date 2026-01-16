@@ -8,896 +8,401 @@ const bcrypt = require('bcryptjs');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const compression = require('compression'); // เพิ่ม compression
+const compression = require('compression');
 const { v2: cloudinary } = require('cloudinary');
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const { GoogleGenerativeAI } = require("@google/generative-ai"); // Google Gemini AI
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// JWT Secret (ต้องตั้งใน .env)
+// JWT Secret
 const JWT_SECRET = process.env.JWT_SECRET || 'default-secret-change-me';
 const JWT_EXPIRES_IN = '24h';
 
-// Admin Credentials (ต้องตั้งใน .env)
+// Admin Credentials
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
-const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH; // bcrypt hash
+const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH;
 
 // --- Middleware ---
-app.use(compression()); // Compress all responses
+app.use(compression());
 app.use(bodyParser.json());
 app.use(cors({
     origin: [
-        'https://ro-v-sn-tournament-official.vercel.app', // Vercel Production
-        'http://localhost:5173', // Vite Dev Server (Default)
-        'http://localhost:5174', // Vite Dev Server (Fallback 1)
-        'http://localhost:5175', // Vite Dev Server (Fallback 2)
-        'http://localhost:3000', // Local Backend
-        'https://phuriphatizamu.github.io' // Legacy
+        'https://ro-v-sn-tournament-official.vercel.app',
+        'http://localhost:5173',
+        'http://localhost:5174',
+        'http://localhost:5175',
+        'http://localhost:3000',
+        'https://phuriphatizamu.github.io'
     ],
     credentials: true
 }));
 
-// Cache middleware for read-only API endpoints (5 minutes)
+// Cache middleware
 const cacheControl = (duration = 300) => (req, res, next) => {
     res.set('Cache-Control', `public, max-age=${duration}`);
     next();
 };
 
 // --- Database Connection ---
-// ใช้ Environment Variable เท่านั้น (ดูไฟล์ .env.example สำหรับตัวอย่าง)
 const MONGO_URI = process.env.MONGO_URI;
-
 if (!MONGO_URI) {
     console.error('❌ MONGO_URI is not defined in environment variables!');
-    console.error('📝 Please create a .env file in the server directory with your MongoDB connection string.');
     process.exit(1);
 }
-
 console.log("🔄 Connecting to MongoDB...");
 mongoose.connect(MONGO_URI)
     .then(() => console.log(`✅ MongoDB Connected`))
     .catch(err => console.error('❌ MongoDB Error:', err));
 
-// --- Schemas & Models (ประกาศหลังจาก Import mongoose แล้ว) ---
-
-// 1. Schedule Schema
-const ScheduleSchema = new mongoose.Schema({
-    teams: [String],
-    potA: [String],
-    potB: [String],
-    schedule: Array,
-    createdAt: { type: Date, default: Date.now }
-});
+// --- Schemas & Models ---
+const ScheduleSchema = new mongoose.Schema({ teams: [String], potA: [String], potB: [String], schedule: Array, createdAt: { type: Date, default: Date.now } });
 const Schedule = mongoose.model('Schedule', ScheduleSchema, 'schedules');
 
-// 2. Result Schema
-const ResultSchema = new mongoose.Schema({
-    matchId: String,
-    matchDay: Number,
-    teamBlue: String,
-    teamRed: String,
-    scoreBlue: Number,
-    scoreRed: Number,
-    winner: String,
-    loser: String,
-    gameDetails: Array,
-    isByeWin: { type: Boolean, default: false }, // Win by Bye (ชนะบาย)
-    createdAt: { type: Date, default: Date.now }
-});
+const ResultSchema = new mongoose.Schema({ matchId: String, matchDay: Number, teamBlue: String, teamRed: String, scoreBlue: Number, scoreRed: Number, winner: String, loser: String, gameDetails: Array, isByeWin: { type: Boolean, default: false }, createdAt: { type: Date, default: Date.now } });
 const Result = mongoose.model('Result', ResultSchema, 'results');
 
-// 3. Game Stat Schema - เก็บสถิติผู้เล่นแต่ละเกม
-const GameStatSchema = new mongoose.Schema({
-    matchId: String,
-    gameNumber: Number,
-    teamName: String,
-    playerName: String,
-    heroName: String,        // ชื่อฮีโร่ที่ใช้
-    kills: Number,
-    deaths: Number,
-    assists: Number,
-    gold: Number,            // Gold (ใช้คำนวณ GPM = Gold / gameDuration)
-    mvp: Boolean,
-    gameDuration: Number,    // ระยะเวลาเกม (วินาที)
-    win: Boolean,
-    createdAt: { type: Date, default: Date.now }
-});
+const GameStatSchema = new mongoose.Schema({ matchId: String, gameNumber: Number, teamName: String, playerName: String, heroName: String, kills: Number, deaths: Number, assists: Number, gold: Number, mvp: Boolean, gameDuration: Number, win: Boolean, createdAt: { type: Date, default: Date.now } });
 const GameStat = mongoose.model('GameStat', GameStatSchema, 'gamestats');
 
-// 4. Team Logo Schema (เก็บ URL โลโก้ทีม) [NEW]
-const TeamLogoSchema = new mongoose.Schema({
-    teamName: String,       // ชื่อทีม (Key หลักในการค้นหา)
-    logoUrl: String,        // URL รูปภาพ (Cloud Storage / Public URL)
-    createdAt: { type: Date, default: Date.now }
-});
-// บังคับชื่อ Collection ว่า 'teamlogo' ตามที่คุณระบุ
+const TeamLogoSchema = new mongoose.Schema({ teamName: String, logoUrl: String, createdAt: { type: Date, default: Date.now } });
 const TeamLogo = mongoose.model('TeamLogo', TeamLogoSchema, 'teamlogo');
 
-// 5. Hero Schema (เก็บข้อมูลฮีโร่) [NEW]
-const HeroSchema = new mongoose.Schema({
-    name: { type: String, required: true, unique: true },   // ชื่อฮีโร่ (ดึงจากชื่อไฟล์)
-    imageUrl: String,     // URL รูปภาพฮีโร่
-    createdAt: { type: Date, default: Date.now }
-});
+const HeroSchema = new mongoose.Schema({ name: { type: String, required: true, unique: true }, imageUrl: String, createdAt: { type: Date, default: Date.now } });
 const Hero = mongoose.model('Hero', HeroSchema, 'heroes');
 
-// --- Cloudinary Config ---
+const PlayerPoolSchema = new mongoose.Schema({ name: String, grade: String, team: String, inGameName: String, openId: String, createdAt: { type: Date, default: Date.now } });
+const PlayerPool = mongoose.model('PlayerPool', PlayerPoolSchema, 'playerpool');
+
+// --- Cloudinary ---
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
     api_key: process.env.CLOUDINARY_API_KEY,
     api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-// Cloudinary Storage for Multer
 const cloudinaryStorage = new CloudinaryStorage({
     cloudinary: cloudinary,
-    params: {
-        folder: 'rov-heroes', // Folder name in Cloudinary
-        allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
-        transformation: [{ width: 200, height: 200, crop: 'fill' }] // Auto resize
-    }
+    params: { folder: 'rov-heroes', allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp'], transformation: [{ width: 200, height: 200, crop: 'fill' }] }
 });
 
-// Local fallback for development (if Cloudinary not configured)
 const localUploadDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(localUploadDir)) {
-    fs.mkdirSync(localUploadDir);
-}
+if (!fs.existsSync(localUploadDir)) fs.mkdirSync(localUploadDir);
 app.use('/uploads', express.static(localUploadDir));
 
 const localStorage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, localUploadDir);
-    },
-    filename: function (req, file, cb) {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, 'hero-' + uniqueSuffix + path.extname(file.originalname));
-    }
+    destination: (req, file, cb) => cb(null, localUploadDir),
+    filename: (req, file, cb) => cb(null, 'hero-' + Date.now() + '-' + Math.round(Math.random() * 1E9) + path.extname(file.originalname))
 });
 
-// Use Cloudinary if configured, otherwise local storage
 const useCloudinary = process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY;
 const upload = multer({
     storage: useCloudinary ? cloudinaryStorage : localStorage,
-    limits: { fileSize: 10 * 1024 * 1024 } // 10MB max per file
+    limits: { fileSize: 10 * 1024 * 1024 }
 });
-
 console.log(`📁 Image Storage: ${useCloudinary ? 'Cloudinary ☁️' : 'Local Disk 💾'}`);
 
 // --- AUTH MIDDLEWARE ---
 const authenticateToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
-
-    if (!token) {
-        return res.status(401).json({ error: 'Access token required' });
-    }
-
+    const token = authHeader && authHeader.split(' ')[1];
+    if (!token) return res.status(401).json({ error: 'Access token required' });
     jwt.verify(token, JWT_SECRET, (err, user) => {
-        if (err) {
-            return res.status(403).json({ error: 'Invalid or expired token' });
-        }
+        if (err) return res.status(403).json({ error: 'Invalid or expired token' });
         req.user = user;
         next();
     });
 };
 
-// Upload Endpoint
+// Upload Endpoint (Standard)
 app.post('/api/upload', authenticateToken, upload.single('logo'), (req, res) => {
-    if (!req.file) {
-        return res.status(400).send({ message: 'No file uploaded' });
-    }
-    // Return the URL to access the file
-    // Check if Cloudinary was used (req.file.path contains the Cloudinary URL)
-    let fileUrl;
-    if (useCloudinary && req.file.path) {
-        fileUrl = req.file.path;
-    } else {
-        // Local storage fallback
-        fileUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
-    }
-
+    if (!req.file) return res.status(400).send({ message: 'No file uploaded' });
+    const fileUrl = (useCloudinary && req.file.path) ? req.file.path : `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
     res.json({ url: fileUrl });
 });
 
-// --- API Routes ---
+// Configure Multer for AI (Memory Storage)
+const uploadMemory = multer({ storage: multer.memoryStorage() });
 
-app.get('/', (req, res) => {
-    res.send('<h1>RoV SN Tournament API</h1><p>Status: Online</p><p>Version: 2.0 (with Auth)</p>');
-});
+// --- ROUTES ---
 
+app.get('/', (req, res) => res.send('<h1>RoV SN Tournament API</h1><p>Status: Online</p>'));
 app.get('/api/health', (req, res) => res.json({ status: 'ok', version: '2.0' }));
 
-// --- AUTH ROUTES ---
-
-
-// POST: Login
+// Auth Routes
 app.post('/api/auth/login', async (req, res) => {
     try {
         const { username, password } = req.body;
+        if (!username || !password) return res.status(400).json({ error: 'Username and password required' });
+        if (username !== ADMIN_USERNAME) return res.status(401).json({ error: 'Invalid credentials' });
 
-        if (!username || !password) {
-            return res.status(400).json({ error: 'Username and password required' });
-        }
-
-        // ตรวจสอบ username
-        if (username !== ADMIN_USERNAME) {
-            return res.status(401).json({ error: 'Invalid credentials' });
-        }
-
-        // ตรวจสอบ password
         if (!ADMIN_PASSWORD_HASH) {
-            // กรณีไม่ได้ตั้ง hash ใน .env ให้ใช้ default password (สำหรับ dev เท่านั้น!)
-            if (password !== 'admin123') {
-                return res.status(401).json({ error: 'Invalid credentials' });
-            }
+            if (password !== 'admin123') return res.status(401).json({ error: 'Invalid credentials' });
         } else {
             const isValid = await bcrypt.compare(password, ADMIN_PASSWORD_HASH);
-            if (!isValid) {
-                return res.status(401).json({ error: 'Invalid credentials' });
-            }
+            if (!isValid) return res.status(401).json({ error: 'Invalid credentials' });
         }
-
-        // สร้าง JWT Token
-        const token = jwt.sign(
-            { username, role: 'admin' },
-            JWT_SECRET,
-            { expiresIn: JWT_EXPIRES_IN }
-        );
-
-        res.json({
-            message: 'Login successful',
-            token,
-            expiresIn: JWT_EXPIRES_IN
-        });
-    } catch (error) {
-        console.error("Login error:", error);
-        res.status(500).json({ error: error.message });
-    }
+        const token = jwt.sign({ username, role: 'admin' }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+        res.json({ message: 'Login successful', token, expiresIn: JWT_EXPIRES_IN });
+    } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
-// GET: Verify Token
-app.get('/api/auth/verify', authenticateToken, (req, res) => {
-    res.json({ valid: true, user: req.user });
-});
+app.get('/api/auth/verify', authenticateToken, (req, res) => res.json({ valid: true, user: req.user }));
 
-// POST: Generate Password Hash (สำหรับสร้าง hash ใส่ใน .env)
-app.post('/api/auth/hash', async (req, res) => {
-    try {
-        const { password } = req.body;
-        if (!password) {
-            return res.status(400).json({ error: 'Password required' });
-        }
-        const hash = await bcrypt.hash(password, 10);
-        res.json({
-            message: 'Password hash generated. Add this to your .env file as ADMIN_PASSWORD_HASH',
-            hash
-        });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-// GET: Schedules (cached 2 min)
+// Schedules
 app.get('/api/schedules', cacheControl(120), async (req, res) => {
     try {
         const latest = await Schedule.findOne().sort({ createdAt: -1 });
         if (!latest) return res.status(404).json({ message: "No schedule found" });
         res.json(latest);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
+    } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
-// POST: Schedules (Protected)
 app.post('/api/schedules', authenticateToken, async (req, res) => {
     try {
         const newSchedule = new Schedule(req.body);
         const saved = await newSchedule.save();
         res.status(201).json(saved);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
+    } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
-// DELETE: Clear All Schedules AND Results (Protected)
 app.delete('/api/schedules/clear', authenticateToken, async (req, res) => {
     try {
-        const scheduleResult = await Schedule.deleteMany({});
-        const resultResult = await Result.deleteMany({});
-        res.json({
-            message: 'All data cleared successfully',
-            deleted: {
-                schedules: scheduleResult.deletedCount,
-                results: resultResult.deletedCount
-            }
-        });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
+        await Schedule.deleteMany({});
+        await Result.deleteMany({});
+        res.json({ message: 'All data cleared successfully' });
+    } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
-// GET: Results (cached 1 min)
+// Results
 app.get('/api/results', cacheControl(60), async (req, res) => {
     try {
         const results = await Result.find().sort({ matchDay: 1 });
         res.json(results);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
+    } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
-// DELETE: Reset results by day (Protected)
-app.delete('/api/results/reset/:day', authenticateToken, async (req, res) => {
+app.post('/api/results', authenticateToken, async (req, res) => {
     try {
-        const { day } = req.params;
-        const result = await Result.deleteMany({
-            $or: [
-                { matchDay: parseInt(day) },
-                { matchDay: day.toString() }
-            ]
-        });
-        res.json({ message: `Results for day ${day} cleared`, deleted: result.deletedCount });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
+        let { matchDay, teamBlue, teamRed, scoreBlue, scoreRed, gameDetails, isByeWin } = req.body;
+
+        // Sanitize Input (Important for consistent IDs)
+        teamBlue = teamBlue.trim();
+        teamRed = teamRed.trim();
+
+        let winner = null, loser = null;
+        if (scoreBlue > scoreRed) { winner = teamBlue; loser = teamRed; }
+        else { winner = teamRed; loser = teamBlue; }
+
+        const matchId = `${matchDay}_${teamBlue}_vs_${teamRed}`.replace(/\s+/g, '');
+        const resultData = { matchId, matchDay, teamBlue, teamRed, scoreBlue, scoreRed, winner, loser, gameDetails: gameDetails || [], isByeWin: isByeWin || false };
+
+        const result = await Result.findOneAndUpdate({ matchId: matchId }, resultData, { upsert: true, new: true });
+        res.status(201).json(result);
+    } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
-// DELETE: Single Match Result (Protected)
 app.delete('/api/results/:matchId', authenticateToken, async (req, res) => {
     try {
         const { matchId } = req.params;
-        const result = await Result.deleteOne({ matchId });
-        // Optional: delete stats too
+        await Result.deleteOne({ matchId });
         await GameStat.deleteMany({ matchId });
-        res.json({ message: `Result ${matchId} deleted`, deleted: result.deletedCount });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
+        res.json({ message: `Result ${matchId} deleted` });
+    } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
-// POST: Results (Protected)
-app.post('/api/results', authenticateToken, async (req, res) => {
+app.delete('/api/results/reset/:day', authenticateToken, async (req, res) => {
     try {
-        const { matchDay, teamBlue, teamRed, scoreBlue, scoreRed, gameDetails, isByeWin } = req.body;
-
-        let winner = null;
-        let loser = null;
-        if (scoreBlue > scoreRed) {
-            winner = teamBlue;
-            loser = teamRed;
-        } else {
-            winner = teamRed;
-            loser = teamBlue;
-        }
-
-        const matchId = `${matchDay}_${teamBlue}_vs_${teamRed}`.replace(/\s+/g, '');
-
-        const resultData = {
-            matchId, matchDay, teamBlue, teamRed, scoreBlue, scoreRed, winner, loser,
-            gameDetails: gameDetails || [],
-            isByeWin: isByeWin || false, // Win by Bye flag
-        };
-
-        const result = await Result.findOneAndUpdate(
-            { matchId: matchId },
-            resultData,
-            { upsert: true, new: true }
-        );
-
-        res.status(201).json(result);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
+        const { day } = req.params;
+        await Result.deleteMany({ $or: [{ matchDay: parseInt(day) }, { matchDay: day.toString() }] });
+        res.json({ message: `Results for day ${day} cleared` });
+    } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
-// GET: Player Stats
+
+// Stats
 app.get('/api/player-stats', async (req, res) => {
     try {
         const stats = await GameStat.aggregate([
-            {
-                // Calculate GPM for each game record first
-                $addFields: {
-                    gameGPM: {
-                        $cond: [
-                            { $gt: ["$gameDuration", 0] },
-                            { $divide: ["$gold", { $divide: ["$gameDuration", 60] }] },
-                            0
-                        ]
-                    }
-                }
-            },
-            {
-                $group: {
-                    _id: { playerName: "$playerName", teamName: "$teamName" },
-                    totalKills: { $sum: "$kills" },
-                    totalDeaths: { $sum: "$deaths" },
-                    totalAssists: { $sum: "$assists" },
-                    totalGold: { $sum: "$gold" },
-                    gamesPlayed: { $sum: 1 },
-                    mvpCount: { $sum: { $cond: ["$mvp", 1, 0] } },
-                    wins: { $sum: { $cond: ["$win", 1, 0] } },
-                    avgGPM: { $avg: "$gameGPM" } // Average of per-game GPM
-                }
-            },
-            {
-                $project: {
-                    playerName: "$_id.playerName",
-                    teamName: "$_id.teamName",
-                    totalKills: 1, totalDeaths: 1, totalAssists: 1, totalGold: 1,
-                    gamesPlayed: 1, mvpCount: 1, wins: 1,
-                    kda: {
-                        $cond: [
-                            { $eq: ["$totalDeaths", 0] },
-                            { $add: ["$totalKills", "$totalAssists"] },
-                            { $round: [{ $divide: [{ $add: ["$totalKills", "$totalAssists"] }, "$totalDeaths"] }, 2] }
-                        ]
-                    },
-                    gpm: { $round: ["$avgGPM", 0] } // Round the average GPM
-                }
-            },
-            { $sort: { gpm: -1 } } // Sort by GPM instead of KDA
+            { $addFields: { gameGPM: { $cond: [{ $gt: ["$gameDuration", 0] }, { $divide: ["$gold", { $divide: ["$gameDuration", 60] }] }, 0] } } },
+            { $group: { _id: { playerName: "$playerName", teamName: "$teamName" }, totalKills: { $sum: "$kills" }, totalDeaths: { $sum: "$deaths" }, totalAssists: { $sum: "$assists" }, totalGold: { $sum: "$gold" }, gamesPlayed: { $sum: 1 }, mvpCount: { $sum: { $cond: ["$mvp", 1, 0] } }, wins: { $sum: { $cond: ["$win", 1, 0] } }, avgGPM: { $avg: "$gameGPM" } } },
+            { $project: { playerName: "$_id.playerName", teamName: "$_id.teamName", totalKills: 1, totalDeaths: 1, totalAssists: 1, totalGold: 1, gamesPlayed: 1, mvpCount: 1, wins: 1, kda: { $cond: [{ $eq: ["$totalDeaths", 0] }, { $add: ["$totalKills", "$totalAssists"] }, { $round: [{ $divide: [{ $add: ["$totalKills", "$totalAssists"] }, "$totalDeaths"] }, 2] }] }, gpm: { $round: ["$avgGPM", 0] } } },
+            { $sort: { gpm: -1 } }
         ]);
         res.json(stats);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
+    } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
-// GET: Team Stats
 app.get('/api/team-stats', async (req, res) => {
     try {
         const stats = await GameStat.aggregate([
-            {
-                $group: {
-                    _id: "$teamName",
-                    totalKills: { $sum: "$kills" },
-                    totalDeaths: { $sum: "$deaths" },
-                    totalAssists: { $sum: "$assists" },
-                    totalGold: { $sum: "$gold" },
-                    gamesPlayed: { $sum: 1 },
-                    wins: { $sum: { $cond: ["$win", 1, 0] } }
-                }
-            },
-            {
-                $project: {
-                    teamName: "$_id",
-                    totalKills: 1, totalDeaths: 1, totalAssists: 1, totalGold: 1,
-                    // Assuming 5 players per team, divide by 5 to get actual team stats
-                    realGamesPlayed: { $ceil: { $divide: ["$gamesPlayed", 5] } },
-                    realWins: { $ceil: { $divide: ["$wins", 5] } }
-                }
-            },
+            { $group: { _id: "$teamName", totalKills: { $sum: "$kills" }, totalDeaths: { $sum: "$deaths" }, totalAssists: { $sum: "$assists" }, totalGold: { $sum: "$gold" }, gamesPlayed: { $sum: 1 }, wins: { $sum: { $cond: ["$win", 1, 0] } } } },
+            { $project: { teamName: "$_id", totalKills: 1, totalDeaths: 1, totalAssists: 1, totalGold: 1, realGamesPlayed: { $ceil: { $divide: ["$gamesPlayed", 5] } }, realWins: { $ceil: { $divide: ["$wins", 5] } } } },
             { $sort: { realWins: -1 } }
         ]);
         res.json(stats);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
+    } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
-// GET: Season Stats (Updated to include Total Deaths)
 app.get('/api/season-stats', async (req, res) => {
     try {
-        const stats = await GameStat.aggregate([
-            {
-                $group: {
-                    _id: null,
-                    totalKills: { $sum: "$kills" },
-                    totalDeaths: { $sum: "$deaths" }, // เพิ่มบรรทัดนี้
-                    avgGameDuration: { $avg: "$gameDuration" },
-                    totalDarkSlayers: { $sum: 0 }
-                }
-            }
-        ]);
-        res.json(stats[0] || { totalKills: 0, totalDeaths: 0, avgGameDuration: 0 });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
+        // 1. Total Stats
+        const stats = await GameStat.aggregate([{ $group: { _id: null, totalKills: { $sum: "$kills" }, totalDeaths: { $sum: "$deaths" }, avgGameDuration: { $avg: "$gameDuration" } } }]);
+        let totalStats = stats[0] || { totalKills: 0, totalDeaths: 0, avgGameDuration: 0 };
 
-// GET: Season Stats (Bloodiest Game, Longest Game)
-app.get('/api/season-stats', async (req, res) => {
-    try {
-        // Get all results with gameDetails
+        // 2. Bloodiest & Longest Game
         const results = await Result.find({ 'gameDetails.0': { $exists: true }, isByeWin: { $ne: true } });
-
         let highestKillGame = { match: '-', kills: 0 };
         let longestGame = { match: '-', duration: 0 };
-        let totalKills = 0;
-        let totalDeaths = 0;
-        let totalGames = 0;
-        let totalDuration = 0;
 
-        // Get kill stats per game from gamestats
-        const gameStats = await GameStat.aggregate([
-            {
-                $group: {
-                    _id: { matchId: "$matchId", gameNumber: "$gameNumber" },
-                    totalKills: { $sum: "$kills" },
-                    totalDeaths: { $sum: "$deaths" },
-                    gameDuration: { $first: "$gameDuration" },
-                    matchId: { $first: "$matchId" }
-                }
-            }
-        ]);
-
-        // Process gameStats for bloodiest game
+        const gameStats = await GameStat.aggregate([{ $group: { _id: { matchId: "$matchId", gameNumber: "$gameNumber" }, totalKills: { $sum: "$kills" }, matchId: { $first: "$matchId" } } }]);
         gameStats.forEach(game => {
-            totalKills += game.totalKills || 0;
-            totalDeaths += game.totalDeaths || 0;
-            if (game.gameDuration) {
-                totalGames++;
-                totalDuration += game.gameDuration;
-            }
-
             if (game.totalKills > highestKillGame.kills) {
-                highestKillGame = {
-                    match: game.matchId?.replace(/_/g, ' ').replace('vs', 'vs.') || 'Unknown',
-                    kills: game.totalKills
-                };
+                highestKillGame = { match: game.matchId?.replace(/_/g, ' ').replace('vs', 'vs.') || 'Unknown', kills: game.totalKills };
             }
         });
 
-        // Process results for longest game (from gameDetails)
         results.forEach(result => {
-            if (result.gameDetails && result.gameDetails.length > 0) {
+            if (result.gameDetails) {
                 result.gameDetails.forEach(game => {
                     if (game.duration && game.duration > longestGame.duration) {
-                        longestGame = {
-                            match: `${result.teamBlue} vs ${result.teamRed}`,
-                            duration: game.duration
-                        };
+                        longestGame = { match: `${result.teamBlue} vs ${result.teamRed}`, duration: game.duration };
                     }
                 });
             }
         });
 
-        // Calculate avgGameDuration
-        const avgGameDuration = totalGames > 0 ? Math.round(totalDuration / totalGames) : 0;
-
-        res.json({
-            totalKills,
-            totalDeaths,
-            avgGameDuration,
-            highestKillGame,
-            longestGame
-        });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
+        res.json({ ...totalStats, highestKillGame, longestGame });
+    } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
-// GET: ดึงข้อมูลโลโก้ทั้งหมด (cached 5 min)
-app.get('/api/team-logos', cacheControl(300), async (req, res) => {
-    try {
-        const logos = await TeamLogo.find();
-        res.json(logos);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-// POST: บันทึกหรืออัปเดตโลโก้ทีม (Protected)
-app.post('/api/team-logos', authenticateToken, async (req, res) => {
-    try {
-        const { teamName, logoUrl } = req.body;
-
-        if (!teamName || !logoUrl) {
-            return res.status(400).json({ error: "teamName and logoUrl are required" });
-        }
-
-        // ใช้ upsert: true (ถ้ามีอัปเดต ถ้าไม่มีสร้างใหม่)
-        const result = await TeamLogo.findOneAndUpdate(
-            { teamName: teamName },
-            { logoUrl: logoUrl },
-            { upsert: true, new: true }
-        );
-
-        res.status(201).json(result);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-// DELETE: ลบโลโก้ทีม (Protected)
-app.delete('/api/team-logos/:teamName', authenticateToken, async (req, res) => {
-    try {
-        const { teamName } = req.params;
-        const result = await TeamLogo.deleteOne({ teamName: teamName });
-        if (result.deletedCount === 0) {
-            return res.status(404).json({ message: 'Logo not found' });
-        }
-        res.json({ message: 'Logo deleted successfully' });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-// POST: Stats (Batch Insert/Update) (Protected)
-// IMPORTANT: Deletes existing stats for the match first, then inserts new ones
 app.post('/api/stats', authenticateToken, async (req, res) => {
     try {
         const statsArray = req.body;
-        if (!Array.isArray(statsArray) || statsArray.length === 0) {
-            return res.status(400).json({ error: "Data must be a non-empty array of player stats" });
-        }
-
-        // Get unique matchIds from the incoming stats
+        if (!Array.isArray(statsArray) || statsArray.length === 0) return res.status(400).json({ error: "Data must be a non-empty array" });
         const matchIds = [...new Set(statsArray.map(s => s.matchId))];
-
-        // Delete ALL existing stats for these matchIds first (prevents duplicates on re-save)
         await GameStat.deleteMany({ matchId: { $in: matchIds } });
-
-        // Insert the new stats
         const savedStats = await GameStat.insertMany(statsArray);
-        res.status(201).json({
-            message: `Saved ${savedStats.length} stats (replaced existing data for ${matchIds.length} match(es))`,
-            count: savedStats.length
-        });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
+        res.status(201).json({ message: `Saved ${savedStats.length} stats`, count: savedStats.length });
+    } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
-// GET: Stats for a specific match (for editing)
-// Use query param instead of route param to handle matchIds with special characters like "/"
 app.get('/api/stats/match', async (req, res) => {
     try {
         const { matchId } = req.query;
-        if (!matchId) {
-            return res.status(400).json({ error: 'matchId query parameter is required' });
-        }
+        if (!matchId) return res.status(400).json({ error: 'matchId required' });
         const stats = await GameStat.find({ matchId }).sort({ gameNumber: 1, teamName: 1 });
         res.json(stats);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
+    } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
-// 5. Player Pool Schema (ทะเบียนผู้เล่นสำหรับ Import/แก้ไข) [NEW]
-const PlayerPoolSchema = new mongoose.Schema({
-    name: String,           // ชื่อ-สกุล
-    grade: String,          // ชั้น (Class)
-    team: String,           // ทีม
-    inGameName: String,     // ชื่อในเกม
-    openId: String,         // OpenID
-    createdAt: { type: Date, default: Date.now }
-});
-const PlayerPool = mongoose.model('PlayerPool', PlayerPoolSchema, 'playerpool');
-
-// --- API Routes for Player Pool ---
-
-// GET: List all players in pool
+// Player Pool
 app.get('/api/players', async (req, res) => {
     try {
         const players = await PlayerPool.find().sort({ team: 1, name: 1 });
         res.json(players);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
+    } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
-// POST: Add single player (Protected)
-app.post('/api/players', authenticateToken, async (req, res) => {
-    try {
-        const newPlayer = new PlayerPool(req.body);
-        const saved = await newPlayer.save();
-        res.status(201).json(saved);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-// POST: Batch Import Players (Protected)
 app.post('/api/players/import', authenticateToken, async (req, res) => {
     try {
-        const players = req.body; // Array of player objects
-        if (!Array.isArray(players) || players.length === 0) {
-            return res.status(400).json({ error: "Invalid data format" });
-        }
-
-        // Clear existing pool if needed? For now, append or user clears manually.
-        // Or upsert based on OpenID? Let's use simple insert for speed as requested.
+        const players = req.body;
         const result = await PlayerPool.insertMany(players);
         res.status(201).json({ message: `Imported ${result.length} players`, count: result.length });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
+    } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
-// PUT: Update player (Protected)
-app.put('/api/players/:id', authenticateToken, async (req, res) => {
-    try {
-        const { id } = req.params;
-        const updated = await PlayerPool.findByIdAndUpdate(id, req.body, { new: true });
-        res.json(updated);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-// DELETE: Delete single player (Protected)
-app.delete('/api/players/:id', authenticateToken, async (req, res) => {
-    try {
-        const { id } = req.params;
-        await PlayerPool.findByIdAndDelete(id);
-        res.json({ message: "Player deleted" });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-// DELETE: Clear all players (Protected)
 app.delete('/api/players/all/clear', authenticateToken, async (req, res) => {
     try {
-        const result = await PlayerPool.deleteMany({});
-        res.json({ message: "All players cleared", deletedCount: result.deletedCount });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
+        await PlayerPool.deleteMany({});
+        res.json({ message: "All players cleared" });
+    } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
-// ==================== HERO API ====================
+// Team Logos
+app.get('/api/team-logos', cacheControl(300), async (req, res) => {
+    try { const logos = await TeamLogo.find(); res.json(logos); } catch (error) { res.status(500).json({ error: error.message }); }
+});
 
-// GET: List all heroes (cached 10 min - heroes rarely change)
-app.get('/api/heroes', cacheControl(600), async (req, res) => {
+app.post('/api/team-logos', authenticateToken, async (req, res) => {
     try {
-        const heroes = await Hero.find().sort({ name: 1 });
-        res.json(heroes);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
+        const { teamName, logoUrl } = req.body;
+        const result = await TeamLogo.findOneAndUpdate({ teamName: teamName }, { logoUrl: logoUrl }, { upsert: true, new: true });
+        res.status(201).json(result);
+    } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
-// POST: Upload multiple hero images (Protected)
+app.delete('/api/team-logos/:teamName', authenticateToken, async (req, res) => {
+    try { await TeamLogo.deleteOne({ teamName: req.params.teamName }); res.json({ message: 'Logo deleted' }); } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
+// Heroes
+app.get('/api/heroes', cacheControl(600), async (req, res) => {
+    try { const heroes = await Hero.find().sort({ name: 1 }); res.json(heroes); } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
 app.post('/api/heroes/upload', authenticateToken, upload.any(), async (req, res) => {
     try {
-        if (!req.files || req.files.length === 0) {
-            return res.status(400).json({ error: 'No files uploaded' });
-        }
-
+        if (!req.files) return res.status(400).json({ error: 'No files uploaded' });
         const results = [];
-        const errors = [];
-
         for (const file of req.files) {
-            // Extract hero name from filename (remove extension)
             const heroName = path.basename(file.originalname, path.extname(file.originalname));
-
-            // Use Cloudinary URL if available, otherwise local URL
             const imageUrl = file.path || `${req.protocol}://${req.get('host')}/uploads/${file.filename}`;
-
-            try {
-                // Upsert: Update if exists, create if not
-                const hero = await Hero.findOneAndUpdate(
-                    { name: heroName },
-                    { name: heroName, imageUrl: imageUrl },
-                    { upsert: true, new: true }
-                );
-                results.push(hero);
-            } catch (err) {
-                errors.push({ file: file.originalname, error: err.message });
-            }
+            const hero = await Hero.findOneAndUpdate({ name: heroName }, { name: heroName, imageUrl: imageUrl }, { upsert: true, new: true });
+            results.push(hero);
         }
-
-        res.status(201).json({
-            message: `Uploaded ${results.length} heroes`,
-            heroes: results,
-            errors: errors.length > 0 ? errors : undefined
-        });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
+        res.status(201).json({ message: `Uploaded ${results.length} heroes`, heroes: results });
+    } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
-// PUT: Update hero (Protected)
-app.put('/api/heroes/:id', authenticateToken, async (req, res) => {
-    try {
-        const { id } = req.params;
-        const updated = await Hero.findByIdAndUpdate(id, req.body, { new: true });
-        if (!updated) {
-            return res.status(404).json({ error: 'Hero not found' });
-        }
-        res.json(updated);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-// DELETE: Delete single hero (Protected)
-app.delete('/api/heroes/:id', authenticateToken, async (req, res) => {
-    try {
-        const { id } = req.params;
-        const deleted = await Hero.findByIdAndDelete(id);
-        if (!deleted) {
-            return res.status(404).json({ error: 'Hero not found' });
-        }
-        res.json({ message: 'Hero deleted', hero: deleted });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-// DELETE: Clear all heroes (Protected)
 app.delete('/api/heroes/all/clear', authenticateToken, async (req, res) => {
+    try { await Hero.deleteMany({}); res.json({ message: 'All heroes cleared' }); } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
+// AI Endpoint (Gemini 2.5 Flash)
+app.post('/api/extract-rov-stats', authenticateToken, uploadMemory.single('image'), async (req, res) => {
     try {
-        const result = await Hero.deleteMany({});
-        res.json({ message: 'All heroes cleared', deletedCount: result.deletedCount });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
+        if (!req.file) return res.status(400).json({ error: 'No image uploaded' });
+        if (!process.env.GEMINI_API_KEY) return res.status(500).json({ error: 'Missing API Key' });
 
-// GET: Player hero stats (most played heroes per player)
-app.get('/api/player-hero-stats', async (req, res) => {
-    try {
-        const stats = await GameStat.aggregate([
-            { $match: { heroName: { $exists: true, $ne: null, $ne: '' } } },
-            {
-                $group: {
-                    _id: { playerName: "$playerName", heroName: "$heroName" },
-                    gamesPlayed: { $sum: 1 },
-                    wins: { $sum: { $cond: ["$win", 1, 0] } },
-                    totalKills: { $sum: "$kills" },
-                    totalDeaths: { $sum: "$deaths" },
-                    totalAssists: { $sum: "$assists" }
-                }
+        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY.trim());
+        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+
+        const imagePart = {
+            inlineData: {
+                data: req.file.buffer.toString("base64"),
+                mimeType: req.file.mimetype,
             },
-            {
-                $group: {
-                    _id: "$_id.playerName",
-                    heroes: {
-                        $push: {
-                            heroName: "$_id.heroName",
-                            gamesPlayed: "$gamesPlayed",
-                            wins: "$wins",
-                            winRate: { $multiply: [{ $divide: ["$wins", "$gamesPlayed"] }, 100] },
-                            kda: {
-                                $cond: [
-                                    { $eq: ["$totalDeaths", 0] },
-                                    { $add: ["$totalKills", "$totalAssists"] },
-                                    { $divide: [{ $add: ["$totalKills", "$totalAssists"] }, "$totalDeaths"] }
-                                ]
-                            }
-                        }
-                    }
-                }
-            },
-            {
-                $project: {
-                    playerName: "$_id",
-                    topHeroes: {
-                        $slice: [
-                            { $sortArray: { input: "$heroes", sortBy: { gamesPlayed: -1 } } },
-                            3
-                        ]
-                    }
-                }
-            }
-        ]);
-        res.json(stats);
+        };
+
+        const prompt = `
+        Analyze this RoV (Arena of Valor) scoreboard screenshot.
+        Extract for 10 players.
+        
+        CRITICAL:
+        1. **Hero Name**: Look at BOTTOM-LEFT of hero portrait. Return standard hero name.
+        2. **Player Name**: OCR carefully.
+        3. **Stats**: K/D/A/Gold. Watch out for OCR errors on numbers.
+
+        Return RAW JSON Array:
+        [{ "name": "...", "hero": "...", "side": "blue/red", "k": 0, "d": 0, "a": 0, "gold": 0 }]
+        `;
+
+        const result = await model.generateContent([prompt, imagePart]);
+        const response = await result.response;
+        const text = response.text();
+        const jsonStr = text.replace(/```json|```/g, '').trim();
+        const data = JSON.parse(jsonStr);
+
+        res.json(data);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        console.error("AI Error:", error);
+        res.status(500).json({ error: `AI Error: ${error.message}` });
     }
 });
 
-// Global Error Handler (for Multer and other errors)
-app.use((err, req, res, next) => {
-    console.error('Error:', err);
-    if (err instanceof multer.MulterError) {
-        // Multer-specific error
-        return res.status(400).json({ error: `Upload error: ${err.message}` });
-    } else if (err) {
-        // General error
-        return res.status(500).json({ error: err.message });
-    }
-    next();
-});
-
-// Start Server
 if (require.main === module) {
     app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
 }
-
 module.exports = app;

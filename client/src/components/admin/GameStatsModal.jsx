@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 
-export default function GameStatsModal({ isOpen, onClose, teamBlue, teamRed, gameNumber, initialData, onSave, allPlayers = [], allHeroes = [] }) {
+export default function GameStatsModal({ isOpen, onClose, teamBlue, teamRed, gameNumber, initialData, onSave, allPlayers = [], allHeroes = [], token }) {
     // Filter Rosters for Autocomplete
     const blueRoster = allPlayers.filter(p => p.team === teamBlue);
     const redRoster = allPlayers.filter(p => p.team === teamRed);
@@ -15,6 +15,146 @@ export default function GameStatsModal({ isOpen, onClose, teamBlue, teamRed, gam
     const [heroPickerOpen, setHeroPickerOpen] = useState({ open: false, team: null, index: null });
     const [heroSearch, setHeroSearch] = useState('');
     const heroSearchRef = useRef(null);
+    const [uploading, setUploading] = useState(false);
+
+    // AI Stats Extraction Handler
+    const handleAiUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        setUploading(true);
+        const formData = new FormData();
+        formData.append('image', file);
+
+        try {
+            // Use token from props
+            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+
+            const res = await fetch(`${API_URL}/extract-rov-stats`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` },
+                body: formData
+            });
+
+            if (!res.ok) {
+                const err = await res.json();
+                throw new Error(err.error || 'Failed to extract stats');
+            }
+
+            const aiData = await res.json();
+            console.log('🤖 AI Extracted Data:', aiData);
+
+            if (!Array.isArray(aiData) || aiData.length === 0) {
+                throw new Error('AI could not find any player data.');
+            }
+
+            // --- Intelligent Mapping Logic ---
+
+            // Helper to normalize strings
+            const normalize = (str) => str ? str.toLowerCase().replace(/[^a-z0-9\u0E00-\u0E7F]/g, '') : '';
+
+            // Helper to match hero name from DB
+            const matchHero = (aiHeroName) => {
+                if (!aiHeroName) return '';
+                const normAi = normalize(aiHeroName);
+
+                // 1. Exact Name Match
+                const exact = allHeroes.find(h => normalize(h.name) === normAi);
+                if (exact) return exact.name;
+
+                // 2. Flexible Match (Partial string)
+                const partial = allHeroes.find(h => {
+                    const normDb = normalize(h.name);
+                    return normDb.length > 2 && (normAi.includes(normDb) || normDb.includes(normAi));
+                });
+                if (partial) return partial.name;
+                return '';
+            };
+
+            // Helper to find a player in a roster
+            const findPlayerInRoster = (aiName, roster) => {
+                return roster.find(r => {
+                    const nAi = normalize(aiName);
+                    const nInGame = normalize(r.inGameName);
+                    const nReal = normalize(r.name);
+                    // Loose matching
+                    return (nInGame && (nInGame === nAi || nInGame.includes(nAi) || nAi.includes(nInGame))) ||
+                        (nReal && (nReal === nAi || nReal.includes(nAi) || nAi.includes(nReal)));
+                });
+            };
+
+            // 1. Split AI Data into two groups (Top/Bottom or Left/Right)
+            // Assuming 10 players, first 5 are Team A, next 5 are Team B
+            let groupA = aiData.slice(0, 5);
+            let groupB = aiData.slice(5, 10);
+
+            // 2. Auto-Detect Side based on Roster Matching Score
+            const calculateScore = (group, roster) => {
+                return group.reduce((score, player) => {
+                    return score + (findPlayerInRoster(player.name, roster) ? 1 : 0);
+                }, 0);
+            };
+
+            const scoreA_Blue = calculateScore(groupA, blueRoster);
+            const scoreA_Red = calculateScore(groupA, redRoster);
+            const scoreB_Blue = calculateScore(groupB, blueRoster);
+            const scoreB_Red = calculateScore(groupB, redRoster);
+
+            console.log(`Team Matching Scores: A-Blue=${scoreA_Blue}, A-Red=${scoreA_Red}, B-Blue=${scoreB_Blue}, B-Red=${scoreB_Red}`);
+
+            // Decision Logic:
+            // If Group A matches Red better than Blue, OR Group B matches Blue better than Red -> SWAP
+            // (Default: Group A = Blue, Group B = Red)
+            let finalBlueGroup = groupA;
+            let finalRedGroup = groupB;
+
+            if (scoreA_Red > scoreA_Blue || scoreB_Blue > scoreB_Red) {
+                console.log("🔄 Auto-swapping teams based on roster match!");
+                finalBlueGroup = groupB;
+                finalRedGroup = groupA;
+            }
+
+            // 3. Map Data to Form (Strict Mode)
+            const mapStats = (aiGroup, targetRoster) => {
+                const newSlots = Array(5).fill(null).map(() => ({ name: '', hero: '', k: 0, d: 0, a: 0, gold: 0 }));
+
+                aiGroup.forEach((aiPlayer, index) => {
+                    if (index >= 5) return;
+
+                    const rosterMatch = findPlayerInRoster(aiPlayer.name, targetRoster);
+
+                    // IF Match Found -> Use Exact Name from Roster
+                    // IF Not Found -> Empty String (User must select from dropdown)
+                    const finalName = rosterMatch ? (rosterMatch.inGameName || rosterMatch.name) : '';
+
+                    const finalHero = matchHero(aiPlayer.hero);
+
+                    newSlots[index] = {
+                        name: finalName,
+                        hero: finalHero,
+                        k: aiPlayer.k || 0,
+                        d: aiPlayer.d || 0,
+                        a: aiPlayer.a || 0,
+                        gold: aiPlayer.gold || 0
+                    };
+                });
+                return newSlots;
+            };
+
+            setBluePlayers(mapStats(finalBlueGroup, blueRoster));
+            setRedPlayers(mapStats(finalRedGroup, redRoster));
+
+            alert(`✨ เรียบร้อย! ดึงข้อมูลได้ ${aiData.length} รายการ`);
+
+        } catch (error) {
+            console.error('AI Error:', error);
+            alert(`❌ เกิดข้อผิดพลาด: ${error.message}`);
+        } finally {
+            setUploading(false);
+            // Reset file input
+            e.target.value = '';
+        }
+    };
 
     // Reset state when modal opens
     useEffect(() => {
@@ -101,10 +241,38 @@ export default function GameStatsModal({ isOpen, onClose, teamBlue, teamRed, gam
                 </datalist>
 
                 <div className="flex justify-between items-center mb-6 border-b pb-4">
-                    <h3 className="text-2xl font-bold font-display text-uefa-dark flex items-center gap-3">
-                        <i className="fas fa-chart-bar text-cyan-aura"></i>
-                        บันทึกสถิติผู้เล่น <span className="text-gray-400 text-lg">|</span> เกมที่ {gameNumber}
-                    </h3>
+                    <div className="flex items-center gap-4">
+                        <h3 className="text-2xl font-bold font-display text-uefa-dark flex items-center gap-3">
+                            <i className="fas fa-chart-bar text-cyan-aura"></i>
+                            บันทึกสถิติผู้เล่น <span className="text-gray-400 text-lg">|</span> เกมที่ {gameNumber}
+                        </h3>
+
+                        {/* AI Auto-fill Button */}
+                        <div className="relative">
+                            <input
+                                type="file"
+                                id="ai-upload"
+                                className="hidden"
+                                accept="image/*"
+                                onChange={handleAiUpload}
+                                disabled={uploading}
+                            />
+                            <label
+                                htmlFor="ai-upload"
+                                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold cursor-pointer transition-all shadow-sm ${uploading
+                                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                    : 'bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:shadow-md hover:scale-105'
+                                    }`}
+                            >
+                                {uploading ? (
+                                    <><i className="fas fa-spinner fa-spin"></i> กำลังวิเคราะห์...</>
+                                ) : (
+                                    <><i className="fas fa-magic"></i> AI Auto-fill (จากรูป)</>
+                                )}
+                            </label>
+                        </div>
+                    </div>
+
                     <button onClick={onClose} className="text-gray-400 hover:text-red-500 transition-colors">
                         <i className="fas fa-times text-2xl"></i>
                     </button>
