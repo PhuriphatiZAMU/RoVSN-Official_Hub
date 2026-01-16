@@ -83,18 +83,21 @@ function LatestMatches() {
     // Get all matches with results, sorted by matchDay descending (most recent first)
     const matchesWithResults = [];
     schedule.forEach(round => {
-        (round.matches || []).forEach(m => {
+        (round.matches || []).forEach((m, index) => {
             const matchKey = `${round.day}_${m.blue}_vs_${m.red}`.replace(/\s+/g, '');
             const result = results.find(r => r.matchId === matchKey);
             if (result) {
-                matchesWithResults.push({ match: m, result, day: round.day });
+                matchesWithResults.push({ match: m, result, day: round.day, index });
             }
         });
     });
 
-    // Sort by day descending and take latest 4
+    // Sort by day descending AND match index descending (to show latest match first)
     const latestMatches = matchesWithResults
-        .sort((a, b) => b.day - a.day)
+        .sort((a, b) => {
+            if (b.day !== a.day) return b.day - a.day;
+            return b.index - a.index;
+        })
         .slice(0, 4);
 
     // If no results yet, show first scheduled matches
