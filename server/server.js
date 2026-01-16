@@ -397,16 +397,28 @@ app.get('/api/player-stats', async (req, res) => {
     try {
         const stats = await GameStat.aggregate([
             {
+                // Calculate GPM for each game record first
+                $addFields: {
+                    gameGPM: {
+                        $cond: [
+                            { $gt: ["$gameDuration", 0] },
+                            { $divide: ["$gold", { $divide: ["$gameDuration", 60] }] },
+                            0
+                        ]
+                    }
+                }
+            },
+            {
                 $group: {
                     _id: { playerName: "$playerName", teamName: "$teamName" },
                     totalKills: { $sum: "$kills" },
                     totalDeaths: { $sum: "$deaths" },
                     totalAssists: { $sum: "$assists" },
                     totalGold: { $sum: "$gold" },
-                    totalGameDuration: { $sum: "$gameDuration" }, // Total time in seconds
                     gamesPlayed: { $sum: 1 },
                     mvpCount: { $sum: { $cond: ["$mvp", 1, 0] } },
-                    wins: { $sum: { $cond: ["$win", 1, 0] } }
+                    wins: { $sum: { $cond: ["$win", 1, 0] } },
+                    avgGPM: { $avg: "$gameGPM" } // Average of per-game GPM
                 }
             },
             {
@@ -422,18 +434,10 @@ app.get('/api/player-stats', async (req, res) => {
                             { $round: [{ $divide: [{ $add: ["$totalKills", "$totalAssists"] }, "$totalDeaths"] }, 2] }
                         ]
                     },
-                    // GPM = Total Gold / Total Game Time (in minutes)
-                    // totalGameDuration is in seconds, divide by 60 to get minutes
-                    gpm: {
-                        $cond: [
-                            { $eq: ["$totalGameDuration", 0] },
-                            0, // Avoid division by zero
-                            { $round: [{ $divide: ["$totalGold", { $divide: ["$totalGameDuration", 60] }] }, 0] }
-                        ]
-                    }
+                    gpm: { $round: ["$avgGPM", 0] } // Round the average GPM
                 }
             },
-            { $sort: { kda: -1 } }
+            { $sort: { gpm: -1 } } // Sort by GPM instead of KDA
         ]);
         res.json(stats);
     } catch (error) {

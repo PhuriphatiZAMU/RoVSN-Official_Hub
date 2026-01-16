@@ -300,12 +300,33 @@ export default function AdminResults() {
         const maxGames = checkBO5 ? 5 : 3;
 
         // Check if result already exists for this match
-        const matchKey = `${selectedDay}_${match.blue}_vs_${match.red}`.replace(/\s+/g, '');
-        const existingResult = results.find(r => r.matchId === matchKey);
+        // Check if result already exists for this match
+        const sanitizedBlue = match.blue.trim();
+        const sanitizedRed = match.red.trim();
+        const matchKey = `${selectedDay}_${sanitizedBlue}_vs_${sanitizedRed}`.replace(/\s+/g, '');
+
+        console.log('🔍 [DEBUG SELECT] Searching for matchKey:', matchKey);
+        console.log('🔍 [DEBUG SELECT] Available results count:', results.length);
+
+        // Debug finding logic
+        // Debug finding logic
+        let existingResult = results.find(r => r.matchId === matchKey);
+
+        if (!existingResult) {
+            console.warn('⚠️ [DEBUG SELECT] Match NOT found in results!');
+            console.log('🔍 [DEBUG SELECT] First 5 Available matchIds:', results.slice(0, 5).map(r => r.matchId));
+
+            // Try lenient search (ignore spaces completely)
+            const looseResult = results.find(r => r.teamBlue.trim() === sanitizedBlue && r.teamRed.trim() === sanitizedRed && r.matchDay == selectedDay);
+            if (looseResult) {
+                console.log('🎉 [DEBUG SELECT] Found via name matching instead of ID!', looseResult);
+                existingResult = looseResult; // Use this result!
+            }
+        }
 
         if (existingResult) {
-            console.log('🔍 [DEBUG] existingResult:', existingResult);
-            console.log('🔍 [DEBUG] gameDetails from DB:', existingResult.gameDetails);
+            console.log('✅ [DEBUG SELECT] existingResult found:', existingResult);
+            console.log('🔍 [DEBUG SELECT] gameDetails from DB:', existingResult.gameDetails);
 
             // Load existing scores
             setFormData({
@@ -515,6 +536,10 @@ export default function AdminResults() {
             }));
 
             // 1. Save Match Result
+            // Sanitize team names
+            const cleanTeamBlue = formData.teamBlue.trim();
+            const cleanTeamRed = formData.teamRed.trim();
+
             const response = await fetch(`${API_BASE_URL}/results`, {
                 method: 'POST',
                 headers: {
@@ -523,8 +548,8 @@ export default function AdminResults() {
                 },
                 body: JSON.stringify({
                     matchDay: selectedDay,
-                    teamBlue: formData.teamBlue,
-                    teamRed: formData.teamRed,
+                    teamBlue: cleanTeamBlue,
+                    teamRed: cleanTeamRed,
                     scoreBlue,
                     scoreRed,
                     gameDetails: playedGames,
@@ -537,7 +562,7 @@ export default function AdminResults() {
             }
 
             // 2. Save Player Stats (if any)
-            const matchId = `${selectedDay}_${formData.teamBlue}_vs_${formData.teamRed}`.replace(/\s+/g, '');
+            const matchId = `${selectedDay}_${cleanTeamBlue}_vs_${cleanTeamRed}`.replace(/\s+/g, '');
             const allStats = [];
 
             console.log('🔍 [DEBUG SAVE] gamesStats object:', gamesStats);
@@ -553,14 +578,14 @@ export default function AdminResults() {
                         if (p.name) allStats.push({
                             matchId,
                             gameNumber: gameNum,
-                            teamName: formData.teamBlue,
+                            teamName: cleanTeamBlue,
                             playerName: p.name,
                             heroName: p.hero || '',
                             kills: p.k, deaths: p.d, assists: p.a,
                             gold: p.gold || 0,
                             mvp: gameDetails[gameIndex]?.mvpPlayer === p.name,
                             gameDuration: (parseInt(gameDetails[gameIndex]?.durationMin) || 0) * 60 + (parseInt(gameDetails[gameIndex]?.durationSec) || 0),
-                            win: gameDetails[gameIndex]?.winner === formData.teamBlue
+                            win: gameDetails[gameIndex]?.winner === formData.teamBlue // Using original formData match logic is fine as long as values match
                         });
                     });
                 }
@@ -569,7 +594,7 @@ export default function AdminResults() {
                         if (p.name) allStats.push({
                             matchId,
                             gameNumber: gameNum,
-                            teamName: formData.teamRed,
+                            teamName: cleanTeamRed,
                             playerName: p.name,
                             heroName: p.hero || '',
                             kills: p.k, deaths: p.d, assists: p.a,
