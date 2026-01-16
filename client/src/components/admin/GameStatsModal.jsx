@@ -27,8 +27,8 @@ export default function GameStatsModal({ isOpen, onClose, teamBlue, teamRed, gam
         formData.append('image', file);
 
         try {
-            // Use token from props
-            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+            // Use relative path for API (handled by Vite proxy in dev, Vercel rewrites in prod)
+            const API_URL = '/api';
 
             const res = await fetch(`${API_URL}/extract-rov-stats`, {
                 method: 'POST',

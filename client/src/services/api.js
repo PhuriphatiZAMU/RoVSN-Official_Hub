@@ -1,7 +1,6 @@
 // API Configuration
-// ถ้ามี VITE_API_URL ให้ใช้ค่านั้น ถ้าไม่มี (dev) ให้ใช้ proxy
-const envUrl = import.meta.env.VITE_API_URL || '';
-const API_BASE_URL = envUrl ? (envUrl.endsWith('/api') ? envUrl : `${envUrl}/api`) : '/api';
+// Use relative path for API (handled by Vite proxy in dev, Vercel rewrites in prod)
+const API_BASE_URL = '/api';
 
 // API Helper
 const api = {
