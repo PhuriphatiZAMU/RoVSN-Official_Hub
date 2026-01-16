@@ -361,7 +361,10 @@ export default function AdminResults() {
 
             // Load existing player stats from API
             try {
-                const statsUrl = `${API_BASE_URL}/stats/match?matchId=${encodeURIComponent(matchKey)}`;
+                // Use the ACTUAL matchId from the database result, not the one we just generated
+                // This handles cases where we found the result via loose search (name mismatch)
+                const targetMatchId = existingResult.matchId;
+                const statsUrl = `${API_BASE_URL}/stats/match?matchId=${encodeURIComponent(targetMatchId)}`;
                 console.log('🔍 [DEBUG] Fetching stats from:', statsUrl);
                 const statsRes = await fetch(statsUrl, {
                     headers: { 'Authorization': `Bearer ${token}` }
