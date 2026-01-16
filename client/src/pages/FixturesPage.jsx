@@ -23,6 +23,29 @@ export default function FixturesPage() {
 
     if (sortedSchedule.length === 0) return <EmptyState title={t.common.noData} message="" />;
 
+    // Helper: Format date for display
+    const formatMatchDate = (dateString) => {
+        if (!dateString) return null;
+
+        // If already formatted string like "25 ม.ค. 2026", return as-is
+        if (typeof dateString === 'string' && !dateString.includes('-') && !dateString.includes('T')) {
+            return dateString;
+        }
+
+        try {
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) return dateString; // Return original if invalid
+
+            return date.toLocaleDateString(isThai ? 'th-TH' : 'en-US', {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric'
+            });
+        } catch {
+            return dateString;
+        }
+    };
+
     return (
         <div className="min-h-screen bg-gray-50 pb-12">
             {/* Page Header */}
@@ -51,6 +74,13 @@ export default function FixturesPage() {
                                 <span className="bg-cyan-aura text-uefa-dark font-display font-bold px-3 py-1 rounded text-xs md:text-sm uppercase tracking-wide shadow-lg shadow-cyan-aura/20 whitespace-nowrap">
                                     {isThai ? `วันที่ ${round.day}` : `Day ${round.day}`}
                                 </span>
+                                {/* Show round date if available */}
+                                {round.date && (
+                                    <span className="text-gray-500 text-xs md:text-sm font-medium flex items-center gap-1.5">
+                                        <i className="fas fa-calendar-alt text-cyan-aura"></i>
+                                        {formatMatchDate(round.date)}
+                                    </span>
+                                )}
                                 <div className="h-px bg-gray-200 flex-grow"></div>
                             </div>
 
@@ -60,6 +90,9 @@ export default function FixturesPage() {
                                     // Find result if exists
                                     const matchKey = `${round.day}_${match.blue}_vs_${match.red}`.replace(/\s+/g, '');
                                     const result = results.find(r => r.matchId === matchKey);
+
+                                    // Get match date (from match itself or from round)
+                                    const matchDate = match.date || round.date;
 
                                     return (
                                         <div
@@ -101,11 +134,24 @@ export default function FixturesPage() {
                                                 </div>
                                             </div>
 
-                                            {/* MVP Footer (if exists) */}
-                                            {result && result.mvp && (
-                                                <div className="bg-gradient-to-r from-yellow-50 to-white px-3 py-1.5 text-xs flex items-center justify-center gap-1.5 border-t border-gray-100 text-gray-600">
-                                                    <i className="fas fa-crown text-yellow-500"></i>
-                                                    <span>MVP: <span className="font-bold text-uefa-dark">{result.mvp}</span></span>
+                                            {/* Match Info Footer (Date + MVP) */}
+                                            {(matchDate || (result && result.mvp)) && (
+                                                <div className="bg-gradient-to-r from-gray-50 to-white px-3 py-1.5 text-xs flex items-center justify-between border-t border-gray-100">
+                                                    {/* Match Date */}
+                                                    {matchDate && (
+                                                        <span className="text-gray-500 flex items-center gap-1">
+                                                            <i className="far fa-calendar text-cyan-aura/70"></i>
+                                                            {formatMatchDate(matchDate)}
+                                                        </span>
+                                                    )}
+
+                                                    {/* MVP */}
+                                                    {result && result.mvp && (
+                                                        <span className="text-gray-600 flex items-center gap-1.5 ml-auto">
+                                                            <i className="fas fa-crown text-yellow-500"></i>
+                                                            MVP: <span className="font-bold text-uefa-dark">{result.mvp}</span>
+                                                        </span>
+                                                    )}
                                                 </div>
                                             )}
                                         </div>
