@@ -158,10 +158,10 @@ function LatestMatches() {
                     className={`bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition duration-300 ${result ? 'border-l-4 border-l-cyan-aura' : ''}`}
                 >
                     {/* Match Row */}
-                    <div className="p-3 md:p-4 flex items-center justify-between gap-2 md:gap-4">
+                    <div className="p-3 flex items-center justify-between gap-2">
                         {/* Blue Team */}
-                        <div className="flex-1 flex items-center justify-end gap-2 md:gap-3 min-w-0">
-                            <span className="font-bold text-gray-800 text-xs md:text-base truncate text-right">
+                        <div className="flex-1 flex items-center justify-end gap-2 min-w-0">
+                            <span className="font-bold text-gray-800 text-sm md:text-base truncate text-right">
                                 {m.blue}
                             </span>
                             <div className="flex-shrink-0">
@@ -170,33 +170,33 @@ function LatestMatches() {
                         </div>
 
                         {/* Score / VS - Center */}
-                        <div className="flex-shrink-0 bg-gray-50 py-1.5 px-3 md:py-2 md:px-5 rounded-lg border border-gray-100 min-w-[60px] md:min-w-[90px] text-center">
+                        <div className="flex-shrink-0 bg-gray-50 py-1 px-3 rounded-lg border border-gray-100 min-w-[70px] text-center">
                             {result.isByeWin ? (
                                 <div className="flex flex-col items-center">
-                                    <span className="bg-yellow-500 text-white px-2 py-0.5 rounded text-xs font-bold">BYE</span>
-                                    <span className="text-xs text-gray-500 mt-0.5 truncate max-w-[80px]">{result.winner}</span>
+                                    <span className="bg-yellow-500 text-white px-2 py-0.5 rounded-[4px] text-[10px] font-bold">BYE</span>
+                                    <span className="text-[10px] text-gray-500 mt-0.5 truncate max-w-[80px]">{result.winner}</span>
                                 </div>
                             ) : (
-                                <span className="font-display font-bold text-lg md:text-2xl text-uefa-dark">
+                                <span className="font-display font-bold text-base md:text-xl text-uefa-dark">
                                     {result.scoreBlue} - {result.scoreRed}
                                 </span>
                             )}
                         </div>
 
                         {/* Red Team */}
-                        <div className="flex-1 flex items-center justify-start gap-2 md:gap-3 min-w-0">
+                        <div className="flex-1 flex items-center justify-start gap-2 min-w-0">
                             <div className="flex-shrink-0">
                                 <TeamLogo teamName={m.red} size="sm" />
                             </div>
-                            <span className="font-bold text-gray-800 text-xs md:text-base truncate text-left">
+                            <span className="font-bold text-gray-800 text-sm md:text-base truncate text-left">
                                 {m.red}
                             </span>
                         </div>
                     </div>
 
-                    {/* Match Info Footer (Date + MVP) - Consistent with FixturesPage */}
+                    {/* Match Info Footer (Date + MVP) - Compact Version */}
                     {(date || (result && result.mvp)) && (
-                        <div className="bg-gradient-to-r from-gray-50 to-white px-3 py-1.5 text-xs flex items-center justify-between border-t border-gray-100">
+                        <div className="bg-gradient-to-r from-gray-50 to-white px-3 py-1 text-[10px] md:text-xs flex items-center justify-between border-t border-gray-100">
                             {/* Match Date */}
                             {date && (
                                 <span className="text-gray-500 flex items-center gap-1">
@@ -208,7 +208,7 @@ function LatestMatches() {
                             {/* MVP */}
                             {result && result.mvp && (
                                 <span className="text-gray-600 flex items-center gap-1.5 ml-auto">
-                                    <i className="fas fa-crown text-yellow-500"></i>
+                                    <i className="fas fa-crown text-yellow-500 text-[10px]"></i>
                                     MVP: <span className="font-bold text-uefa-dark">{result.mvp}</span>
                                 </span>
                             )}
