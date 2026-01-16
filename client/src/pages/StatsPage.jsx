@@ -345,18 +345,18 @@ export default function StatsPage() {
 
             <div className="container mx-auto px-4 pb-12">
                 {/* Navigation Tabs (Mobile Optimized) */}
-                <div className="flex flex-wrap gap-2 mb-8 p-1 bg-white rounded-xl w-full md:w-fit border border-gray-200 shadow-sm">
+                <div className="grid grid-cols-3 md:flex md:flex-wrap gap-1 md:gap-2 mb-6 md:mb-8 p-1 bg-white rounded-xl w-full md:w-fit border border-gray-200 shadow-sm">
                     {tabs.map(tab => (
                         <Link
                             key={tab.path}
                             to={tab.path}
-                            className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-bold text-sm md:text-base transition-all duration-300 ${activeTab === tab.id
-                                ? 'bg-uefa-dark text-cyan-aura shadow-md transform scale-105'
+                            className={`flex flex-col md:flex-row items-center justify-center gap-0.5 md:gap-2 px-1.5 md:px-4 py-2 md:py-3 rounded-lg font-bold text-[11px] md:text-base transition-all duration-300 ${activeTab === tab.id
+                                ? 'bg-uefa-dark text-cyan-aura shadow-md'
                                 : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
                                 }`}
                         >
-                            <i className={`fas ${tab.icon}`}></i>
-                            <span>{tab.label}</span>
+                            <i className={`fas ${tab.icon} text-sm md:text-base`}></i>
+                            <span className="text-center leading-tight">{tab.label}</span>
                         </Link>
                     ))}
                 </div>
