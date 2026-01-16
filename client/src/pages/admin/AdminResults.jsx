@@ -35,10 +35,11 @@ export default function AdminResults() {
     });
 
     // Game Details for Statistics
+    // duration stored as: durationMin (minutes) + durationSec (seconds) => total seconds for backend
     const [gameDetails, setGameDetails] = useState([
-        { gameNumber: 1, winner: '', duration: 15, mvpPlayer: '', mvpTeam: '' },
-        { gameNumber: 2, winner: '', duration: 15, mvpPlayer: '', mvpTeam: '' },
-        { gameNumber: 3, winner: '', duration: 15, mvpPlayer: '', mvpTeam: '' },
+        { gameNumber: 1, winner: '', durationMin: 15, durationSec: 0, mvpPlayer: '', mvpTeam: '' },
+        { gameNumber: 2, winner: '', durationMin: 15, durationSec: 0, mvpPlayer: '', mvpTeam: '' },
+        { gameNumber: 3, winner: '', durationMin: 15, durationSec: 0, mvpPlayer: '', mvpTeam: '' },
     ]);
 
     // Player Stats State
@@ -303,11 +304,11 @@ export default function AdminResults() {
         });
 
         setGameDetails([
-            { gameNumber: 1, winner: '', duration: 15, mvpPlayer: '', mvpTeam: '' },
-            { gameNumber: 2, winner: '', duration: 15, mvpPlayer: '', mvpTeam: '' },
-            { gameNumber: 3, winner: '', duration: 15, mvpPlayer: '', mvpTeam: '' },
-            { gameNumber: 4, winner: '', duration: 15, mvpPlayer: '', mvpTeam: '' },
-            { gameNumber: 5, winner: '', duration: 15, mvpPlayer: '', mvpTeam: '' },
+            { gameNumber: 1, winner: '', durationMin: 15, durationSec: 0, mvpPlayer: '', mvpTeam: '' },
+            { gameNumber: 2, winner: '', durationMin: 15, durationSec: 0, mvpPlayer: '', mvpTeam: '' },
+            { gameNumber: 3, winner: '', durationMin: 15, durationSec: 0, mvpPlayer: '', mvpTeam: '' },
+            { gameNumber: 4, winner: '', durationMin: 15, durationSec: 0, mvpPlayer: '', mvpTeam: '' },
+            { gameNumber: 5, winner: '', durationMin: 15, durationSec: 0, mvpPlayer: '', mvpTeam: '' },
         ].slice(0, checkBO5 ? 5 : 3));
 
         setGamesStats({});
@@ -355,11 +356,12 @@ export default function AdminResults() {
             const scoreRed = parseInt(formData.scoreRed);
 
             // Prepare game details (filter only played games)
+            // Duration is now stored as total seconds: (min * 60) + sec
             const playedGames = gameDetails.filter(g => g.winner !== '').map(g => ({
                 gameNumber: g.gameNumber,
                 winner: g.winner,
                 loser: g.winner === formData.teamBlue ? formData.teamRed : formData.teamBlue,
-                duration: parseInt(g.duration) || 15,
+                duration: (parseInt(g.durationMin) || 0) * 60 + (parseInt(g.durationSec) || 0),
                 mvpPlayer: g.mvpPlayer,
                 mvpTeam: g.mvpTeam || g.winner,
             }));
@@ -405,7 +407,7 @@ export default function AdminResults() {
                             damage: p.damage, damageTaken: p.damageTaken,
                             gold: p.gold || 0,
                             mvp: gameDetails[gameIndex]?.mvpPlayer === p.name,
-                            gameDuration: parseInt(gameDetails[gameIndex]?.duration) || 15,
+                            gameDuration: (parseInt(gameDetails[gameIndex]?.durationMin) || 0) * 60 + (parseInt(gameDetails[gameIndex]?.durationSec) || 0),
                             win: gameDetails[gameIndex]?.winner === formData.teamBlue
                         });
                     });
@@ -422,7 +424,7 @@ export default function AdminResults() {
                             damage: p.damage, damageTaken: p.damageTaken,
                             gold: p.gold || 0,
                             mvp: gameDetails[gameIndex]?.mvpPlayer === p.name,
-                            gameDuration: parseInt(gameDetails[gameIndex]?.duration) || 15,
+                            gameDuration: (parseInt(gameDetails[gameIndex]?.durationMin) || 0) * 60 + (parseInt(gameDetails[gameIndex]?.durationSec) || 0),
                             win: gameDetails[gameIndex]?.winner === formData.teamRed
                         });
                     });
@@ -440,9 +442,9 @@ export default function AdminResults() {
             setMessage({ type: 'success', text: '✅ บันทึกผลการแข่งขันและสถิติสำเร็จ!' });
             setFormData({ teamBlue: '', teamRed: '', scoreBlue: 0, scoreRed: 0 });
             setGameDetails([
-                { gameNumber: 1, winner: '', duration: 15, mvpPlayer: '', mvpTeam: '' },
-                { gameNumber: 2, winner: '', duration: 15, mvpPlayer: '', mvpTeam: '' },
-                { gameNumber: 3, winner: '', duration: 15, mvpPlayer: '', mvpTeam: '' },
+                { gameNumber: 1, winner: '', durationMin: 15, durationSec: 0, mvpPlayer: '', mvpTeam: '' },
+                { gameNumber: 2, winner: '', durationMin: 15, durationSec: 0, mvpPlayer: '', mvpTeam: '' },
+                { gameNumber: 3, winner: '', durationMin: 15, durationSec: 0, mvpPlayer: '', mvpTeam: '' },
             ]);
             setGamesStats({});
 
@@ -687,17 +689,36 @@ export default function AdminResults() {
                                                         </select>
                                                     </div>
 
-                                                    {/* Duration */}
+                                                    {/* Duration - Minutes and Seconds */}
                                                     <div>
-                                                        <label className="block text-xs text-gray-500 mb-1">ระยะเวลา (นาที)</label>
-                                                        <input
-                                                            type="number"
-                                                            min="5"
-                                                            max="60"
-                                                            value={gameDetails[index].duration}
-                                                            onChange={(e) => updateGameDetail(index, 'duration', e.target.value)}
-                                                            className="w-full p-2 border border-gray-300 rounded-lg focus:border-cyan-aura focus:outline-none"
-                                                        />
+                                                        <label className="block text-xs text-gray-500 mb-1">ระยะเวลา</label>
+                                                        <div className="flex gap-2 items-center">
+                                                            <div className="flex-1">
+                                                                <input
+                                                                    type="number"
+                                                                    min="0"
+                                                                    max="60"
+                                                                    value={gameDetails[index].durationMin}
+                                                                    onChange={(e) => updateGameDetail(index, 'durationMin', e.target.value)}
+                                                                    className="w-full p-2 border border-gray-300 rounded-lg focus:border-cyan-aura focus:outline-none text-center"
+                                                                    placeholder="นาที"
+                                                                />
+                                                                <span className="text-xs text-gray-400 text-center block">นาที</span>
+                                                            </div>
+                                                            <span className="text-gray-400 font-bold">:</span>
+                                                            <div className="flex-1">
+                                                                <input
+                                                                    type="number"
+                                                                    min="0"
+                                                                    max="59"
+                                                                    value={gameDetails[index].durationSec}
+                                                                    onChange={(e) => updateGameDetail(index, 'durationSec', Math.min(59, parseInt(e.target.value) || 0))}
+                                                                    className="w-full p-2 border border-gray-300 rounded-lg focus:border-cyan-aura focus:outline-none text-center"
+                                                                    placeholder="วินาที"
+                                                                />
+                                                                <span className="text-xs text-gray-400 text-center block">วินาที</span>
+                                                            </div>
+                                                        </div>
                                                     </div>
 
                                                     {/* MVP Player Select */}

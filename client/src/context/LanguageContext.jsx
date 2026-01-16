@@ -18,10 +18,23 @@ export function LanguageProvider({ children }) {
         setLanguage(prev => prev === 'th' ? 'en' : 'th');
     };
 
-    const t = translations[language];
+    // Alias for setLanguage for convenience
+    const changeLanguage = (lang) => {
+        if (lang === 'th' || lang === 'en') {
+            setLanguage(lang);
+        }
+    };
+
+    const t = translations[language] || translations['th'];
 
     return (
-        <LanguageContext.Provider value={{ language, setLanguage, toggleLanguage, t }}>
+        <LanguageContext.Provider value={{
+            language,
+            setLanguage,
+            changeLanguage,
+            toggleLanguage,
+            t
+        }}>
             {children}
         </LanguageContext.Provider>
     );

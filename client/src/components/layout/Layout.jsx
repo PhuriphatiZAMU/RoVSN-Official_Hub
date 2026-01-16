@@ -6,7 +6,8 @@ export default function Layout() {
     return (
         <div className="min-h-screen flex flex-col">
             <Navbar />
-            <main className="flex-grow">
+            {/* Main content with padding-top to account for fixed navbar */}
+            <main className="flex-grow pt-20">
                 <Outlet />
             </main>
             <Footer />

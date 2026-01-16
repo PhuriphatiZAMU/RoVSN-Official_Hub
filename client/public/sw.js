@@ -35,11 +35,16 @@ self.addEventListener('activate', (event) => {
 
 // Fetch event - serve from cache, fallback to network
 self.addEventListener('fetch', (event) => {
+    const url = new URL(event.request.url);
+
     // Skip non-GET requests
     if (event.request.method !== 'GET') return;
 
+    // Skip non-http/https requests (e.g., chrome-extension://)
+    if (!url.protocol.startsWith('http')) return;
+
     // Skip API requests (always fetch fresh)
-    if (event.request.url.includes('/api/')) {
+    if (url.pathname.includes('/api/')) {
         return;
     }
 
@@ -52,7 +57,7 @@ self.addEventListener('fetch', (event) => {
                 }
 
                 return fetch(event.request).then((response) => {
-                    // Don't cache non-successful responses
+                    // Don't cache non-successful responses or non-basic types
                     if (!response || response.status !== 200 || response.type !== 'basic') {
                         return response;
                     }
@@ -65,6 +70,9 @@ self.addEventListener('fetch', (event) => {
                         });
 
                     return response;
+                }).catch(() => {
+                    // Return offline fallback if fetch fails
+                    return caches.match('/');
                 });
             })
     );
