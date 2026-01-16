@@ -1,39 +1,48 @@
 // Service Worker for RoV SN Tournament PWA
-const CACHE_NAME = 'rov-sn-v1';
+// IMPORTANT: Change version when deploying updates to invalidate old cache
+const CACHE_VERSION = 'v3';
+const CACHE_NAME = `rov-sn-${CACHE_VERSION}`;
 
-// Files to cache for offline use
+// Files to cache for offline use (minimal - let Vite handle hashed assets)
 const urlsToCache = [
     '/',
-    '/index.html',
     '/manifest.json',
 ];
 
 // Install event - cache essential files
 self.addEventListener('install', (event) => {
+    console.log(`🚀 PWA: Installing ${CACHE_NAME}`);
     event.waitUntil(
         caches.open(CACHE_NAME)
             .then((cache) => {
-                console.log('🚀 PWA: Caching app shell');
+                console.log('📦 PWA: Caching app shell');
                 return cache.addAll(urlsToCache);
             })
-            .then(() => self.skipWaiting())
+            .then(() => self.skipWaiting()) // Force activation
     );
 });
 
-// Activate event - clean up old caches
+// Activate event - clean up ALL old caches aggressively
 self.addEventListener('activate', (event) => {
+    console.log(`✅ PWA: Activating ${CACHE_NAME}`);
     event.waitUntil(
         caches.keys().then((cacheNames) => {
             return Promise.all(
                 cacheNames
-                    .filter((cacheName) => cacheName !== CACHE_NAME)
-                    .map((cacheName) => caches.delete(cacheName))
+                    .filter((cacheName) => cacheName.startsWith('rov-sn-') && cacheName !== CACHE_NAME)
+                    .map((cacheName) => {
+                        console.log(`🗑️ PWA: Deleting old cache: ${cacheName}`);
+                        return caches.delete(cacheName);
+                    })
             );
-        }).then(() => self.clients.claim())
+        }).then(() => {
+            console.log('🎯 PWA: Claiming clients');
+            return self.clients.claim(); // Take control immediately
+        })
     );
 });
 
-// Fetch event - serve from cache, fallback to network
+// Fetch event - Network First strategy for HTML, Cache First for assets
 self.addEventListener('fetch', (event) => {
     const url = new URL(event.request.url);
 
@@ -44,41 +53,70 @@ self.addEventListener('fetch', (event) => {
     if (!url.protocol.startsWith('http')) return;
 
     // Skip API requests (always fetch fresh)
-    if (url.pathname.includes('/api/')) {
+    if (url.pathname.includes('/api/')) return;
+
+    // For HTML pages - Network First (get fresh, fallback to cache)
+    if (event.request.mode === 'navigate' ||
+        event.request.headers.get('accept')?.includes('text/html')) {
+        event.respondWith(
+            fetch(event.request)
+                .then((response) => {
+                    // Clone and cache the fresh response
+                    const responseToCache = response.clone();
+                    caches.open(CACHE_NAME).then((cache) => {
+                        cache.put(event.request, responseToCache);
+                    });
+                    return response;
+                })
+                .catch(() => {
+                    // Offline - return cached version
+                    return caches.match(event.request) || caches.match('/');
+                })
+        );
         return;
     }
 
-    event.respondWith(
-        caches.match(event.request)
-            .then((response) => {
-                // Return cached version or fetch from network
-                if (response) {
-                    return response;
+    // For assets (JS/CSS with hash) - Cache First (immutable)
+    if (url.pathname.match(/\.(js|css)$/) && url.pathname.includes('-')) {
+        event.respondWith(
+            caches.match(event.request).then((cachedResponse) => {
+                if (cachedResponse) {
+                    return cachedResponse;
                 }
-
                 return fetch(event.request).then((response) => {
-                    // Don't cache non-successful responses or non-basic types
-                    if (!response || response.status !== 200 || response.type !== 'basic') {
+                    if (!response || response.status !== 200) {
                         return response;
                     }
-
-                    // Clone and cache the response
                     const responseToCache = response.clone();
-                    caches.open(CACHE_NAME)
-                        .then((cache) => {
-                            cache.put(event.request, responseToCache);
-                        });
-
+                    caches.open(CACHE_NAME).then((cache) => {
+                        cache.put(event.request, responseToCache);
+                    });
                     return response;
-                }).catch(() => {
-                    // Return offline fallback if fetch fails
-                    return caches.match('/');
                 });
             })
+        );
+        return;
+    }
+
+    // For other assets - Stale While Revalidate
+    event.respondWith(
+        caches.match(event.request).then((cachedResponse) => {
+            const fetchPromise = fetch(event.request).then((networkResponse) => {
+                if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
+                    const responseToCache = networkResponse.clone();
+                    caches.open(CACHE_NAME).then((cache) => {
+                        cache.put(event.request, responseToCache);
+                    });
+                }
+                return networkResponse;
+            }).catch(() => cachedResponse);
+
+            return cachedResponse || fetchPromise;
+        })
     );
 });
 
-// Listen for messages from the app
+// Listen for messages to skip waiting
 self.addEventListener('message', (event) => {
     if (event.data && event.data.type === 'SKIP_WAITING') {
         self.skipWaiting();

@@ -12,6 +12,20 @@ export default defineConfig({
         target: 'http://localhost:3000',
         changeOrigin: true,
       }
+    },
+    // Disable caching for development to prevent stale assets
+    headers: {
+      'Cache-Control': 'no-store',
+    }
+  },
+  build: {
+    // Add hash to filenames for cache busting in production
+    rollupOptions: {
+      output: {
+        entryFileNames: 'assets/[name]-[hash].js',
+        chunkFileNames: 'assets/[name]-[hash].js',
+        assetFileNames: 'assets/[name]-[hash].[ext]'
+      }
     }
   }
 })
