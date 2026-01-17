@@ -317,8 +317,8 @@ app.get('/api/team-stats', async (req, res) => {
                     }
                 }
             },
-            // Sort Order: Win Rate -> Wins -> KDA -> Kills
-            { $sort: { winRate: -1, realWins: -1, kda: -1, totalKills: -1 } }
+            // Sort Order: Win Rate -> Wins -> KDA -> Kills -> Name (Ascending for consistency)
+            { $sort: { winRate: -1, realWins: -1, kda: -1, totalKills: -1, teamName: 1 } }
         ]);
         res.json(stats);
     } catch (error) {
