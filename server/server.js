@@ -275,6 +275,7 @@ app.get('/api/player-stats', async (req, res) => {
     } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
+// GET: Team Stats
 app.get('/api/team-stats', async (req, res) => {
     try {
         const stats = await GameStat.aggregate([
@@ -284,7 +285,6 @@ app.get('/api/team-stats', async (req, res) => {
                     totalKills: { $sum: "$kills" },
                     totalDeaths: { $sum: "$deaths" },
                     totalAssists: { $sum: "$assists" },
-                    // totalGold: { $sum: "$gold" }, // REMOVED
                     gamesPlayed: { $sum: 1 },
                     wins: { $sum: { $cond: ["$win", 1, 0] } }
                 }
@@ -293,15 +293,37 @@ app.get('/api/team-stats', async (req, res) => {
                 $project: {
                     teamName: "$_id",
                     totalKills: 1, totalDeaths: 1, totalAssists: 1,
-                    // totalGold: 1, // REMOVED
                     realGamesPlayed: { $ceil: { $divide: ["$gamesPlayed", 5] } },
-                    realWins: { $ceil: { $divide: ["$wins", 5] } }
+                    realWins: { $ceil: { $divide: ["$wins", 5] } },
+                    // Calculate Team KDA
+                    kda: {
+                        $cond: [
+                            { $eq: ["$totalDeaths", 0] },
+                            { $add: ["$totalKills", "$totalAssists"] },
+                            { $divide: [{ $add: ["$totalKills", "$totalAssists"] }, "$totalDeaths"] }
+                        ]
+                    }
                 }
             },
-            { $sort: { realWins: -1 } }
+            {
+                $addFields: {
+                    // Calculate Win Rate
+                    winRate: {
+                        $cond: [
+                            { $eq: ["$realGamesPlayed", 0] },
+                            0,
+                            { $multiply: [{ $divide: ["$realWins", "$realGamesPlayed"] }, 100] }
+                        ]
+                    }
+                }
+            },
+            // Sort Order: Win Rate -> Wins -> KDA -> Kills
+            { $sort: { winRate: -1, realWins: -1, kda: -1, totalKills: -1 } }
         ]);
         res.json(stats);
-    } catch (error) { res.status(500).json({ error: error.message }); }
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
 });
 
 app.get('/api/season-stats', async (req, res) => {
