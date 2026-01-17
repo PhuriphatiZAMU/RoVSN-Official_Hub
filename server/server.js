@@ -483,6 +483,19 @@ app.post('/api/extract-rov-stats', authenticateToken, uploadMemory.single('image
     }
 });
 
+// --- Serve Static Assets (Production/Deployment) ---
+const clientBuildPath = path.join(__dirname, '../client/dist');
+if (fs.existsSync(clientBuildPath)) {
+    console.log("📂 Serving static files from client/dist");
+    app.use(express.static(clientBuildPath));
+    // SPA Fallback: Serve index.html for any unknown route
+    app.get('*', (req, res) => {
+        res.sendFile(path.join(clientBuildPath, 'index.html'));
+    });
+} else {
+    console.log("⚠️ No client build found in client/dist. API Mode only.");
+}
+
 if (require.main === module) {
     app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
 }
