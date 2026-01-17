@@ -441,6 +441,53 @@ app.delete('/api/heroes/all/clear', authenticateToken, async (req, res) => {
     try { await Hero.deleteMany({}); res.json({ message: 'All heroes cleared' }); } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
+// Player Hero Stats - Top heroes used by each player
+app.get('/api/player-hero-stats', async (req, res) => {
+    try {
+        const stats = await GameStat.aggregate([
+            // Group by player + hero to count usage
+            {
+                $group: {
+                    _id: { playerName: "$playerName", heroName: "$heroName" },
+                    gamesPlayed: { $sum: 1 },
+                    wins: { $sum: { $cond: ["$win", 1, 0] } },
+                    totalKills: { $sum: "$kills" },
+                    totalDeaths: { $sum: "$deaths" },
+                    totalAssists: { $sum: "$assists" }
+                }
+            },
+            // Sort by games played for each player-hero combo
+            { $sort: { gamesPlayed: -1 } },
+            // Group by player to collect all their heroes
+            {
+                $group: {
+                    _id: "$_id.playerName",
+                    heroes: {
+                        $push: {
+                            heroName: "$_id.heroName",
+                            gamesPlayed: "$gamesPlayed",
+                            wins: "$wins",
+                            totalKills: "$totalKills",
+                            totalDeaths: "$totalDeaths",
+                            totalAssists: "$totalAssists"
+                        }
+                    }
+                }
+            },
+            // Format output
+            {
+                $project: {
+                    playerName: "$_id",
+                    topHeroes: { $slice: ["$heroes", 3] } // Top 3 heroes
+                }
+            }
+        ]);
+        res.json(stats);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // AI Endpoint (Gemini 2.5 Flash)
 app.post('/api/extract-rov-stats', authenticateToken, uploadMemory.single('image'), async (req, res) => {
     try {

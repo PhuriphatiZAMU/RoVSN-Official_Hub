@@ -8,56 +8,8 @@ import { ErrorState, EmptyState } from '../components/common/States';
 import ShareButton from '../components/common/ShareButton';
 
 function SeasonStats() {
-    const { t } = useLanguage();
-    const [stats, setStats] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-
-    useEffect(() => {
-        fetchSeasonStats()
-            .then(data => setStats(data))
-            .catch(err => setError(err.message))
-            .finally(() => setLoading(false));
-    }, []);
-
-    if (loading) return <StatsSkeleton />;
-    if (!stats && !loading && !error) return <EmptyState title={t.common.noData} message="" />;
-
-    const duration = stats?.avgGameDuration || 0;
-    const minutes = Math.floor(duration / 60);
-    const seconds = Math.round(duration % 60);
-    const timeStr = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
-
-    const StatCard = ({ label, value, colorClass }) => (
-        <div className={`bg-white p-4 md:p-6 rounded-lg shadow-sm border-t-4 ${colorClass} transition-all hover:shadow-md border border-gray-100`}>
-            <p className="text-gray-500 uppercase text-xs font-bold mb-2">{label}</p>
-            <div className={`text-3xl md:text-5xl font-display font-bold text-uefa-dark`}>
-                {error ? <span className="text-gray-300">-</span> : value}
-            </div>
-        </div>
-    );
-
-    return (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <StatCard
-                label={t.stats.totalKills}
-                value={(stats?.totalKills || 0).toLocaleString()}
-                colorClass="border-red-500"
-            />
-            <StatCard
-                label={t.stats.totalDeaths}
-                value={(stats?.totalDeaths || 0).toLocaleString()}
-                colorClass="border-gray-500"
-            />
-            <StatCard
-                label={t.stats.avgGameTime}
-                value={timeStr}
-                colorClass="border-cyan-aura"
-            />
-
-            {/* Additional Stats Removed */}
-        </div>
-    );
+    // Component removed per user request
+    return null;
 }
 
 function TeamStats() {
@@ -309,12 +261,11 @@ export default function StatsPage() {
     const location = useLocation();
     const path = location.pathname;
 
-    // Determine active tab
-    const activeTab = path === '/stats/team' ? 'team' : path === '/stats/player' ? 'player' : 'season';
+    // Determine active tab (Season removed - default to team)
+    const activeTab = path === '/stats/player' ? 'player' : 'team';
 
     const tabs = [
-        { path: '/stats', id: 'season', label: t.stats.season, icon: 'fa-chart-pie' },
-        { path: '/stats/team', id: 'team', label: t.stats.team, icon: 'fa-users' },
+        { path: '/stats', id: 'team', label: t.stats.team, icon: 'fa-users' },
         { path: '/stats/player', id: 'player', label: t.stats.player, icon: 'fa-user-ninja' },
     ];
 
@@ -357,12 +308,10 @@ export default function StatsPage() {
                 <div className="animate-fade-in-up">
                     <h2 className="flex items-center gap-3 text-2xl font-display font-bold text-uefa-dark mb-6">
                         <span className="w-1.5 h-8 bg-cyan-aura rounded-full"></span>
-                        {activeTab === 'season' && t.stats.kpi}
                         {activeTab === 'team' && t.stats.team}
                         {activeTab === 'player' && t.stats.player}
                     </h2>
 
-                    {activeTab === 'season' && <SeasonStats />}
                     {activeTab === 'team' && <TeamStats />}
                     {activeTab === 'player' && <PlayerStats />}
                 </div>
