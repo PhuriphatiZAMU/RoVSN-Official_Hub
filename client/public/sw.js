@@ -76,24 +76,27 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // For assets (JS/CSS with hash) - Cache First (immutable)
+    // For assets (JS/CSS with hash) - Network First with Cache Fallback
+    // This prevents issues when hashed file names change after deploy
     if (url.pathname.match(/\.(js|css)$/) && url.pathname.includes('-')) {
         event.respondWith(
-            caches.match(event.request).then((cachedResponse) => {
-                if (cachedResponse) {
-                    return cachedResponse;
-                }
-                return fetch(event.request).then((response) => {
+            fetch(event.request)
+                .then((response) => {
                     if (!response || response.status !== 200) {
-                        return response;
+                        // If network fails, try cache as fallback
+                        return caches.match(event.request) || response;
                     }
+                    // Cache the fresh response
                     const responseToCache = response.clone();
                     caches.open(CACHE_NAME).then((cache) => {
                         cache.put(event.request, responseToCache);
                     });
                     return response;
-                });
-            })
+                })
+                .catch(() => {
+                    // Network failed - try cache
+                    return caches.match(event.request);
+                })
         );
         return;
     }
