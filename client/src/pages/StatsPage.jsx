@@ -225,9 +225,7 @@ function PlayerStats() {
                             <th className="p-4 text-center text-blue-600 bg-gray-50 border-b border-gray-200" title="Total Kills">K</th>
                             <th className="p-4 text-center text-red-600 bg-gray-50 border-b border-gray-200" title="Total Deaths">D</th>
                             <th className="p-4 text-center text-green-600 bg-gray-50 border-b border-gray-200" title="Total Assists">A</th>
-                            <th className="p-4 text-center bg-gray-50 border-b border-gray-200" title="MVP Count">
-                                <i className="fas fa-crown text-yellow-500 text-lg"></i>
-                            </th>
+                            <th className="p-4 text-center font-bold text-yellow-600 bg-gray-50 border-b border-gray-200" title="MVP Count">MVP</th>
                             <th className="p-4 text-center font-bold text-cyan-aura bg-gray-50 border-b border-gray-200" title="KDA Ratio">{t.stats.kda}</th>
                         </tr>
                     </thead>
@@ -296,12 +294,7 @@ function PlayerStats() {
                                             <td className="p-4 text-center font-mono font-bold text-gray-800">{p.totalDeaths}</td>
                                             <td className="p-4 text-center font-mono font-bold text-gray-800">{p.totalAssists}</td>
                                             <td className="p-4 text-center font-bold text-yellow-600 text-lg">
-                                                {p.mvpCount > 0 ? (
-                                                    <span className="flex items-center justify-center gap-1">
-                                                        {p.mvpCount}
-                                                        <i className="fas fa-crown text-yellow-400 text-xs"></i>
-                                                    </span>
-                                                ) : '-'}
+                                                {p.mvpCount > 0 ? p.mvpCount : '-'}
                                             </td>
                                             <td className="p-4 text-center">
                                                 <span className="text-lg font-bold text-cyan-aura bg-cyan-aura/10 px-2 py-1 rounded inline-block min-w-[60px]">
