@@ -63,7 +63,21 @@ const Schedule = mongoose.model('Schedule', ScheduleSchema, 'schedules');
 const ResultSchema = new mongoose.Schema({ matchId: String, matchDay: Number, teamBlue: String, teamRed: String, scoreBlue: Number, scoreRed: Number, winner: String, loser: String, gameDetails: Array, isByeWin: { type: Boolean, default: false }, createdAt: { type: Date, default: Date.now } });
 const Result = mongoose.model('Result', ResultSchema, 'results');
 
-const GameStatSchema = new mongoose.Schema({ matchId: String, gameNumber: Number, teamName: String, playerName: String, heroName: String, kills: Number, deaths: Number, assists: Number, gold: Number, mvp: Boolean, gameDuration: Number, win: Boolean, createdAt: { type: Date, default: Date.now } });
+const GameStatSchema = new mongoose.Schema({
+    matchId: String,
+    gameNumber: Number,
+    teamName: String,
+    playerName: String,
+    heroName: String,        // ชื่อฮีโร่ที่ใช้
+    kills: Number,
+    deaths: Number,
+    assists: Number,
+    // gold: Number,            // REMOVED: ตัด Gold ออก
+    mvp: Boolean,
+    gameDuration: Number,    // ระยะเวลาเกม (วินาที)
+    win: Boolean,
+    createdAt: { type: Date, default: Date.now }
+});
 const GameStat = mongoose.model('GameStat', GameStatSchema, 'gamestats');
 
 const TeamLogoSchema = new mongoose.Schema({ teamName: String, logoUrl: String, createdAt: { type: Date, default: Date.now } });
@@ -225,10 +239,37 @@ app.delete('/api/results/reset/:day', authenticateToken, async (req, res) => {
 app.get('/api/player-stats', async (req, res) => {
     try {
         const stats = await GameStat.aggregate([
-            { $addFields: { gameGPM: { $cond: [{ $gt: ["$gameDuration", 0] }, { $divide: ["$gold", { $divide: ["$gameDuration", 60] }] }, 0] } } },
-            { $group: { _id: { playerName: "$playerName", teamName: "$teamName" }, totalKills: { $sum: "$kills" }, totalDeaths: { $sum: "$deaths" }, totalAssists: { $sum: "$assists" }, totalGold: { $sum: "$gold" }, gamesPlayed: { $sum: 1 }, mvpCount: { $sum: { $cond: ["$mvp", 1, 0] } }, wins: { $sum: { $cond: ["$win", 1, 0] } }, avgGPM: { $avg: "$gameGPM" } } },
-            { $project: { playerName: "$_id.playerName", teamName: "$_id.teamName", totalKills: 1, totalDeaths: 1, totalAssists: 1, totalGold: 1, gamesPlayed: 1, mvpCount: 1, wins: 1, kda: { $cond: [{ $eq: ["$totalDeaths", 0] }, { $add: ["$totalKills", "$totalAssists"] }, { $round: [{ $divide: [{ $add: ["$totalKills", "$totalAssists"] }, "$totalDeaths"] }, 2] }] }, gpm: { $round: ["$avgGPM", 0] } } },
-            { $sort: { gpm: -1 } }
+            {
+                $group: {
+                    _id: { playerName: "$playerName", teamName: "$teamName" },
+                    totalKills: { $sum: "$kills" },
+                    totalDeaths: { $sum: "$deaths" },
+                    totalAssists: { $sum: "$assists" },
+                    // totalGold: { $sum: "$gold" }, // REMOVED
+                    gamesPlayed: { $sum: 1 },
+                    mvpCount: { $sum: { $cond: ["$mvp", 1, 0] } },
+                    wins: { $sum: { $cond: ["$win", 1, 0] } },
+                    // avgGPM: { $avg: "$gameGPM" } // REMOVED
+                }
+            },
+            {
+                $project: {
+                    playerName: "$_id.playerName",
+                    teamName: "$_id.teamName",
+                    totalKills: 1, totalDeaths: 1, totalAssists: 1,
+                    // totalGold: 1, // REMOVED
+                    gamesPlayed: 1, mvpCount: 1, wins: 1,
+                    kda: {
+                        $cond: [
+                            { $eq: ["$totalDeaths", 0] },
+                            { $add: ["$totalKills", "$totalAssists"] },
+                            { $round: [{ $divide: [{ $add: ["$totalKills", "$totalAssists"] }, "$totalDeaths"] }, 2] }
+                        ]
+                    },
+                    // gpm: { $round: ["$avgGPM", 0] } // REMOVED
+                }
+            },
+            { $sort: { kda: -1 } } // Sort by KDA instead of GPM
         ]);
         res.json(stats);
     } catch (error) { res.status(500).json({ error: error.message }); }
@@ -237,8 +278,26 @@ app.get('/api/player-stats', async (req, res) => {
 app.get('/api/team-stats', async (req, res) => {
     try {
         const stats = await GameStat.aggregate([
-            { $group: { _id: "$teamName", totalKills: { $sum: "$kills" }, totalDeaths: { $sum: "$deaths" }, totalAssists: { $sum: "$assists" }, totalGold: { $sum: "$gold" }, gamesPlayed: { $sum: 1 }, wins: { $sum: { $cond: ["$win", 1, 0] } } } },
-            { $project: { teamName: "$_id", totalKills: 1, totalDeaths: 1, totalAssists: 1, totalGold: 1, realGamesPlayed: { $ceil: { $divide: ["$gamesPlayed", 5] } }, realWins: { $ceil: { $divide: ["$wins", 5] } } } },
+            {
+                $group: {
+                    _id: "$teamName",
+                    totalKills: { $sum: "$kills" },
+                    totalDeaths: { $sum: "$deaths" },
+                    totalAssists: { $sum: "$assists" },
+                    // totalGold: { $sum: "$gold" }, // REMOVED
+                    gamesPlayed: { $sum: 1 },
+                    wins: { $sum: { $cond: ["$win", 1, 0] } }
+                }
+            },
+            {
+                $project: {
+                    teamName: "$_id",
+                    totalKills: 1, totalDeaths: 1, totalAssists: 1,
+                    // totalGold: 1, // REMOVED
+                    realGamesPlayed: { $ceil: { $divide: ["$gamesPlayed", 5] } },
+                    realWins: { $ceil: { $divide: ["$wins", 5] } }
+                }
+            },
             { $sort: { realWins: -1 } }
         ]);
         res.json(stats);
@@ -383,10 +442,10 @@ app.post('/api/extract-rov-stats', authenticateToken, uploadMemory.single('image
         CRITICAL:
         1. **Hero Name**: Look at BOTTOM-LEFT of hero portrait. Return standard hero name.
         2. **Player Name**: OCR carefully.
-        3. **Stats**: K/D/A/Gold. Watch out for OCR errors on numbers.
+        3. **Stats**: K / D / A (Ignore Gold/Money).
 
         Return RAW JSON Array:
-        [{ "name": "...", "hero": "...", "side": "blue/red", "k": 0, "d": 0, "a": 0, "gold": 0 }]
+        [{ "name": "...", "hero": "...", "side": "blue/red", "k": 0, "d": 0, "a": 0 }]
         `;
 
         const result = await model.generateContent([prompt, imagePart]);

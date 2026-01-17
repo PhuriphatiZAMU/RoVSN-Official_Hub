@@ -116,7 +116,7 @@ export default function GameStatsModal({ isOpen, onClose, teamBlue, teamRed, gam
 
             // 3. Map Data to Form (Strict Mode)
             const mapStats = (aiGroup, targetRoster) => {
-                const newSlots = Array(5).fill(null).map(() => ({ name: '', hero: '', k: 0, d: 0, a: 0, gold: 0 }));
+                const newSlots = Array(5).fill(null).map(() => ({ name: '', hero: '', k: 0, d: 0, a: 0 }));
 
                 aiGroup.forEach((aiPlayer, index) => {
                     if (index >= 5) return;
@@ -134,8 +134,7 @@ export default function GameStatsModal({ isOpen, onClose, teamBlue, teamRed, gam
                         hero: finalHero,
                         k: aiPlayer.k || 0,
                         d: aiPlayer.d || 0,
-                        a: aiPlayer.a || 0,
-                        gold: aiPlayer.gold || 0
+                        a: aiPlayer.a || 0
                     };
                 });
                 return newSlots;
@@ -280,7 +279,7 @@ export default function GameStatsModal({ isOpen, onClose, teamBlue, teamRed, gam
 
                 <div className="grid xl:grid-cols-2 gap-8 mb-6">
                     {/* Blue Team */}
-                    <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100">
+                    <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100 mb-6">
                         <h4 className="font-bold text-xl text-blue-600 mb-4 flex items-center gap-2">
                             <span className="w-3 h-3 bg-blue-500 rounded-full"></span>
                             {teamBlue}
@@ -294,7 +293,6 @@ export default function GameStatsModal({ isOpen, onClose, teamBlue, teamRed, gam
                                         <th className="p-2 text-center text-green-600">K</th>
                                         <th className="p-2 text-center text-red-500">D</th>
                                         <th className="p-2 text-center text-blue-500">A</th>
-                                        <th className="p-2 text-center text-yellow-600">Gold</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-blue-100">
@@ -340,10 +338,6 @@ export default function GameStatsModal({ isOpen, onClose, teamBlue, teamRed, gam
                                                 <input type="number" min="0" className="w-14 px-1 py-1 border border-gray-300 rounded text-center focus:border-cyan-aura focus:outline-none"
                                                     value={player.a} onChange={(e) => handleBlueChange(i, 'a', parseInt(e.target.value) || 0)} />
                                             </td>
-                                            <td className="p-2">
-                                                <input type="number" min="0" className="w-20 px-1 py-1 border border-gray-300 rounded text-center focus:border-cyan-aura focus:outline-none"
-                                                    value={player.gold} onChange={(e) => handleBlueChange(i, 'gold', parseInt(e.target.value) || 0)} placeholder="0" />
-                                            </td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -366,7 +360,6 @@ export default function GameStatsModal({ isOpen, onClose, teamBlue, teamRed, gam
                                         <th className="p-2 text-center text-green-600">K</th>
                                         <th className="p-2 text-center text-red-500">D</th>
                                         <th className="p-2 text-center text-blue-500">A</th>
-                                        <th className="p-2 text-center text-yellow-600">Gold</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-red-100">
@@ -411,10 +404,6 @@ export default function GameStatsModal({ isOpen, onClose, teamBlue, teamRed, gam
                                             <td className="p-2">
                                                 <input type="number" min="0" className="w-14 px-1 py-1 border border-gray-300 rounded text-center focus:border-cyan-aura focus:outline-none"
                                                     value={player.a} onChange={(e) => handleRedChange(i, 'a', parseInt(e.target.value) || 0)} />
-                                            </td>
-                                            <td className="p-2">
-                                                <input type="number" min="0" className="w-20 px-1 py-1 border border-gray-300 rounded text-center focus:border-cyan-aura focus:outline-none"
-                                                    value={player.gold} onChange={(e) => handleRedChange(i, 'gold', parseInt(e.target.value) || 0)} placeholder="0" />
                                             </td>
                                         </tr>
                                     ))}
