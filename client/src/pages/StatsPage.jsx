@@ -55,35 +55,7 @@ function SeasonStats() {
                 colorClass="border-cyan-aura"
             />
 
-            {/* Additional Stats - Now visible on all screens */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 col-span-1 md:col-span-3 mt-4">
-                {/* Bloodiest Game */}
-                <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm border border-gray-100 flex items-center justify-between gap-3">
-                    <div className="min-w-0 flex-1">
-                        <p className="text-gray-500 text-xs md:text-sm font-bold uppercase truncate">{t.stats.highestKillGame}</p>
-                        <p className="text-lg md:text-2xl font-display font-bold text-uefa-dark mt-1 truncate">
-                            {stats?.highestKillGame?.match || '-'}
-                        </p>
-                    </div>
-                    <div className="text-2xl md:text-4xl font-bold text-red-500 bg-red-50 px-3 py-1.5 md:px-4 md:py-2 rounded-lg flex-shrink-0">
-                        {stats?.highestKillGame?.kills || 0} <span className="text-xs md:text-base text-gray-500">Kills</span>
-                    </div>
-                </div>
-
-                {/* Longest Game */}
-                <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm border border-gray-100 flex items-center justify-between gap-3">
-                    <div className="min-w-0 flex-1">
-                        <p className="text-gray-500 text-xs md:text-sm font-bold uppercase truncate">{t.stats.longestGame}</p>
-                        <p className="text-lg md:text-2xl font-display font-bold text-uefa-dark mt-1 truncate">
-                            {stats?.longestGame?.match || '-'}
-                        </p>
-                    </div>
-                    <div className="text-2xl md:text-4xl font-bold text-purple-500 bg-purple-50 px-3 py-1.5 md:px-4 md:py-2 rounded-lg flex-shrink-0">
-                        {Math.floor((stats?.longestGame?.duration || 0) / 60)}:{((stats?.longestGame?.duration || 0) % 60).toString().padStart(2, '0')}
-                        <span className="text-xs md:text-base text-gray-500 ml-1 md:ml-2">Mins</span>
-                    </div>
-                </div>
-            </div>
+            {/* Additional Stats Removed */}
         </div>
     );
 }
