@@ -68,7 +68,26 @@ function TeamStats() {
 
     useEffect(() => {
         fetchTeamStats()
-            .then(data => setStats(data || []))
+            .then(data => {
+                // FORCE Frontend Sort (Same logic as backend to double ensure consistency)
+                const sortedData = (data || []).sort((a, b) => {
+                    const winRateA = a.realGamesPlayed > 0 ? (a.realWins / a.realGamesPlayed) : 0;
+                    const winRateB = b.realGamesPlayed > 0 ? (b.realWins / b.realGamesPlayed) : 0;
+
+                    if (winRateB !== winRateA) return winRateB - winRateA; // 1. Win Rate Desc
+                    if (b.realWins !== a.realWins) return b.realWins - a.realWins; // 2. Wins Desc
+
+                    // Calculate KDA if not present
+                    const kdaA = a.kda || (a.totalDeaths === 0 ? (a.totalKills + a.totalAssists) : ((a.totalKills + a.totalAssists) / a.totalDeaths));
+                    const kdaB = b.kda || (b.totalDeaths === 0 ? (b.totalKills + b.totalAssists) : ((b.totalKills + b.totalAssists) / b.totalDeaths));
+
+                    if (kdaB !== kdaA) return kdaB - kdaA; // 3. KDA Desc
+                    if (b.totalKills !== a.totalKills) return b.totalKills - a.totalKills; // 4. Kills Desc
+
+                    return a.teamName.localeCompare(b.teamName); // 5. Name Asc (A-Z)
+                });
+                setStats(sortedData);
+            })
             .catch(err => setError(err.message))
             .finally(() => setLoading(false));
     }, []);
@@ -76,7 +95,7 @@ function TeamStats() {
     return (
         <div className="bg-white shadow-sm rounded-lg overflow-hidden border border-gray-200">
             <div className="overflow-x-auto">
-                <table className="w-full uefa-table min-w-[600px]">
+                <table className="w-full uefa-table min-w-[800px]">
                     <thead>
                         <tr>
                             <th className="p-4 text-left bg-gray-50 text-uefa-dark border-b border-gray-200">{t.standings.team}</th>
@@ -104,9 +123,9 @@ function TeamStats() {
                                 <tr><td colSpan="6" className="p-8 text-center text-gray-500">{t.common.noData}</td></tr>
                             ) : (
                                 stats.map((team, idx) => {
-                                    const kdaRatio = team.totalDeaths === 0
+                                    const kdaRatio = team.kda || (team.totalDeaths === 0
                                         ? (team.totalKills + team.totalAssists)
-                                        : ((team.totalKills + team.totalAssists) / team.totalDeaths);
+                                        : ((team.totalKills + team.totalAssists) / team.totalDeaths));
 
                                     const games = team.realGamesPlayed || 0;
                                     const wins = team.realWins || 0;
