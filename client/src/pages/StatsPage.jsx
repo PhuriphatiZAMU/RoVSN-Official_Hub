@@ -147,8 +147,11 @@ function PlayerStats() {
         return hero?.imageUrl || null;
     };
 
-    const getPlayerTopHeroes = (playerName) => {
-        const playerHeroStat = heroStats.find(h => h.playerName === playerName);
+    const getPlayerTopHeroes = (playerRealName) => {
+        // Match by realName first, then playerName for backwards compatibility
+        const playerHeroStat = heroStats.find(h =>
+            h.realName === playerRealName || h.playerName === playerRealName
+        );
         return playerHeroStat?.topHeroes || [];
     };
 
@@ -189,9 +192,9 @@ function PlayerStats() {
                                 <tr><td colSpan="10" className="p-8 text-center text-gray-500">{t.common.noData}</td></tr>
                             ) : (
                                 stats.slice(0, 50).map((p, idx) => {
-                                    const topHeroes = getPlayerTopHeroes(p.playerName);
+                                    const topHeroes = getPlayerTopHeroes(p.realName || p.playerName);
                                     return (
-                                        <tr key={`${p.teamName}-${p.playerName}`} className={`hover:bg-gray-50 transition border-b border-gray-100 last:border-0 ${idx < 3 ? 'bg-yellow-50' : 'bg-white'}`}>
+                                        <tr key={`${p.teamName}-${p.realName || p.playerName}`} className={`hover:bg-gray-50 transition border-b border-gray-100 last:border-0 ${idx < 3 ? 'bg-yellow-50' : 'bg-white'}`}>
                                             <td className="p-4 text-center text-gray-500">
                                                 {idx < 3 ? (
                                                     <div className={`w-8 h-8 rounded-full flex items-center justify-center mx-auto font-bold text-white ${idx === 0 ? 'bg-gradient-to-br from-yellow-400 to-yellow-600' :
@@ -205,7 +208,7 @@ function PlayerStats() {
                                                 )}
                                             </td>
                                             <td className="p-4 font-bold text-uefa-dark sticky left-0 bg-inherit z-10 shadow-[2px_0_5px_rgba(0,0,0,0.05)] md:shadow-none">
-                                                {p.playerName}
+                                                {p.realName || p.playerName}
                                             </td>
                                             <td className="p-4">
                                                 <div className="flex items-center gap-2">
