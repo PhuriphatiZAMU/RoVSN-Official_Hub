@@ -86,7 +86,15 @@ const TeamLogo = mongoose.model('TeamLogo', TeamLogoSchema, 'teamlogo');
 const HeroSchema = new mongoose.Schema({ name: { type: String, required: true, unique: true }, imageUrl: String, createdAt: { type: Date, default: Date.now } });
 const Hero = mongoose.model('Hero', HeroSchema, 'heroes');
 
-const PlayerPoolSchema = new mongoose.Schema({ name: String, grade: String, team: String, inGameName: String, openId: String, createdAt: { type: Date, default: Date.now } });
+const PlayerPoolSchema = new mongoose.Schema({
+    name: String,           // ชื่อจริง (ใช้ในการ aggregate สถิติ)
+    grade: String,
+    team: String,
+    inGameName: String,     // ชื่อในเกมปัจจุบัน (IGN)
+    previousIGNs: [String], // ชื่อในเกมเก่า (สำหรับ mapping สถิติเก่า)
+    openId: String,
+    createdAt: { type: Date, default: Date.now }
+});
 const PlayerPool = mongoose.model('PlayerPool', PlayerPoolSchema, 'playerpool');
 
 // --- Cloudinary ---
@@ -240,7 +248,7 @@ app.get('/api/player-stats', async (req, res) => {
     try {
         const stats = await GameStat.aggregate([
             // Step 1: Lookup PlayerPool to get realName
-            // Try to match by inGameName first, then by name
+            // Try to match by inGameName, previousIGNs, or name
             {
                 $lookup: {
                     from: 'playerpool',
@@ -251,7 +259,8 @@ app.get('/api/player-stats', async (req, res) => {
                                 $expr: {
                                     $or: [
                                         { $eq: ['$inGameName', '$$ign'] },
-                                        { $eq: ['$name', '$$ign'] }
+                                        { $eq: ['$name', '$$ign'] },
+                                        { $in: ['$$ign', { $ifNull: ['$previousIGNs', []] }] }
                                     ]
                                 }
                             }
@@ -438,6 +447,84 @@ app.delete('/api/players/all/clear', authenticateToken, async (req, res) => {
     } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
+// Get unmatched IGNs (IGNs in stats that don't match any player in PlayerPool)
+app.get('/api/players/unmatched-igns', authenticateToken, async (req, res) => {
+    try {
+        // Get all unique playerNames from GameStat
+        const statsIGNs = await GameStat.distinct('playerName');
+
+        // Get all players from PlayerPool
+        const players = await PlayerPool.find({});
+
+        // Build a set of all known IGNs (current + previous)
+        const knownIGNs = new Set();
+        players.forEach(p => {
+            if (p.name) knownIGNs.add(p.name);
+            if (p.inGameName) knownIGNs.add(p.inGameName);
+            (p.previousIGNs || []).forEach(ign => knownIGNs.add(ign));
+        });
+
+        // Find IGNs that are not in knownIGNs
+        const unmatchedIGNs = statsIGNs.filter(ign => !knownIGNs.has(ign));
+
+        // Get stats count for each unmatched IGN
+        const result = await Promise.all(unmatchedIGNs.map(async (ign) => {
+            const count = await GameStat.countDocuments({ playerName: ign });
+            const sample = await GameStat.findOne({ playerName: ign });
+            return { ign, gamesCount: count, team: sample?.teamName || 'Unknown' };
+        }));
+
+        res.json(result);
+    } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
+// Add a previous IGN to a player (for merging stats)
+app.post('/api/players/:playerId/add-previous-ign', authenticateToken, async (req, res) => {
+    try {
+        const { playerId } = req.params;
+        const { previousIGN } = req.body;
+
+        if (!previousIGN) return res.status(400).json({ error: 'previousIGN is required' });
+
+        const player = await PlayerPool.findByIdAndUpdate(
+            playerId,
+            { $addToSet: { previousIGNs: previousIGN } },
+            { new: true }
+        );
+
+        if (!player) return res.status(404).json({ error: 'Player not found' });
+
+        res.json({ message: `Added "${previousIGN}" to ${player.name}'s previous IGNs`, player });
+    } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
+// Update player's current IGN (auto-archive old one to previousIGNs)
+app.patch('/api/players/:playerId/update-ign', authenticateToken, async (req, res) => {
+    try {
+        const { playerId } = req.params;
+        const { newIGN } = req.body;
+
+        if (!newIGN) return res.status(400).json({ error: 'newIGN is required' });
+
+        const player = await PlayerPool.findById(playerId);
+        if (!player) return res.status(404).json({ error: 'Player not found' });
+
+        // Archive current IGN to previousIGNs before updating
+        if (player.inGameName && player.inGameName !== newIGN) {
+            player.previousIGNs = player.previousIGNs || [];
+            if (!player.previousIGNs.includes(player.inGameName)) {
+                player.previousIGNs.push(player.inGameName);
+            }
+        }
+
+        player.inGameName = newIGN;
+        await player.save();
+
+        res.json({ message: `Updated IGN to "${newIGN}"`, player });
+    } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
+
 // Team Logos
 app.get('/api/team-logos', cacheControl(300), async (req, res) => {
     try { const logos = await TeamLogo.find(); res.json(logos); } catch (error) { res.status(500).json({ error: error.message }); }
@@ -478,35 +565,71 @@ app.delete('/api/heroes/all/clear', authenticateToken, async (req, res) => {
     try { await Hero.deleteMany({}); res.json({ message: 'All heroes cleared' }); } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
-// Player Hero Stats - Top heroes used by each player
+// Player Hero Stats - Top heroes used by each player (grouped by realName)
 app.get('/api/player-hero-stats', async (req, res) => {
     try {
         const stats = await GameStat.aggregate([
-            // Group by player + hero to count usage
+            // Step 1: Lookup PlayerPool to get realName
+            {
+                $lookup: {
+                    from: 'playerpool',
+                    let: { ign: '$playerName' },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $or: [
+                                        { $eq: ['$inGameName', '$$ign'] },
+                                        { $eq: ['$name', '$$ign'] },
+                                        { $in: ['$$ign', { $ifNull: ['$previousIGNs', []] }] }
+                                    ]
+                                }
+                            }
+                        }
+                    ],
+                    as: 'playerInfo'
+                }
+            },
+            // Step 2: Add realName field
+            {
+                $addFields: {
+                    realName: {
+                        $cond: [
+                            { $gt: [{ $size: '$playerInfo' }, 0] },
+                            { $arrayElemAt: ['$playerInfo.name', 0] },
+                            '$playerName'
+                        ]
+                    },
+                    displayName: '$playerName'
+                }
+            },
+            // Step 3: Group by realName + hero to count usage
             {
                 $group: {
-                    _id: { playerName: "$playerName", heroName: "$heroName" },
+                    _id: { realName: '$realName', heroName: '$heroName' },
+                    playerName: { $last: '$displayName' },
                     gamesPlayed: { $sum: 1 },
-                    wins: { $sum: { $cond: ["$win", 1, 0] } },
-                    totalKills: { $sum: "$kills" },
-                    totalDeaths: { $sum: "$deaths" },
-                    totalAssists: { $sum: "$assists" }
+                    wins: { $sum: { $cond: ['$win', 1, 0] } },
+                    totalKills: { $sum: '$kills' },
+                    totalDeaths: { $sum: '$deaths' },
+                    totalAssists: { $sum: '$assists' }
                 }
             },
             // Sort by games played for each player-hero combo
             { $sort: { gamesPlayed: -1 } },
-            // Group by player to collect all their heroes
+            // Group by realName to collect all their heroes
             {
                 $group: {
-                    _id: "$_id.playerName",
+                    _id: '$_id.realName',
+                    playerName: { $first: '$playerName' },
                     heroes: {
                         $push: {
-                            heroName: "$_id.heroName",
-                            gamesPlayed: "$gamesPlayed",
-                            wins: "$wins",
-                            totalKills: "$totalKills",
-                            totalDeaths: "$totalDeaths",
-                            totalAssists: "$totalAssists"
+                            heroName: '$_id.heroName',
+                            gamesPlayed: '$gamesPlayed',
+                            wins: '$wins',
+                            totalKills: '$totalKills',
+                            totalDeaths: '$totalDeaths',
+                            totalAssists: '$totalAssists'
                         }
                     }
                 }
@@ -514,8 +637,10 @@ app.get('/api/player-hero-stats', async (req, res) => {
             // Format output
             {
                 $project: {
-                    playerName: "$_id",
-                    topHeroes: { $slice: ["$heroes", 3] } // Top 3 heroes
+                    _id: 0,
+                    realName: '$_id',
+                    playerName: 1,
+                    topHeroes: { $slice: ['$heroes', 3] }
                 }
             }
         ]);
