@@ -239,37 +239,74 @@ app.delete('/api/results/reset/:day', authenticateToken, async (req, res) => {
 app.get('/api/player-stats', async (req, res) => {
     try {
         const stats = await GameStat.aggregate([
+            // Step 1: Lookup PlayerPool to get realName
+            // Try to match by inGameName first, then by name
             {
-                $group: {
-                    _id: { playerName: "$playerName", teamName: "$teamName" },
-                    totalKills: { $sum: "$kills" },
-                    totalDeaths: { $sum: "$deaths" },
-                    totalAssists: { $sum: "$assists" },
-                    // totalGold: { $sum: "$gold" }, // REMOVED
-                    gamesPlayed: { $sum: 1 },
-                    mvpCount: { $sum: { $cond: ["$mvp", 1, 0] } },
-                    wins: { $sum: { $cond: ["$win", 1, 0] } },
-                    // avgGPM: { $avg: "$gameGPM" } // REMOVED
+                $lookup: {
+                    from: 'playerpool',
+                    let: { ign: '$playerName' },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $or: [
+                                        { $eq: ['$inGameName', '$$ign'] },
+                                        { $eq: ['$name', '$$ign'] }
+                                    ]
+                                }
+                            }
+                        }
+                    ],
+                    as: 'playerInfo'
                 }
             },
+            // Step 2: Unwind (or keep original if no match)
+            {
+                $addFields: {
+                    // Use realName from PlayerPool if found, otherwise use playerName
+                    realName: {
+                        $cond: [
+                            { $gt: [{ $size: '$playerInfo' }, 0] },
+                            { $arrayElemAt: ['$playerInfo.name', 0] },
+                            '$playerName'
+                        ]
+                    },
+                    // Keep latest IGN for display
+                    displayName: '$playerName'
+                }
+            },
+            // Step 3: Group by realName + teamName
+            {
+                $group: {
+                    _id: { realName: '$realName', teamName: '$teamName' },
+                    playerName: { $last: '$displayName' }, // Latest IGN for display
+                    totalKills: { $sum: '$kills' },
+                    totalDeaths: { $sum: '$deaths' },
+                    totalAssists: { $sum: '$assists' },
+                    gamesPlayed: { $sum: 1 },
+                    mvpCount: { $sum: { $cond: ['$mvp', 1, 0] } },
+                    wins: { $sum: { $cond: ['$win', 1, 0] } }
+                }
+            },
+            // Step 4: Project final fields
             {
                 $project: {
-                    playerName: "$_id.playerName",
-                    teamName: "$_id.teamName",
+                    _id: 0,
+                    realName: '$_id.realName',
+                    playerName: 1, // Display IGN
+                    teamName: '$_id.teamName',
                     totalKills: 1, totalDeaths: 1, totalAssists: 1,
-                    // totalGold: 1, // REMOVED
                     gamesPlayed: 1, mvpCount: 1, wins: 1,
                     kda: {
                         $cond: [
-                            { $eq: ["$totalDeaths", 0] },
-                            { $add: ["$totalKills", "$totalAssists"] },
-                            { $round: [{ $divide: [{ $add: ["$totalKills", "$totalAssists"] }, "$totalDeaths"] }, 2] }
+                            { $eq: ['$totalDeaths', 0] },
+                            { $add: ['$totalKills', '$totalAssists'] },
+                            { $round: [{ $divide: [{ $add: ['$totalKills', '$totalAssists'] }, '$totalDeaths'] }, 2] }
                         ]
-                    },
-                    // gpm: { $round: ["$avgGPM", 0] } // REMOVED
+                    }
                 }
             },
-            { $sort: { kda: -1 } } // Sort by KDA instead of GPM
+            { $sort: { kda: -1, totalKills: -1 } }
         ]);
         res.json(stats);
     } catch (error) { res.status(500).json({ error: error.message }); }
