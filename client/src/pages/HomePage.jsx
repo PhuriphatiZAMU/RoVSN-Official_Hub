@@ -171,16 +171,20 @@ function LatestMatches() {
 
                         {/* Score / VS - Center */}
                         <div className="flex-shrink-0 bg-gray-50 py-1 px-3 rounded-lg border border-gray-100 min-w-[70px] text-center">
-                            {result.isByeWin ? (
-                                <div className="flex flex-col items-center">
-                                    <span className="bg-yellow-500 text-white px-2 py-0.5 rounded-[4px] text-[10px] font-bold">BYE</span>
-                                    <span className="text-[10px] text-gray-500 mt-0.5 truncate max-w-[80px]">{result.winner}</span>
-                                </div>
-                            ) : (
-                                <span className="font-display font-bold text-base md:text-xl text-uefa-dark">
-                                    {result.scoreBlue} - {result.scoreRed}
-                                </span>
-                            )}
+                            {(() => {
+                                // Detect BYE: either isByeWin flag OR score 0-0 with a winner
+                                const isBye = result.isByeWin || (result.scoreBlue === 0 && result.scoreRed === 0 && result.winner);
+                                return isBye ? (
+                                    <div className="flex flex-col items-center">
+                                        <span className="bg-yellow-500 text-white px-2 py-0.5 rounded-[4px] text-[10px] font-bold">BYE</span>
+                                        <span className="text-[10px] text-gray-500 mt-0.5 truncate max-w-[80px]">{result.winner}</span>
+                                    </div>
+                                ) : (
+                                    <span className="font-display font-bold text-base md:text-xl text-uefa-dark">
+                                        {result.scoreBlue} - {result.scoreRed}
+                                    </span>
+                                );
+                            })()}
                         </div>
 
                         {/* Red Team */}

@@ -114,8 +114,10 @@ export default function FixturesPage() {
 
                                                 {/* Score / VS - Center */}
                                                 <div className="flex-shrink-0 bg-gray-50 py-1.5 px-3 md:py-2 md:px-5 rounded-lg border border-gray-100 min-w-[60px] md:min-w-[90px] text-center">
-                                                    {result ? (
-                                                        result.isByeWin ? (
+                                                    {result ? (() => {
+                                                        // Detect BYE: either isByeWin flag OR score 0-0 with a winner
+                                                        const isBye = result.isByeWin || (result.scoreBlue === 0 && result.scoreRed === 0 && result.winner);
+                                                        return isBye ? (
                                                             <div className="flex flex-col items-center">
                                                                 <span className="bg-yellow-500 text-white px-2 py-0.5 rounded text-xs font-bold">BYE</span>
                                                                 <span className="text-xs text-gray-500 mt-0.5 truncate max-w-[80px]">{result.winner}</span>
@@ -124,8 +126,8 @@ export default function FixturesPage() {
                                                             <span className="font-display font-bold text-lg md:text-2xl text-uefa-dark">
                                                                 {result.scoreBlue} - {result.scoreRed}
                                                             </span>
-                                                        )
-                                                    ) : (
+                                                        );
+                                                    })() : (
                                                         <span className="text-gray-400 font-bold text-sm md:text-lg">VS</span>
                                                     )}
                                                 </div>

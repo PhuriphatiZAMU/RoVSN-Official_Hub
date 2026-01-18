@@ -750,26 +750,30 @@ export default function AdminResults() {
                                                 <span className="text-gray-400">vs</span>
                                                 <span className="font-bold text-red-600">{match.red}</span>
                                             </div>
-                                            {result ? (
-                                                <div className="flex items-center gap-3">
-                                                    {result.isByeWin ? (
-                                                        <span className="bg-yellow-500 text-white px-3 py-1 rounded font-bold">
-                                                            BYE → {result.winner}
-                                                        </span>
-                                                    ) : (
-                                                        <span className="bg-green-500 text-white px-3 py-1 rounded font-bold">
-                                                            {result.scoreBlue} - {result.scoreRed}
-                                                        </span>
-                                                    )}
-                                                    <div
-                                                        onClick={(e) => handleDeleteResult(match, e)}
-                                                        className="w-8 h-8 flex items-center justify-center bg-red-100 text-red-500 rounded-full hover:bg-red-500 hover:text-white transition-colors"
-                                                        title="ลบผลการแข่งขัน"
-                                                    >
-                                                        <i className="fas fa-trash-alt text-sm"></i>
+                                            {result ? (() => {
+                                                // Detect BYE: either isByeWin flag OR score 0-0 with a winner
+                                                const isBye = result.isByeWin || (result.scoreBlue === 0 && result.scoreRed === 0 && result.winner);
+                                                return (
+                                                    <div className="flex items-center gap-3">
+                                                        {isBye ? (
+                                                            <span className="bg-yellow-500 text-white px-3 py-1 rounded font-bold">
+                                                                BYE → {result.winner}
+                                                            </span>
+                                                        ) : (
+                                                            <span className="bg-green-500 text-white px-3 py-1 rounded font-bold">
+                                                                {result.scoreBlue} - {result.scoreRed}
+                                                            </span>
+                                                        )}
+                                                        <div
+                                                            onClick={(e) => handleDeleteResult(match, e)}
+                                                            className="w-8 h-8 flex items-center justify-center bg-red-100 text-red-500 rounded-full hover:bg-red-500 hover:text-white transition-colors"
+                                                            title="ลบผลการแข่งขัน"
+                                                        >
+                                                            <i className="fas fa-trash-alt text-sm"></i>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            ) : (
+                                                );
+                                            })() : (
                                                 <span className="text-gray-400 text-sm">ยังไม่มีผล</span>
                                             )}
                                         </button>
