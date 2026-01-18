@@ -48,9 +48,19 @@ export default function AdminDashboard() {
                                             <span className="text-gray-400">vs</span>
                                             <span className="font-bold">{r.teamRed}</span>
                                         </div>
-                                        <div className="bg-uefa-dark text-white px-3 py-1 rounded font-bold">
-                                            {r.scoreBlue} - {r.scoreRed}
-                                        </div>
+                                        {(() => {
+                                            // Detect BYE: either isByeWin flag OR score 0-0 with a winner
+                                            const isBye = r.isByeWin || (r.scoreBlue === 0 && r.scoreRed === 0 && r.winner);
+                                            return isBye ? (
+                                                <div className="bg-yellow-500 text-white px-3 py-1 rounded font-bold">
+                                                    BYE → {r.winner}
+                                                </div>
+                                            ) : (
+                                                <div className="bg-uefa-dark text-white px-3 py-1 rounded font-bold">
+                                                    {r.scoreBlue} - {r.scoreRed}
+                                                </div>
+                                            );
+                                        })()}
                                     </div>
                                 ))}
                             </div>
