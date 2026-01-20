@@ -39,5 +39,9 @@
     "mongoose": "^9.1.4",
     "multer": "^2.0.2",
     "multer-storage-cloudinary": "^4.0.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.57.0",
+    "@types/node": "^25.0.9"
   }
 }

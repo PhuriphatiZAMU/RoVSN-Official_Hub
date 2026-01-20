@@ -7,13 +7,216 @@ import { StatsSkeleton, TableSkeleton } from '../components/common/Skeleton';
 import { ErrorState, EmptyState } from '../components/common/States';
 import ShareButton from '../components/common/ShareButton';
 
+// Helper: Format duration (seconds) to MM:SS
+function formatDuration(seconds) {
+    if (!seconds || seconds <= 0) return '-';
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+}
+
 function SeasonStats() {
-    // Component removed per user request
-    return null;
+    const { t, language } = useLanguage();
+    const [stats, setStats] = useState(null);
+    const [heroes, setHeroes] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        Promise.all([fetchSeasonStats(), fetchHeroes()])
+            .then(([seasonData, heroData]) => {
+                setStats(seasonData);
+                setHeroes(heroData || []);
+            })
+            .catch(err => setError(err.message))
+            .finally(() => setLoading(false));
+    }, []);
+
+    const getHeroImage = (heroName) => {
+        const hero = heroes.find(h => h.name === heroName);
+        return hero?.imageUrl || null;
+    };
+
+    if (loading) return <StatsSkeleton />;
+    if (error) return <ErrorState message={error} />;
+    if (!stats) return <EmptyState message={t?.common?.noData || 'No data'} />;
+
+    // Stat Cards Data
+    const statCards = [
+        {
+            icon: 'fa-trophy',
+            label: language === 'th' ? 'แมตช์ทั้งหมด' : 'Total Matches',
+            value: stats.totalMatches || 0,
+            color: 'from-cyan-500 to-blue-600',
+            bgColor: 'bg-gradient-to-br from-cyan-500/10 to-blue-600/10',
+        },
+        {
+            icon: 'fa-gamepad',
+            label: language === 'th' ? 'เกมทั้งหมด' : 'Total Games',
+            value: stats.totalGames || 0,
+            color: 'from-purple-500 to-pink-600',
+            bgColor: 'bg-gradient-to-br from-purple-500/10 to-pink-600/10',
+        },
+        {
+            icon: 'fa-clock',
+            label: language === 'th' ? 'เวลาเฉลี่ย/เกม' : 'Avg Game Time',
+            value: formatDuration(stats.avgGameDuration),
+            color: 'from-green-500 to-emerald-600',
+            bgColor: 'bg-gradient-to-br from-green-500/10 to-emerald-600/10',
+        },
+        {
+            icon: 'fa-skull-crossbones',
+            label: language === 'th' ? 'เกมที่ Kill เยอะสุด' : 'Bloodiest Game',
+            value: stats.highestKillGame?.kills || 0,
+            subtext: stats.highestKillGame?.match !== '-' ? `${stats.highestKillGame?.match}` : null,
+            color: 'from-red-500 to-orange-600',
+            bgColor: 'bg-gradient-to-br from-red-500/10 to-orange-600/10',
+        },
+    ];
+
+    // Highlight Cards (Players, Team, Hero)
+    const highlightCards = [
+        stats.topMVPPlayer && {
+            icon: 'fa-crown',
+            title: language === 'th' ? 'MVP มากที่สุด' : 'Top MVP Player',
+            name: stats.topMVPPlayer.name,
+            team: stats.topMVPPlayer.team,
+            value: `${stats.topMVPPlayer.count} MVP`,
+            color: 'from-yellow-400 to-amber-500',
+        },
+        stats.topKillerPlayer && {
+            icon: 'fa-crosshairs',
+            title: language === 'th' ? 'Kill มากที่สุด' : 'Top Killer',
+            name: stats.topKillerPlayer.name,
+            team: stats.topKillerPlayer.team,
+            value: `${stats.topKillerPlayer.kills} Kills`,
+            color: 'from-red-500 to-rose-600',
+        },
+        stats.bestTeam && {
+            icon: 'fa-users',
+            title: language === 'th' ? 'ทีม Win Rate สูงสุด' : 'Best Win Rate Team',
+            name: stats.bestTeam.name,
+            value: `${stats.bestTeam.winRate}%`,
+            subtext: `${stats.bestTeam.wins}W / ${stats.bestTeam.games}G`,
+            color: 'from-cyan-400 to-blue-500',
+            isTeam: true,
+        },
+        stats.mostPickedHero && {
+            icon: 'fa-mask',
+            title: language === 'th' ? 'ฮีโร่ยอดนิยม' : 'Most Picked Hero',
+            name: stats.mostPickedHero.name,
+            value: `${stats.mostPickedHero.picks} ${language === 'th' ? 'ครั้ง' : 'picks'}`,
+            subtext: `WR: ${stats.mostPickedHero.winRate}%`,
+            color: 'from-purple-500 to-violet-600',
+            heroImage: getHeroImage(stats.mostPickedHero.name),
+        },
+        stats.bestWinRateHero && {
+            icon: 'fa-star',
+            title: language === 'th' ? 'ฮีโร่ Win Rate สูงสุด' : 'Best Hero Win Rate',
+            name: stats.bestWinRateHero.name,
+            value: `${stats.bestWinRateHero.winRate}%`,
+            subtext: `${stats.bestWinRateHero.picks} ${language === 'th' ? 'ครั้ง' : 'picks'}`,
+            color: 'from-emerald-500 to-green-600',
+            heroImage: getHeroImage(stats.bestWinRateHero.name),
+        },
+    ].filter(Boolean);
+
+    return (
+        <div className="space-y-6">
+            {/* Main Stats Grid */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+                {statCards.map((card, idx) => (
+                    <div
+                        key={idx}
+                        className={`${card.bgColor} rounded-xl p-4 md:p-5 border border-gray-200/50 hover:shadow-lg transition-all duration-300 hover:scale-[1.02]`}
+                    >
+                        <div className={`inline-flex items-center justify-center w-10 h-10 md:w-12 md:h-12 rounded-xl bg-gradient-to-br ${card.color} text-white mb-3 shadow-lg`}>
+                            <i className={`fas ${card.icon} text-lg md:text-xl`}></i>
+                        </div>
+                        <p className="text-xs md:text-sm text-gray-500 font-medium mb-1">{card.label}</p>
+                        <p className={`text-2xl md:text-3xl font-bold bg-gradient-to-r ${card.color} bg-clip-text text-transparent`}>
+                            {card.value}
+                        </p>
+                        {card.subtext && (
+                            <p className="text-xs text-gray-400 mt-1 truncate" title={card.subtext}>{card.subtext}</p>
+                        )}
+                    </div>
+                ))}
+            </div>
+
+            {/* Highlight Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {highlightCards.map((card, idx) => (
+                    <div
+                        key={idx}
+                        className="bg-white rounded-xl p-4 md:p-5 border border-gray-200 shadow-sm hover:shadow-md transition-all duration-300"
+                    >
+                        {/* Header */}
+                        <div className="flex items-center gap-2 mb-4">
+                            <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${card.color} flex items-center justify-center`}>
+                                <i className={`fas ${card.icon} text-white text-sm`}></i>
+                            </div>
+                            <span className="text-sm font-semibold text-gray-600">{card.title}</span>
+                        </div>
+
+                        {/* Content */}
+                        <div className="flex items-center gap-3">
+                            {/* Avatar/Logo/Hero Image */}
+                            {card.heroImage ? (
+                                <img src={card.heroImage} alt={card.name} className="w-12 h-12 rounded-lg border-2 border-gray-200 object-cover bg-gray-900" />
+                            ) : card.isTeam ? (
+                                <TeamLogo teamName={card.name} size="lg" />
+                            ) : (
+                                <div className={`w-12 h-12 rounded-full bg-gradient-to-br ${card.color} flex items-center justify-center text-white font-bold text-xl shadow-lg`}>
+                                    {card.name?.charAt(0)?.toUpperCase()}
+                                </div>
+                            )}
+
+                            {/* Info */}
+                            <div className="flex-1 min-w-0">
+                                <p className="font-bold text-uefa-dark truncate text-lg">{card.name}</p>
+                                {card.team && (
+                                    <div className="flex items-center gap-1.5 mt-0.5">
+                                        <TeamLogo teamName={card.team} size="xs" />
+                                        <span className="text-xs text-gray-500 truncate">{card.team}</span>
+                                    </div>
+                                )}
+                                {card.subtext && !card.team && (
+                                    <p className="text-xs text-gray-500">{card.subtext}</p>
+                                )}
+                            </div>
+
+                            {/* Value Badge */}
+                            <div className={`px-3 py-1.5 rounded-lg bg-gradient-to-br ${card.color} text-white font-bold text-sm shadow-md`}>
+                                {card.value}
+                            </div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+
+            {/* Longest Game */}
+            {stats.longestGame && stats.longestGame.duration > 0 && (
+                <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl p-4 border border-amber-200/50">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white">
+                            <i className="fas fa-hourglass-half"></i>
+                        </div>
+                        <div>
+                            <p className="text-sm text-amber-700 font-medium">{language === 'th' ? 'เกมที่ยาวนานที่สุด' : 'Longest Game'}</p>
+                            <p className="font-bold text-amber-900">
+                                {formatDuration(stats.longestGame.duration)} - {stats.longestGame.match}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
 }
 
 function TeamStats() {
-    const { t } = useLanguage();
+    const { t, language } = useLanguage();
     const [stats, setStats] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -21,22 +224,14 @@ function TeamStats() {
     useEffect(() => {
         fetchTeamStats()
             .then(data => {
-                // FORCE Frontend Sort (Same logic as backend to double ensure consistency)
+                // Sort by Win Rate -> Wins -> KDA -> Kills
                 const sortedData = (data || []).sort((a, b) => {
                     const winRateA = a.realGamesPlayed > 0 ? (a.realWins / a.realGamesPlayed) : 0;
                     const winRateB = b.realGamesPlayed > 0 ? (b.realWins / b.realGamesPlayed) : 0;
-
-                    if (winRateB !== winRateA) return winRateB - winRateA; // 1. Win Rate Desc
-                    if (b.realWins !== a.realWins) return b.realWins - a.realWins; // 2. Wins Desc
-
-                    // Calculate KDA if not present
-                    const kdaA = a.kda || (a.totalDeaths === 0 ? (a.totalKills + a.totalAssists) : ((a.totalKills + a.totalAssists) / a.totalDeaths));
-                    const kdaB = b.kda || (b.totalDeaths === 0 ? (b.totalKills + b.totalAssists) : ((b.totalKills + b.totalAssists) / b.totalDeaths));
-
-                    if (kdaB !== kdaA) return kdaB - kdaA; // 3. KDA Desc
-                    if (b.totalKills !== a.totalKills) return b.totalKills - a.totalKills; // 4. Kills Desc
-
-                    return a.teamName.localeCompare(b.teamName); // 5. Name Asc (A-Z)
+                    if (winRateB !== winRateA) return winRateB - winRateA;
+                    if (b.realWins !== a.realWins) return b.realWins - a.realWins;
+                    if ((b.kda || 0) !== (a.kda || 0)) return (b.kda || 0) - (a.kda || 0);
+                    return (b.totalKills || 0) - (a.totalKills || 0);
                 });
                 setStats(sortedData);
             })
@@ -44,83 +239,192 @@ function TeamStats() {
             .finally(() => setLoading(false));
     }, []);
 
+    if (loading) return <TableSkeleton rows={8} cols={10} />;
+    if (error) return <ErrorState message={error} />;
+
     return (
-        <div className="bg-white shadow-sm rounded-lg overflow-hidden border border-gray-200">
-            <div className="overflow-x-auto">
-                <table className="w-full uefa-table min-w-[800px]">
-                    <thead>
-                        <tr>
-                            <th className="p-4 text-left bg-gray-50 text-uefa-dark border-b border-gray-200">{t.standings.team}</th>
-                            <th className="p-4 text-center bg-gray-50 text-uefa-dark border-b border-gray-200">{t.stats.games}</th>
-                            <th className="p-4 text-center text-green-600 bg-gray-50 border-b border-gray-200">{t.stats.wins}</th>
-                            <th className="p-4 text-center text-red-500 bg-gray-50 border-b border-gray-200">{t.stats.losses}</th>
-                            <th className="p-4 text-center bg-gray-50 text-uefa-dark border-b border-gray-200">{t.stats.winRate}</th>
-                            <th className="p-4 text-center bg-gray-50 text-uefa-dark border-b border-gray-200" title="(Total Kills + Assists) / Total Deaths">Team {t.stats.kda}</th>
-                        </tr>
-                    </thead>
-                    {loading ? (
-                        <TableSkeleton rows={8} cols={6} />
-                    ) : error ? (
-                        <tbody>
-                            <tr>
-                                <td colSpan="6" className="p-8 text-center text-red-500 font-bold">
-                                    <i className="fas fa-exclamation-triangle mr-2"></i>
-                                    {t.common.error}: {error}
-                                </td>
+        <div className="space-y-4">
+            {/* Desktop Table View */}
+            <div className="hidden md:block bg-white shadow-sm rounded-lg overflow-hidden border border-gray-200">
+                <div className="overflow-x-auto">
+                    <table className="w-full uefa-table min-w-[1100px]">
+                        <thead>
+                            <tr className="bg-gradient-to-r from-gray-50 to-gray-100">
+                                <th className="p-3 text-left text-uefa-dark border-b border-gray-200 w-12">#</th>
+                                <th className="p-3 text-left text-uefa-dark border-b border-gray-200">{t.standings.team}</th>
+                                <th className="p-3 text-center text-uefa-dark border-b border-gray-200" title="Games">{language === 'th' ? 'เกม' : 'G'}</th>
+                                <th className="p-3 text-center text-uefa-dark border-b border-gray-200" title="Win-Loss">{language === 'th' ? 'ชนะ-แพ้' : 'W-L'}</th>
+                                <th className="p-3 text-center text-uefa-dark border-b border-gray-200">{t.stats.winRate}</th>
+                                <th className="p-3 text-center text-blue-600 border-b border-gray-200" title="Kills">K</th>
+                                <th className="p-3 text-center text-red-500 border-b border-gray-200" title="Deaths">D</th>
+                                <th className="p-3 text-center text-green-600 border-b border-gray-200" title="Assists">A</th>
+                                <th className="p-3 text-center text-yellow-600 border-b border-gray-200" title="MVP Count">MVP</th>
+                                <th className="p-3 text-center text-cyan-aura border-b border-gray-200 font-bold" title="KDA Ratio">KDA</th>
                             </tr>
-                        </tbody>
-                    ) : (
+                        </thead>
                         <tbody>
                             {stats.length === 0 ? (
-                                <tr><td colSpan="6" className="p-8 text-center text-gray-500">{t.common.noData}</td></tr>
+                                <tr><td colSpan="10" className="p-8 text-center text-gray-500">{t.common.noData}</td></tr>
                             ) : (
                                 stats.map((team, idx) => {
-                                    const kdaRatio = team.kda || (team.totalDeaths === 0
-                                        ? (team.totalKills + team.totalAssists)
-                                        : ((team.totalKills + team.totalAssists) / team.totalDeaths));
-
-                                    const games = team.realGamesPlayed || 0;
-                                    const wins = team.realWins || 0;
-                                    const losses = games - wins;
-                                    const winRate = games > 0 ? ((wins / games) * 100).toFixed(1) : 0;
+                                    const kda = team.kda?.toFixed(2) || '0.00';
+                                    const winRate = team.winRate?.toFixed(1) || 0;
+                                    const isTop3 = idx < 3;
 
                                     return (
-                                        <tr key={team.teamName} className="hover:bg-gray-50 transition border-b border-gray-100 last:border-0">
-                                            <td className="p-4 font-bold text-uefa-dark flex items-center gap-3">
-                                                <span className="text-gray-400 text-xs w-4">{idx + 1}</span>
-                                                <TeamLogo teamName={team.teamName} size="md" />
-                                                <span className="truncate max-w-[120px] md:max-w-xs">{team.teamName}</span>
+                                        <tr key={team.teamName} className={`hover:bg-gray-50 transition border-b border-gray-100 last:border-0 ${isTop3 ? 'bg-gradient-to-r from-yellow-50/50 to-transparent' : ''}`}>
+                                            {/* Rank */}
+                                            <td className="p-3 text-center">
+                                                {idx === 0 ? (
+                                                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center text-white font-bold shadow-md mx-auto">1</div>
+                                                ) : idx === 1 ? (
+                                                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-gray-300 to-gray-500 flex items-center justify-center text-white font-bold shadow-md mx-auto">2</div>
+                                                ) : idx === 2 ? (
+                                                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white font-bold shadow-md mx-auto">3</div>
+                                                ) : (
+                                                    <span className="text-gray-400 font-bold">{idx + 1}</span>
+                                                )}
                                             </td>
-                                            <td className="p-4 text-center text-gray-600">{games}</td>
-                                            <td className="p-4 text-center text-green-600 font-bold">{wins}</td>
-                                            <td className="p-4 text-center text-red-500 font-bold">{losses}</td>
-                                            <td className="p-4 text-center text-sm">
+                                            {/* Team */}
+                                            <td className="p-3">
+                                                <div className="flex items-center gap-3">
+                                                    <TeamLogo teamName={team.teamName} size="md" />
+                                                    <span className="font-bold text-uefa-dark truncate max-w-[150px]">{team.teamName}</span>
+                                                </div>
+                                            </td>
+                                            {/* Games */}
+                                            <td className="p-3 text-center text-gray-600 font-mono">{team.realGamesPlayed || 0}</td>
+                                            {/* Win-Loss */}
+                                            <td className="p-3 text-center">
+                                                <span className="text-green-600 font-bold">{team.realWins || 0}</span>
+                                                <span className="text-gray-400 mx-1">-</span>
+                                                <span className="text-red-500 font-bold">{team.realLosses || 0}</span>
+                                            </td>
+                                            {/* Win Rate */}
+                                            <td className="p-3 text-center">
                                                 <div className="flex items-center justify-center gap-2">
-                                                    <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                                    <div className="w-20 h-2.5 bg-gray-200 rounded-full overflow-hidden">
                                                         <div
-                                                            className="h-full bg-cyan-aura"
+                                                            className={`h-full rounded-full ${winRate >= 70 ? 'bg-gradient-to-r from-green-400 to-emerald-500' : winRate >= 50 ? 'bg-gradient-to-r from-cyan-400 to-blue-500' : 'bg-gradient-to-r from-orange-400 to-red-500'}`}
                                                             style={{ width: `${winRate}%` }}
                                                         ></div>
                                                     </div>
-                                                    <span className="w-12 text-right text-gray-600">{winRate}%</span>
+                                                    <span className={`font-bold text-sm ${winRate >= 70 ? 'text-green-600' : winRate >= 50 ? 'text-cyan-600' : 'text-orange-600'}`}>{winRate}%</span>
                                                 </div>
                                             </td>
-                                            <td className="p-4 text-center font-bold text-cyan-aura text-lg">{kdaRatio.toFixed(2)}</td>
+                                            {/* Kills */}
+                                            <td className="p-3 text-center font-mono text-blue-600 font-bold">{team.totalKills || 0}</td>
+                                            {/* Deaths */}
+                                            <td className="p-3 text-center font-mono text-red-500 font-bold">{team.totalDeaths || 0}</td>
+                                            {/* Assists */}
+                                            <td className="p-3 text-center font-mono text-green-600 font-bold">{team.totalAssists || 0}</td>
+                                            {/* MVP */}
+                                            <td className="p-3 text-center">
+                                                {team.mvpCount > 0 ? (
+                                                    <span className="inline-flex items-center gap-1 bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full font-bold text-sm">
+                                                        <i className="fas fa-crown text-xs"></i>
+                                                        {team.mvpCount}
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-gray-300">-</span>
+                                                )}
+                                            </td>
+                                            {/* KDA */}
+                                            <td className="p-3 text-center">
+                                                <span className="text-lg font-bold text-cyan-aura bg-cyan-aura/10 px-3 py-1 rounded-lg inline-block">{kda}</span>
+                                            </td>
                                         </tr>
                                     );
                                 })
                             )}
                         </tbody>
-                    )}
-                </table>
+                    </table>
+                </div>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="md:hidden space-y-3">
+                {stats.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500">{t.common.noData}</div>
+                ) : (
+                    stats.map((team, idx) => {
+                        const kda = team.kda?.toFixed(2) || '0.00';
+                        const winRate = team.winRate?.toFixed(1) || 0;
+                        const isTop3 = idx < 3;
+
+                        return (
+                            <div key={team.teamName} className={`bg-white rounded-xl p-4 border ${isTop3 ? 'border-yellow-200 shadow-md' : 'border-gray-200'}`}>
+                                {/* Header: Rank + Team */}
+                                <div className="flex items-center gap-3 mb-3">
+                                    {idx === 0 ? (
+                                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center text-white font-bold shadow-lg">1</div>
+                                    ) : idx === 1 ? (
+                                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gray-300 to-gray-500 flex items-center justify-center text-white font-bold shadow-lg">2</div>
+                                    ) : idx === 2 ? (
+                                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white font-bold shadow-lg">3</div>
+                                    ) : (
+                                        <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 font-bold">{idx + 1}</div>
+                                    )}
+                                    <TeamLogo teamName={team.teamName} size="lg" />
+                                    <div className="flex-1 min-w-0">
+                                        <p className="font-bold text-uefa-dark truncate">{team.teamName}</p>
+                                        <p className="text-sm text-gray-500">{team.realGamesPlayed || 0} {language === 'th' ? 'เกม' : 'games'}</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <div className="text-lg font-bold text-cyan-aura">{kda}</div>
+                                        <div className="text-xs text-gray-500">KDA</div>
+                                    </div>
+                                </div>
+
+                                {/* Stats Grid */}
+                                <div className="grid grid-cols-4 gap-2 mb-3">
+                                    <div className="text-center p-2 bg-green-50 rounded-lg">
+                                        <div className="text-green-600 font-bold">{team.realWins || 0}</div>
+                                        <div className="text-xs text-gray-500">{language === 'th' ? 'ชนะ' : 'Wins'}</div>
+                                    </div>
+                                    <div className="text-center p-2 bg-red-50 rounded-lg">
+                                        <div className="text-red-500 font-bold">{team.realLosses || 0}</div>
+                                        <div className="text-xs text-gray-500">{language === 'th' ? 'แพ้' : 'Loss'}</div>
+                                    </div>
+                                    <div className="text-center p-2 bg-yellow-50 rounded-lg">
+                                        <div className="text-yellow-600 font-bold">{team.mvpCount || 0}</div>
+                                        <div className="text-xs text-gray-500">MVP</div>
+                                    </div>
+                                    <div className="text-center p-2 bg-cyan-50 rounded-lg">
+                                        <div className={`font-bold ${winRate >= 70 ? 'text-green-600' : winRate >= 50 ? 'text-cyan-600' : 'text-orange-600'}`}>{winRate}%</div>
+                                        <div className="text-xs text-gray-500">WR</div>
+                                    </div>
+                                </div>
+
+                                {/* K/D/A Bar */}
+                                <div className="flex items-center justify-between text-sm bg-gray-50 rounded-lg p-2">
+                                    <div className="flex items-center gap-1">
+                                        <span className="text-blue-600 font-bold">{team.totalKills || 0}</span>
+                                        <span className="text-gray-400">K</span>
+                                    </div>
+                                    <div className="text-gray-300">/</div>
+                                    <div className="flex items-center gap-1">
+                                        <span className="text-red-500 font-bold">{team.totalDeaths || 0}</span>
+                                        <span className="text-gray-400">D</span>
+                                    </div>
+                                    <div className="text-gray-300">/</div>
+                                    <div className="flex items-center gap-1">
+                                        <span className="text-green-600 font-bold">{team.totalAssists || 0}</span>
+                                        <span className="text-gray-400">A</span>
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    })
+                )}
             </div>
         </div>
     );
 }
 
-// ... Inside PlayerStats function ...
+// Enhanced PlayerStats Component
 function PlayerStats() {
-    const { t } = useLanguage();
+    const { t, language } = useLanguage();
     const [stats, setStats] = useState([]);
     const [heroStats, setHeroStats] = useState([]);
     const [heroes, setHeroes] = useState([]);
@@ -148,83 +452,86 @@ function PlayerStats() {
     };
 
     const getPlayerTopHeroes = (playerRealName) => {
-        // Match by realName first, then playerName for backwards compatibility
         const playerHeroStat = heroStats.find(h =>
             h.realName === playerRealName || h.playerName === playerRealName
         );
         return playerHeroStat?.topHeroes || [];
     };
 
+    if (loading) return <TableSkeleton rows={10} cols={12} />;
+    if (error) return <ErrorState message={error} />;
+
     return (
-        <div className="bg-white shadow-sm rounded-lg overflow-hidden border border-gray-200">
-            <div className="overflow-x-auto">
-                <table className="w-full uefa-table min-w-[800px]">
-                    <thead>
-                        <tr>
-                            <th className="p-4 text-center w-16 bg-gray-50 text-uefa-dark border-b border-gray-200">#</th>
-                            <th className="p-4 text-left sticky left-0 bg-gray-50 z-10 shadow-[2px_0_5px_rgba(0,0,0,0.05)] md:shadow-none md:static text-uefa-dark border-b border-gray-200">
-                                {t.stats.playerShort}
-                            </th>
-                            <th className="p-4 text-left bg-gray-50 text-uefa-dark border-b border-gray-200">{t.stats.team}</th>
-                            <th className="p-2 md:p-4 text-center bg-gray-50 text-uefa-dark border-b border-gray-200" title="Top Heroes">{t.stats.heroes}</th>
-                            <th className="p-4 text-center bg-gray-50 text-uefa-dark border-b border-gray-200" title="Games Played">{t.stats.games}</th>
-                            <th className="p-4 text-center text-blue-600 bg-gray-50 border-b border-gray-200" title="Total Kills">K</th>
-                            <th className="p-4 text-center text-red-600 bg-gray-50 border-b border-gray-200" title="Total Deaths">D</th>
-                            <th className="p-4 text-center text-green-600 bg-gray-50 border-b border-gray-200" title="Total Assists">A</th>
-                            <th className="p-4 text-center font-bold text-yellow-600 bg-gray-50 border-b border-gray-200" title="MVP Count">MVP</th>
-                            <th className="p-4 text-center font-bold text-cyan-aura bg-gray-50 border-b border-gray-200" title="KDA Ratio">{t.stats.kda}</th>
-                        </tr>
-                    </thead>
-                    {loading ? (
-                        <TableSkeleton rows={10} cols={10} />
-                    ) : error ? (
-                        <tbody>
-                            <tr>
-                                <td colSpan="10" className="p-8 text-center text-red-500 font-bold">
-                                    <i className="fas fa-exclamation-triangle mr-2"></i>
-                                    {t.common.error}: {error}
-                                </td>
+        <div className="space-y-4">
+            {/* Desktop Table View */}
+            <div className="hidden md:block bg-white shadow-sm rounded-lg overflow-hidden border border-gray-200">
+                <div className="overflow-x-auto">
+                    <table className="w-full uefa-table min-w-[1200px]">
+                        <thead>
+                            <tr className="bg-gradient-to-r from-gray-50 to-gray-100">
+                                <th className="p-3 text-center w-12 text-uefa-dark border-b border-gray-200">#</th>
+                                <th className="p-3 text-left text-uefa-dark border-b border-gray-200">{t.stats.playerShort}</th>
+                                <th className="p-3 text-left text-uefa-dark border-b border-gray-200">{t.stats.team}</th>
+                                <th className="p-3 text-center text-uefa-dark border-b border-gray-200" title="Top Heroes">{t.stats.heroes}</th>
+                                <th className="p-3 text-center text-uefa-dark border-b border-gray-200" title="Games">G</th>
+                                <th className="p-3 text-center text-uefa-dark border-b border-gray-200" title="Win Rate">WR%</th>
+                                <th className="p-3 text-center text-blue-600 border-b border-gray-200" title="Kills">K</th>
+                                <th className="p-3 text-center text-red-500 border-b border-gray-200" title="Deaths">D</th>
+                                <th className="p-3 text-center text-green-600 border-b border-gray-200" title="Assists">A</th>
+                                <th className="p-3 text-center text-yellow-600 border-b border-gray-200" title="MVP Count">MVP</th>
+                                <th className="p-3 text-center text-cyan-aura font-bold border-b border-gray-200" title="KDA Ratio">KDA</th>
                             </tr>
-                        </tbody>
-                    ) : (
+                        </thead>
                         <tbody>
                             {stats.length === 0 ? (
-                                <tr><td colSpan="10" className="p-8 text-center text-gray-500">{t.common.noData}</td></tr>
+                                <tr><td colSpan="11" className="p-8 text-center text-gray-500">{t.common.noData}</td></tr>
                             ) : (
                                 stats.slice(0, 50).map((p, idx) => {
                                     const topHeroes = getPlayerTopHeroes(p.realName || p.playerName);
+                                    const isTop3 = idx < 3;
+                                    const kda = p.kda?.toFixed(2) || '0.00';
+                                    const winRate = p.winRate || 0;
+
                                     return (
-                                        <tr key={`${p.teamName}-${p.realName || p.playerName}`} className={`hover:bg-gray-50 transition border-b border-gray-100 last:border-0 ${idx < 3 ? 'bg-yellow-50' : 'bg-white'}`}>
-                                            <td className="p-4 text-center text-gray-500">
-                                                {idx < 3 ? (
-                                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center mx-auto font-bold text-white ${idx === 0 ? 'bg-gradient-to-br from-yellow-400 to-yellow-600' :
-                                                        idx === 1 ? 'bg-gradient-to-br from-gray-300 to-gray-500' :
-                                                            'bg-gradient-to-br from-orange-400 to-orange-600'
-                                                        }`}>
-                                                        {idx + 1}
-                                                    </div>
+                                        <tr key={`${p.teamName}-${p.realName || p.playerName}`} className={`hover:bg-gray-50 transition border-b border-gray-100 last:border-0 ${isTop3 ? 'bg-gradient-to-r from-yellow-50/50 to-transparent' : ''}`}>
+                                            {/* Rank */}
+                                            <td className="p-3 text-center">
+                                                {idx === 0 ? (
+                                                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center text-white font-bold shadow-md mx-auto">1</div>
+                                                ) : idx === 1 ? (
+                                                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-gray-300 to-gray-500 flex items-center justify-center text-white font-bold shadow-md mx-auto">2</div>
+                                                ) : idx === 2 ? (
+                                                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white font-bold shadow-md mx-auto">3</div>
                                                 ) : (
-                                                    <span className="text-gray-400 font-bold text-sm">{idx + 1}</span>
+                                                    <span className="text-gray-400 font-bold">{idx + 1}</span>
                                                 )}
                                             </td>
-                                            <td className="p-4 font-bold text-uefa-dark sticky left-0 bg-inherit z-10 shadow-[2px_0_5px_rgba(0,0,0,0.05)] md:shadow-none">
-                                                {p.realName || p.playerName}
+                                            {/* Player Name */}
+                                            <td className="p-3">
+                                                <div className="flex flex-col">
+                                                    <span className="font-bold text-uefa-dark">{p.realName || p.playerName}</span>
+                                                    {p.realName && p.playerName && p.realName !== p.playerName && (
+                                                        <span className="text-xs text-gray-400">IGN: {p.playerName}</span>
+                                                    )}
+                                                </div>
                                             </td>
-                                            <td className="p-4">
+                                            {/* Team */}
+                                            <td className="p-3">
                                                 <div className="flex items-center gap-2">
                                                     <TeamLogo teamName={p.teamName} size="xs" />
                                                     <span className="text-sm text-gray-600 truncate max-w-[100px]">{p.teamName}</span>
                                                 </div>
                                             </td>
-                                            <td className="p-2 md:p-4 max-w-[150px]">
-                                                <div className="flex gap-1 justify-center flex-wrap">
+                                            {/* Top Heroes */}
+                                            <td className="p-2 max-w-[120px]">
+                                                <div className="flex gap-1 justify-center">
                                                     {topHeroes.length > 0 ? (
                                                         topHeroes.slice(0, 3).map((hero, i) => (
-                                                            <div key={i} className="relative group" title={`${hero.heroName} (${hero.gamesPlayed} games)`}>
+                                                            <div key={i} title={`${hero.heroName} (${hero.gamesPlayed} games)`}>
                                                                 {getHeroImage(hero.heroName) ? (
-                                                                    <img src={getHeroImage(hero.heroName)} alt={hero.heroName} className="w-8 h-8 rounded border border-gray-200 object-cover bg-gray-900" />
+                                                                    <img src={getHeroImage(hero.heroName)} alt={hero.heroName} className="w-7 h-7 rounded border border-gray-200 object-cover bg-gray-900" />
                                                                 ) : (
-                                                                    <div className="w-8 h-8 rounded bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-500">
+                                                                    <div className="w-7 h-7 rounded bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-500">
                                                                         {hero.heroName?.charAt(0)}
                                                                     </div>
                                                                 )}
@@ -235,40 +542,160 @@ function PlayerStats() {
                                                     )}
                                                 </div>
                                             </td>
-                                            <td className="p-4 text-center font-mono text-gray-600 font-bold">{p.gamesPlayed}</td>
-                                            <td className="p-4 text-center font-mono font-bold text-gray-800">{p.totalKills}</td>
-                                            <td className="p-4 text-center font-mono font-bold text-gray-800">{p.totalDeaths}</td>
-                                            <td className="p-4 text-center font-mono font-bold text-gray-800">{p.totalAssists}</td>
-                                            <td className="p-4 text-center font-bold text-yellow-600 text-lg">
-                                                {p.mvpCount > 0 ? p.mvpCount : '-'}
-                                            </td>
-                                            <td className="p-4 text-center">
-                                                <span className="text-lg font-bold text-cyan-aura bg-cyan-aura/10 px-2 py-1 rounded inline-block min-w-[60px]">
-                                                    {p.kda.toFixed(2)}
+                                            {/* Games */}
+                                            <td className="p-3 text-center font-mono text-gray-600 font-bold">{p.gamesPlayed}</td>
+                                            {/* Win Rate */}
+                                            <td className="p-3 text-center">
+                                                <span className={`font-bold text-sm ${winRate >= 70 ? 'text-green-600' : winRate >= 50 ? 'text-cyan-600' : 'text-orange-500'}`}>
+                                                    {winRate}%
                                                 </span>
+                                            </td>
+                                            {/* K/D/A */}
+                                            <td className="p-3 text-center font-mono font-bold text-blue-600">{p.totalKills}</td>
+                                            <td className="p-3 text-center font-mono font-bold text-red-500">{p.totalDeaths}</td>
+                                            <td className="p-3 text-center font-mono font-bold text-green-600">{p.totalAssists}</td>
+                                            {/* MVP */}
+                                            <td className="p-3 text-center">
+                                                {p.mvpCount > 0 ? (
+                                                    <span className="inline-flex items-center gap-1 bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full font-bold text-sm">
+                                                        <i className="fas fa-crown text-xs"></i>
+                                                        {p.mvpCount}
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-gray-300">-</span>
+                                                )}
+                                            </td>
+                                            {/* KDA */}
+                                            <td className="p-3 text-center">
+                                                <span className="text-lg font-bold text-cyan-aura bg-cyan-aura/10 px-3 py-1 rounded-lg inline-block">{kda}</span>
                                             </td>
                                         </tr>
                                     );
                                 })
                             )}
                         </tbody>
-                    )}
-                </table>
+                    </table>
+                </div>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="md:hidden space-y-3">
+                {stats.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500">{t.common.noData}</div>
+                ) : (
+                    stats.slice(0, 30).map((p, idx) => {
+                        const topHeroes = getPlayerTopHeroes(p.realName || p.playerName);
+                        const isTop3 = idx < 3;
+                        const kda = p.kda?.toFixed(2) || '0.00';
+                        const winRate = p.winRate || 0;
+
+                        return (
+                            <div key={`${p.teamName}-${p.realName || p.playerName}`} className={`bg-white rounded-xl p-4 border ${isTop3 ? 'border-yellow-200 shadow-md' : 'border-gray-200'}`}>
+                                {/* Header: Rank + Player + KDA */}
+                                <div className="flex items-center gap-3 mb-3">
+                                    {idx === 0 ? (
+                                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center text-white font-bold shadow-lg">1</div>
+                                    ) : idx === 1 ? (
+                                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gray-300 to-gray-500 flex items-center justify-center text-white font-bold shadow-lg">2</div>
+                                    ) : idx === 2 ? (
+                                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white font-bold shadow-lg">3</div>
+                                    ) : (
+                                        <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 font-bold">{idx + 1}</div>
+                                    )}
+                                    <div className="flex-1 min-w-0">
+                                        <p className="font-bold text-uefa-dark truncate">{p.realName || p.playerName}</p>
+                                        {p.realName && p.playerName && p.realName !== p.playerName && (
+                                            <p className="text-xs text-gray-400 truncate">IGN: {p.playerName}</p>
+                                        )}
+                                        <div className="flex items-center gap-1.5">
+                                            <TeamLogo teamName={p.teamName} size="xs" />
+                                            <span className="text-xs text-gray-500 truncate">{p.teamName}</span>
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                        <div className="text-xl font-bold text-cyan-aura">{kda}</div>
+                                        <div className="text-xs text-gray-500">KDA</div>
+                                    </div>
+                                </div>
+
+                                {/* Top Heroes */}
+                                {topHeroes.length > 0 && (
+                                    <div className="flex gap-1 mb-3">
+                                        {topHeroes.slice(0, 3).map((hero, i) => (
+                                            <div key={i} title={hero.heroName}>
+                                                {getHeroImage(hero.heroName) ? (
+                                                    <img src={getHeroImage(hero.heroName)} alt={hero.heroName} className="w-8 h-8 rounded border border-gray-200 object-cover bg-gray-900" />
+                                                ) : (
+                                                    <div className="w-8 h-8 rounded bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-500">
+                                                        {hero.heroName?.charAt(0)}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {/* Stats Grid */}
+                                <div className="grid grid-cols-5 gap-1.5 mb-3">
+                                    <div className="text-center p-1.5 bg-gray-50 rounded-lg">
+                                        <div className="text-gray-700 font-bold text-sm">{p.gamesPlayed}</div>
+                                        <div className="text-xs text-gray-400">G</div>
+                                    </div>
+                                    <div className="text-center p-1.5 bg-green-50 rounded-lg">
+                                        <div className={`font-bold text-sm ${winRate >= 70 ? 'text-green-600' : winRate >= 50 ? 'text-cyan-600' : 'text-orange-500'}`}>{winRate}%</div>
+                                        <div className="text-xs text-gray-400">WR</div>
+                                    </div>
+                                    <div className="text-center p-1.5 bg-yellow-50 rounded-lg">
+                                        <div className="text-yellow-600 font-bold text-sm">{p.mvpCount || 0}</div>
+                                        <div className="text-xs text-gray-400">MVP</div>
+                                    </div>
+                                    <div className="text-center p-1.5 bg-blue-50 rounded-lg">
+                                        <div className="text-blue-600 font-bold text-sm">{p.avgKillsPerGame || 0}</div>
+                                        <div className="text-xs text-gray-400">K/G</div>
+                                    </div>
+                                    <div className="text-center p-1.5 bg-green-50 rounded-lg">
+                                        <div className="text-green-600 font-bold text-sm">{p.avgAssistsPerGame || 0}</div>
+                                        <div className="text-xs text-gray-400">A/G</div>
+                                    </div>
+                                </div>
+
+                                {/* K/D/A Bar */}
+                                <div className="flex items-center justify-between text-sm bg-gray-50 rounded-lg p-2">
+                                    <div className="flex items-center gap-1">
+                                        <span className="text-blue-600 font-bold">{p.totalKills}</span>
+                                        <span className="text-gray-400">K</span>
+                                    </div>
+                                    <div className="text-gray-300">/</div>
+                                    <div className="flex items-center gap-1">
+                                        <span className="text-red-500 font-bold">{p.totalDeaths}</span>
+                                        <span className="text-gray-400">D</span>
+                                    </div>
+                                    <div className="text-gray-300">/</div>
+                                    <div className="flex items-center gap-1">
+                                        <span className="text-green-600 font-bold">{p.totalAssists}</span>
+                                        <span className="text-gray-400">A</span>
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    })
+                )}
             </div>
         </div>
     );
 }
 
 export default function StatsPage() {
-    const { t } = useLanguage();
+    const { t, language } = useLanguage();
     const location = useLocation();
     const path = location.pathname;
 
-    // Determine active tab (Season removed - default to team)
-    const activeTab = path === '/stats/player' ? 'player' : 'team';
+    // Determine active tab
+    const activeTab = path === '/stats/player' ? 'player' : path === '/stats/team' ? 'team' : 'season';
 
     const tabs = [
-        { path: '/stats', id: 'team', label: t.stats.team, icon: 'fa-users' },
+        { path: '/stats', id: 'season', label: language === 'th' ? 'ภาพรวม' : 'Overview', icon: 'fa-chart-pie' },
+        { path: '/stats/team', id: 'team', label: t.stats.team, icon: 'fa-users' },
         { path: '/stats/player', id: 'player', label: t.stats.player, icon: 'fa-user-ninja' },
     ];
 
@@ -311,10 +738,12 @@ export default function StatsPage() {
                 <div className="animate-fade-in-up">
                     <h2 className="flex items-center gap-3 text-2xl font-display font-bold text-uefa-dark mb-6">
                         <span className="w-1.5 h-8 bg-cyan-aura rounded-full"></span>
+                        {activeTab === 'season' && (language === 'th' ? 'ภาพรวมทัวร์นาเมนต์' : 'Tournament Overview')}
                         {activeTab === 'team' && t.stats.team}
                         {activeTab === 'player' && t.stats.player}
                     </h2>
 
+                    {activeTab === 'season' && <SeasonStats />}
                     {activeTab === 'team' && <TeamStats />}
                     {activeTab === 'player' && <PlayerStats />}
                 </div>
