@@ -2,8 +2,18 @@ import { useState, useEffect } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
+interface AuthUser {
+    username: string;
+    role: string;
+}
+
+interface AuthContextType {
+    user: AuthUser | null;
+    logout: () => void;
+}
+
 export default function AdminLayout() {
-    const { user, logout } = useAuth();
+    const { user, logout } = useAuth() as AuthContextType;
     const location = useLocation();
     const navigate = useNavigate();
     const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -11,8 +21,12 @@ export default function AdminLayout() {
     const menuItems = [
         { path: '/admin', label: 'Dashboard', icon: 'fas fa-tachometer-alt', exact: true },
         { path: '/admin/draw', label: 'จับสลาก', icon: 'fas fa-random' },
+        { path: '/admin/schedule', label: 'ตารางแข่งขัน', icon: 'fas fa-calendar-check' },
         { path: '/admin/results', label: 'ผลการแข่งขัน', icon: 'fas fa-trophy' },
-        { path: '/admin/players', label: 'ทะเบียนผู้เล่น', icon: 'fas fa-users' },
+        { path: '/admin/result-history', label: 'ประวัติแก้ไข', icon: 'fas fa-history' },
+        { path: '/admin/teams', label: 'จัดการทีม', icon: 'fas fa-users-cog' },
+        { path: '/admin/players', label: 'ทะเบียนผู้เล่น', icon: 'fas fa-user-friends' },
+        { path: '/admin/game-stats', label: 'สถิติผู้เล่น', icon: 'fas fa-chart-line' },
         { path: '/admin/heroes', label: 'ฮีโร่', icon: 'fas fa-mask' },
         { path: '/admin/logos', label: 'โลโก้ทีม', icon: 'fas fa-image' },
     ];
@@ -22,7 +36,7 @@ export default function AdminLayout() {
         navigate('/login');
     };
 
-    const isActive = (path, exact = false) => {
+    const isActive = (path: string, exact = false) => {
         if (exact) return location.pathname === path;
         return location.pathname.startsWith(path);
     };

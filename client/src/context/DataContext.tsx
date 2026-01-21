@@ -46,6 +46,7 @@ interface DataContextType {
     loading: boolean;
     error: string | null;
     getTeamLogo: (teamName: string) => string | null;
+    refreshData: () => void;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -61,6 +62,12 @@ export function DataProvider({ children }: DataProviderProps) {
     const [teamLogos, setTeamLogos] = useState<Record<string, string>>({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [refreshKey, setRefreshKey] = useState(0);
+
+    // Function to trigger data refresh
+    const refreshData = () => {
+        setRefreshKey(prev => prev + 1);
+    };
 
     useEffect(() => {
         async function loadData() {
@@ -121,7 +128,7 @@ export function DataProvider({ children }: DataProviderProps) {
         }
 
         loadData();
-    }, []);
+    }, [refreshKey]); // Trigger reload when refreshKey changes
 
     // Calculate standings from results (memoized)
     const standings = useMemo(() => {
@@ -183,6 +190,7 @@ export function DataProvider({ children }: DataProviderProps) {
         loading,
         error,
         getTeamLogo,
+        refreshData,
     };
 
     return (

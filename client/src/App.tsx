@@ -19,12 +19,16 @@ import FormatPage from './pages/FormatPage.jsx';
 
 // Admin Pages
 import LoginPage from './pages/admin/LoginPage.jsx';
-import AdminDashboard from './pages/admin/AdminDashboard.jsx';
+import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminDraw from './pages/admin/AdminDraw.jsx';
 import AdminResults from './pages/admin/AdminResults.jsx';
 import AdminLogos from './pages/admin/AdminLogos.jsx';
 import AdminPlayersPage from './pages/admin/AdminPlayersPage.jsx';
 import AdminHeroesPage from './pages/admin/AdminHeroesPage.jsx';
+import AdminTeamsPage from './pages/admin/AdminTeamsPage';
+import AdminSchedulePage from './pages/admin/AdminSchedulePage';
+import AdminGameStatsPage from './pages/admin/AdminGameStatsPage';
+import AdminResultHistory from './pages/admin/AdminResultHistory';
 
 // Auth
 import ProtectedRoute from './components/auth/ProtectedRoute.jsx';
@@ -67,6 +71,10 @@ function App(): React.ReactElement {
                                     <Route path="players" element={<AdminPlayersPage />} />
                                     <Route path="heroes" element={<AdminHeroesPage />} />
                                     <Route path="logos" element={<AdminLogos />} />
+                                    <Route path="teams" element={<AdminTeamsPage />} />
+                                    <Route path="schedule" element={<AdminSchedulePage />} />
+                                    <Route path="game-stats" element={<AdminGameStatsPage />} />
+                                    <Route path="result-history" element={<AdminResultHistory />} />
                                 </Route>
                             </Routes>
                         </BrowserRouter>

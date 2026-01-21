@@ -4,3 +4,4 @@ export { default as GameStat, IGameStat } from './GameStat';
 export { default as PlayerPool, IPlayerPool } from './PlayerPool';
 export { default as TeamLogo, ITeamLogo } from './TeamLogo';
 export { default as Hero, IHero } from './Hero';
+export { default as ResultHistory, IResultHistory } from './ResultHistory';

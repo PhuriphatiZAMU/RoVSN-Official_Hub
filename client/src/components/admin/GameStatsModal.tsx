@@ -1,25 +1,82 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, ChangeEvent } from 'react';
 
-export default function GameStatsModal({ isOpen, onClose, teamBlue, teamRed, gameNumber, initialData, onSave, allPlayers = [], allHeroes = [], token }) {
+interface Player {
+    _id: string;
+    name: string;
+    inGameName?: string;
+    team?: string;
+}
+
+interface Hero {
+    _id: string;
+    name: string;
+    imageUrl?: string;
+}
+
+interface PlayerStats {
+    name: string;
+    hero: string;
+    k: number;
+    d: number;
+    a: number;
+    gold: number;
+}
+
+interface GameStatsData {
+    blue: PlayerStats[];
+    red: PlayerStats[];
+}
+
+interface GameStatsModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    teamBlue: string;
+    teamRed: string;
+    gameNumber: number;
+    initialData?: GameStatsData;
+    onSave: (data: GameStatsData) => void;
+    allPlayers?: Player[];
+    allHeroes?: Hero[];
+    token: string | null;
+}
+
+interface HeroPickerState {
+    open: boolean;
+    team: 'blue' | 'red' | null;
+    index: number | null;
+}
+
+export default function GameStatsModal({
+    isOpen,
+    onClose,
+    teamBlue,
+    teamRed,
+    gameNumber,
+    initialData,
+    onSave,
+    allPlayers = [],
+    allHeroes = [],
+    token
+}: GameStatsModalProps) {
     // Filter Rosters for Autocomplete
     const blueRoster = allPlayers.filter(p => p.team === teamBlue);
     const redRoster = allPlayers.filter(p => p.team === teamRed);
 
     // Default structure: 5 players per team (includes hero and gold for GPM)
-    const createEmptyPlayers = () => Array(5).fill(null).map(() => ({
+    const createEmptyPlayers = (): PlayerStats[] => Array(5).fill(null).map(() => ({
         name: '', hero: '', k: 0, d: 0, a: 0, gold: 0
     }));
 
-    const [bluePlayers, setBluePlayers] = useState(createEmptyPlayers());
-    const [redPlayers, setRedPlayers] = useState(createEmptyPlayers());
-    const [heroPickerOpen, setHeroPickerOpen] = useState({ open: false, team: null, index: null });
-    const [heroSearch, setHeroSearch] = useState('');
-    const heroSearchRef = useRef(null);
-    const [uploading, setUploading] = useState(false);
+    const [bluePlayers, setBluePlayers] = useState<PlayerStats[]>(createEmptyPlayers());
+    const [redPlayers, setRedPlayers] = useState<PlayerStats[]>(createEmptyPlayers());
+    const [heroPickerOpen, setHeroPickerOpen] = useState<HeroPickerState>({ open: false, team: null, index: null });
+    const [heroSearch, setHeroSearch] = useState<string>('');
+    const heroSearchRef = useRef<HTMLInputElement>(null);
+    const [uploading, setUploading] = useState<boolean>(false);
 
     // AI Stats Extraction Handler
-    const handleAiUpload = async (e) => {
-        const file = e.target.files[0];
+    const handleAiUpload = async (e: ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
         if (!file) return;
 
         setUploading(true);
@@ -51,10 +108,10 @@ export default function GameStatsModal({ isOpen, onClose, teamBlue, teamRed, gam
             // --- Intelligent Mapping Logic ---
 
             // Helper to normalize strings
-            const normalize = (str) => str ? str.toLowerCase().replace(/[^a-z0-9\u0E00-\u0E7F]/g, '') : '';
+            const normalize = (str: string) => str ? str.toLowerCase().replace(/[^a-z0-9\u0E00-\u0E7F]/g, '') : '';
 
             // Helper to match hero name from DB
-            const matchHero = (aiHeroName) => {
+            const matchHero = (aiHeroName: string) => {
                 if (!aiHeroName) return '';
                 const normAi = normalize(aiHeroName);
 
@@ -72,10 +129,10 @@ export default function GameStatsModal({ isOpen, onClose, teamBlue, teamRed, gam
             };
 
             // Helper to find a player in a roster
-            const findPlayerInRoster = (aiName, roster) => {
+            const findPlayerInRoster = (aiName: string, roster: Player[]) => {
                 return roster.find(r => {
                     const nAi = normalize(aiName);
-                    const nInGame = normalize(r.inGameName);
+                    const nInGame = normalize(r.inGameName || '');
                     const nReal = normalize(r.name);
                     // Loose matching
                     return (nInGame && (nInGame === nAi || nInGame.includes(nAi) || nAi.includes(nInGame))) ||
@@ -89,7 +146,7 @@ export default function GameStatsModal({ isOpen, onClose, teamBlue, teamRed, gam
             let groupB = aiData.slice(5, 10);
 
             // 2. Auto-Detect Side based on Roster Matching Score
-            const calculateScore = (group, roster) => {
+            const calculateScore = (group: any[], roster: Player[]) => {
                 return group.reduce((score, player) => {
                     return score + (findPlayerInRoster(player.name, roster) ? 1 : 0);
                 }, 0);
@@ -115,8 +172,8 @@ export default function GameStatsModal({ isOpen, onClose, teamBlue, teamRed, gam
             }
 
             // 3. Map Data to Form (Strict Mode)
-            const mapStats = (aiGroup, targetRoster) => {
-                const newSlots = Array(5).fill(null).map(() => ({ name: '', hero: '', k: 0, d: 0, a: 0 }));
+            const mapStats = (aiGroup: any[], targetRoster: Player[]): PlayerStats[] => {
+                const newSlots = createEmptyPlayers();
 
                 aiGroup.forEach((aiPlayer, index) => {
                     if (index >= 5) return;
@@ -134,7 +191,8 @@ export default function GameStatsModal({ isOpen, onClose, teamBlue, teamRed, gam
                         hero: finalHero,
                         k: aiPlayer.k || 0,
                         d: aiPlayer.d || 0,
-                        a: aiPlayer.a || 0
+                        a: aiPlayer.a || 0,
+                        gold: aiPlayer.gold || 0
                     };
                 });
                 return newSlots;
@@ -145,7 +203,7 @@ export default function GameStatsModal({ isOpen, onClose, teamBlue, teamRed, gam
 
             alert(`✨ เรียบร้อย! ดึงข้อมูลได้ ${aiData.length} รายการ`);
 
-        } catch (error) {
+        } catch (error: any) {
             console.error('AI Error:', error);
             alert(`❌ เกิดข้อผิดพลาด: ${error.message}`);
         } finally {
@@ -170,7 +228,7 @@ export default function GameStatsModal({ isOpen, onClose, teamBlue, teamRed, gam
         }
     }, [heroPickerOpen.open]);
 
-    const handleBlueChange = (index, field, value) => {
+    const handleBlueChange = (index: number, field: keyof PlayerStats, value: any) => {
         setBluePlayers(prev => {
             const newPlayers = [...prev];
             newPlayers[index] = { ...newPlayers[index], [field]: value };
@@ -178,7 +236,7 @@ export default function GameStatsModal({ isOpen, onClose, teamBlue, teamRed, gam
         });
     };
 
-    const handleRedChange = (index, field, value) => {
+    const handleRedChange = (index: number, field: keyof PlayerStats, value: any) => {
         setRedPlayers(prev => {
             const newPlayers = [...prev];
             newPlayers[index] = { ...newPlayers[index], [field]: value };
@@ -192,25 +250,25 @@ export default function GameStatsModal({ isOpen, onClose, teamBlue, teamRed, gam
     };
 
     // Open hero picker
-    const openHeroPicker = (team, index) => {
+    const openHeroPicker = (team: 'blue' | 'red', index: number) => {
         setHeroPickerOpen({ open: true, team, index });
         setHeroSearch('');
     };
 
     // Select hero
-    const selectHero = (heroName) => {
-        if (heroPickerOpen.team === 'blue') {
+    const selectHero = (heroName: string) => {
+        if (heroPickerOpen.team === 'blue' && heroPickerOpen.index !== null) {
             handleBlueChange(heroPickerOpen.index, 'hero', heroName);
-        } else {
+        } else if (heroPickerOpen.team === 'red' && heroPickerOpen.index !== null) {
             handleRedChange(heroPickerOpen.index, 'hero', heroName);
         }
         setHeroPickerOpen({ open: false, team: null, index: null });
     };
 
     // Get hero image URL
-    const getHeroImage = (heroName) => {
+    const getHeroImage = (heroName: string): string | undefined => {
         const hero = allHeroes.find(h => h.name === heroName);
-        return hero?.imageUrl || null;
+        return hero?.imageUrl;
     };
 
     // Filter heroes by search
@@ -490,7 +548,8 @@ export default function GameStatsModal({ isOpen, onClose, teamBlue, teamRed, gam
                                                 alt={hero.name}
                                                 className="w-full h-full object-cover"
                                                 onError={(e) => {
-                                                    e.target.src = 'https://via.placeholder.com/60?text=' + encodeURIComponent(hero.name);
+                                                    const target = e.target as HTMLImageElement;
+                                                    target.src = 'https://via.placeholder.com/60?text=' + encodeURIComponent(hero.name);
                                                 }}
                                             />
                                         </button>

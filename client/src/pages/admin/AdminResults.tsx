@@ -1,32 +1,89 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, FormEvent, MouseEvent } from 'react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import GameStatsModal from '../../components/admin/GameStatsModal';
 import { postSchedule, resetResults, deleteMatchResult } from '../../services/api';
 
-const STAGE_MAPPING = {
+// Type definitions
+interface GameDetail {
+    gameNumber: number;
+    winner: string;
+    durationMin: number;
+    durationSec: number;
+    mvpPlayer: string;
+    mvpTeam: string;
+}
+
+interface PlayerStat {
+    name: string;
+    hero: string;
+    k: number;
+    d: number;
+    a: number;
+    gold: number;
+}
+
+interface GameStats {
+    blue: PlayerStat[];
+    red: PlayerStat[];
+}
+
+interface ConfirmModal {
+    isOpen: boolean;
+    type: string | null;
+    title: string;
+    details: string;
+    dateInput: boolean;
+    data?: string;
+}
+
+interface Message {
+    type: 'success' | 'error' | 'info';
+    text: string;
+}
+
+interface Match {
+    blue: string;
+    red: string;
+    date?: string;
+}
+
+interface Player {
+    _id: string;
+    name: string;
+    inGameName?: string;
+    team?: string;
+}
+
+interface Hero {
+    _id: string;
+    name: string;
+    iconUrl?: string;
+}
+
+const STAGE_MAPPING: Record<number, string> = {
     90: 'Semi-Finals',
     99: 'Grand Final'
 };
 
 export default function AdminResults() {
-    const { schedule, results, teams } = useData();
-    const { token } = useAuth();
+    const { schedule, results, teams, standings, refreshData } = useData();
+    const { token } = useAuth() as { token: string | null };
 
     // Initialize selectedDay from localStorage if available, otherwise default to 1
-    const [selectedDay, setSelectedDay] = useState(() => {
+    const [selectedDay, setSelectedDay] = useState<number>(() => {
         const savedDay = localStorage.getItem('admin_selected_day');
-        // Check for magic numbers (90/99) or normal days
         return savedDay ? parseInt(savedDay) : 1;
     });
 
-    const handleDayChange = (day) => {
+    const handleDayChange = (day: number): void => {
         setSelectedDay(day);
-        localStorage.setItem('admin_selected_day', day);
+        localStorage.setItem('admin_selected_day', String(day));
         setFormData({ teamBlue: '', teamRed: '', scoreBlue: 0, scoreRed: 0 });
     };
-    const [loading, setLoading] = useState(false);
-    const [message, setMessage] = useState(null);
+
+    const [loading, setLoading] = useState<boolean>(false);
+    const [message, setMessage] = useState<Message | null>(null);
     const [formData, setFormData] = useState({
         teamBlue: '',
         teamRed: '',
@@ -35,43 +92,46 @@ export default function AdminResults() {
     });
 
     // Game Details for Statistics
-    // duration stored as: durationMin (minutes) + durationSec (seconds) => total seconds for backend
-    const [gameDetails, setGameDetails] = useState([
+    const [gameDetails, setGameDetails] = useState<GameDetail[]>([
         { gameNumber: 1, winner: '', durationMin: 15, durationSec: 0, mvpPlayer: '', mvpTeam: '' },
         { gameNumber: 2, winner: '', durationMin: 15, durationSec: 0, mvpPlayer: '', mvpTeam: '' },
         { gameNumber: 3, winner: '', durationMin: 15, durationSec: 0, mvpPlayer: '', mvpTeam: '' },
     ]);
 
     // Player Stats State
-    const [gamesStats, setGamesStats] = useState({}); // { 0: { blue: [], red: [] }, ... }
-    const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
-    const [editingGameIndex, setEditingGameIndex] = useState(null);
+    const [gamesStats, setGamesStats] = useState<Record<number, GameStats>>({});
+    const [isStatsModalOpen, setIsStatsModalOpen] = useState<boolean>(false);
+    const [editingGameIndex, setEditingGameIndex] = useState<number | null>(null);
 
-    const [showAdvanced, setShowAdvanced] = useState(false);
+    const [showAdvanced, setShowAdvanced] = useState<boolean>(false);
 
     // Win by Bye (ชนะบาย) - ทีมชนะโดยไม่ต้องแข่ง
-    const [isByeWin, setIsByeWin] = useState(false);
-    const [byeWinner, setByeWinner] = useState(''); // 'blue' or 'red'
+    const [isByeWin, setIsByeWin] = useState<boolean>(false);
+    const [byeWinner, setByeWinner] = useState<string>('');
 
     const envUrl = import.meta.env.VITE_API_URL || '';
     const API_BASE_URL = envUrl ? (envUrl.endsWith('/api') ? envUrl : `${envUrl}/api`) : '/api';
-    const dayData = schedule.find(r => parseInt(r.day) === parseInt(selectedDay));
+    const dayData = schedule.find(r => Number(r.day) === selectedDay);
     const dayMatches = dayData?.matches || [];
-    const isBO5 = parseInt(selectedDay) >= 90;
-    const { standings } = useData();
+    const isBO5 = selectedDay >= 90;
 
     // Custom Confirm Modal State
-    const [confirmModal, setConfirmModal] = useState({ isOpen: false, type: null, title: '', details: '', dateInput: false });
-    const [generatedDate, setGeneratedDate] = useState('');
+    const [confirmModal, setConfirmModal] = useState<ConfirmModal>({
+        isOpen: false,
+        type: null,
+        title: '',
+        details: '',
+        dateInput: false
+    });
+    const [generatedDate, setGeneratedDate] = useState<string>('');
 
-    // --- NEW: Player Pool Data for Auto-complete ---
-    const [allPlayers, setAllPlayers] = useState([]);
-    const [allHeroes, setAllHeroes] = useState([]);
+    // Player Pool Data for Auto-complete
+    const [allPlayers, setAllPlayers] = useState<Player[]>([]);
+    const [allHeroes, setAllHeroes] = useState<Hero[]>([]);
 
     useEffect(() => {
         const fetchPlayersPool = async () => {
             try {
-                // Fetch players (no auth specific check needed for GET usually, but added if protected)
                 const res = await fetch(`${API_BASE_URL}/players`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
@@ -83,7 +143,6 @@ export default function AdminResults() {
                 console.error("Failed to load player pool:", err);
             }
 
-            // Fetch heroes
             try {
                 const heroRes = await fetch(`${API_BASE_URL}/heroes`);
                 if (heroRes.ok) {
@@ -97,7 +156,7 @@ export default function AdminResults() {
         if (token) fetchPlayersPool();
     }, [API_BASE_URL, token]);
 
-    const handleDeleteResult = (match, e) => {
+    const handleDeleteResult = (match: Match, e: MouseEvent<HTMLDivElement>): void => {
         e.stopPropagation();
         const matchKey = `${selectedDay}_${match.blue}_vs_${match.red}`.replace(/\s+/g, '');
 
@@ -106,12 +165,14 @@ export default function AdminResults() {
             type: 'delete',
             title: 'ยืนยันการลบผลการแข่งขัน',
             details: `คุณต้องการลบผลการแข่งขันคู่:\n${match.blue} vs ${match.red}\nใช่หรือไม่? การกระทำนี้ไม่สามารถย้อนกลับได้`,
+            dateInput: false,
             data: matchKey
         });
     };
 
     // 1. Prepare & Open Modal
-    const handleGenerateClick = (type) => {
+    // 1. Prepare & Open Modal
+    const handleGenerateClick = (type: string) => {
         setGeneratedDate(''); // Reset date
         if (type === 'semi') {
             if (standings.length < 4) {
@@ -128,18 +189,19 @@ export default function AdminResults() {
                 dateInput: true
             });
         } else if (type === 'final') {
-            const semiMatches = schedule.find(s => parseInt(s.day) === 90)?.matches;
+        } else if (type === 'final') {
+            const semiMatches = schedule.find(s => Number(s.day) === 90)?.matches;
             if (!semiMatches) {
                 alert('ไม่พบตารางแข่งรอบ Semi-Finals');
                 return;
             }
             // Check results logic...
-            const getWinner = (blue, red) => {
+            const getWinner = (blue: string, red: string) => {
                 const matchKey = `90_${blue}_vs_${red}`.replace(/\s+/g, '');
                 const res = results.find(r => r.matchId === matchKey);
                 return res ? res.winner : null;
             };
-            const getLoser = (blue, red) => {
+            const getLoser = (blue: string, red: string) => {
                 const matchKey = `90_${blue}_vs_${red}`.replace(/\s+/g, '');
                 const res = results.find(r => r.matchId === matchKey);
                 return res ? res.loser : null;
@@ -167,7 +229,7 @@ export default function AdminResults() {
     const isRegularSeasonComplete = useMemo(() => {
         // Check Days 1-9
         for (let d = 1; d <= 9; d++) {
-            const daySch = schedule.find(s => parseInt(s.day) === d);
+            const daySch = schedule.find(s => Number(s.day) === d);
             if (!daySch || !daySch.matches) continue; // If no schedule for this day, skip or strict? Let's say skip if not defined.
 
             // Check if all matches in this day have results
@@ -182,7 +244,7 @@ export default function AdminResults() {
     }, [schedule, results]);
 
     const isSemiFinalsComplete = useMemo(() => {
-        const semiSch = schedule.find(s => parseInt(s.day) === 90);
+        const semiSch = schedule.find(s => Number(s.day) === 90);
         if (!semiSch || !semiSch.matches) return false;
 
         return semiSch.matches.every(m => {
@@ -195,7 +257,7 @@ export default function AdminResults() {
 
 
     // Helper Format Date
-    const formatDate = (dateString) => {
+    const formatDate = (dateString: string) => {
         if (!dateString) return '';
         const date = new Date(dateString);
         return date.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -209,10 +271,11 @@ export default function AdminResults() {
         if (confirmModal.type === 'delete') {
             try {
                 setLoading(true);
+                // @ts-ignore
                 await deleteMatchResult(confirmModal.data, token);
                 alert('ลบผลการแข่งขันเรียบร้อย');
-                window.location.reload();
-            } catch (err) {
+                refreshData();
+            } catch (err: any) {
                 alert(`ลบไม่สำเร็จ: ${err.message}`);
             } finally {
                 setLoading(false);
@@ -235,7 +298,7 @@ export default function AdminResults() {
             newSchedule = {
                 teams: teams,
                 schedule: [
-                    ...schedule.filter(s => parseInt(s.day) !== 90),
+                    ...schedule.filter(s => Number(s.day) !== 90),
                     { day: 90, date: formattedDate || 'Semi-Finals', matches: semiMatches }
                 ]
             };
@@ -245,14 +308,17 @@ export default function AdminResults() {
         } else if (confirmModal.type === 'final') {
             // Logic repeated slightly but safer to re-calc or just grab from context again? 
             // Ideally we should have stored calculated matches in state, but re-calc is cheap here.
-            const semiMatches = schedule.find(s => parseInt(s.day) === 90)?.matches;
-            const getWinner = (blue, red) => results.find(r => r.matchId === `90_${blue}_vs_${red}`.replace(/\s+/g, ''))?.winner;
-            const getLoser = (blue, red) => results.find(r => r.matchId === `90_${blue}_vs_${red}`.replace(/\s+/g, ''))?.loser;
+            const semiSch = schedule.find(s => Number(s.day) === 90);
+            if (!semiSch || !semiSch.matches) return;
+            const semiMatches = semiSch.matches;
 
-            const winner1 = getWinner(semiMatches[0].blue, semiMatches[0].red);
-            const winner2 = getWinner(semiMatches[1].blue, semiMatches[1].red);
-            const loser1 = getLoser(semiMatches[0].blue, semiMatches[0].red);
-            const loser2 = getLoser(semiMatches[1].blue, semiMatches[1].red);
+            const getWinner = (blue: string, red: string) => results.find(r => r.matchId === `90_${blue}_vs_${red}`.replace(/\s+/g, ''))?.winner;
+            const getLoser = (blue: string, red: string) => results.find(r => r.matchId === `90_${blue}_vs_${red}`.replace(/\s+/g, ''))?.loser;
+
+            const winner1 = getWinner(semiMatches[0].blue, semiMatches[0].red) as string;
+            const winner2 = getWinner(semiMatches[1].blue, semiMatches[1].red) as string;
+            const loser1 = getLoser(semiMatches[0].blue, semiMatches[0].red) as string;
+            const loser2 = getLoser(semiMatches[1].blue, semiMatches[1].red) as string;
 
             const finalMatches = [
                 { blue: loser1, red: loser2, date: formattedDate ? `${formattedDate} (3rd)` : '3rd Place' },
@@ -261,7 +327,7 @@ export default function AdminResults() {
             newSchedule = {
                 teams: teams,
                 schedule: [
-                    ...schedule.filter(s => parseInt(s.day) !== 99),
+                    ...schedule.filter(s => Number(s.day) !== 99),
                     { day: 99, date: formattedDate || 'Finals', matches: finalMatches }
                 ]
             };
@@ -277,16 +343,16 @@ export default function AdminResults() {
                     try {
                         await resetResults(targetDay, token);
                         console.log(`Results for day ${targetDay} cleared.`);
-                    } catch (e) {
+                    } catch (e: any) {
                         console.warn(`Warning: Could not clear old results: ${e.message}`);
                     }
                 }
 
                 await postSchedule(newSchedule, token);
-                alert(`${successMsg} ระบบจะรีเฟรชหน้าจอใน 2 วินาที...`);
-                localStorage.setItem('admin_selected_day', targetDay);
-                setTimeout(() => window.location.reload(), 2000);
-            } catch (err) {
+                alert(`${successMsg} ระบบจะรีเฟรชข้อมูลใน 2 วินาที...`);
+                localStorage.setItem('admin_selected_day', String(targetDay));
+                setTimeout(() => refreshData(), 2000);
+            } catch (err: any) {
                 alert(`Failed: ${err.message}`);
             } finally {
                 setLoading(false);
@@ -294,9 +360,9 @@ export default function AdminResults() {
         }
     };
 
-    const handleMatchSelect = async (match) => {
+    const handleMatchSelect = async (match: Match) => {
         // Recalculate isBO5 based on CURRENT selectedDay
-        const checkBO5 = parseInt(selectedDay) >= 90;
+        const checkBO5 = selectedDay >= 90;
         const maxGames = checkBO5 ? 5 : 3;
 
         // Check if result already exists for this match
@@ -376,8 +442,9 @@ export default function AdminResults() {
                     console.log('🔍 [DEBUG] Stats data from API:', statsData);
 
                     // Convert flat stats array to gamesStats format: { 0: { blue: [], red: [] }, ... }
-                    const loadedGamesStats = {};
-                    statsData.forEach(stat => {
+                    const loadedGamesStats: Record<number, GameStats> = {};
+
+                    statsData.forEach((stat: any) => {
                         const gameIndex = stat.gameNumber - 1;
                         if (!loadedGamesStats[gameIndex]) {
                             loadedGamesStats[gameIndex] = { blue: [], red: [] };
@@ -440,7 +507,7 @@ export default function AdminResults() {
         }
     };
 
-    const updateGameDetail = (index, field, value) => {
+    const updateGameDetail = (index: number, field: keyof GameDetail, value: any) => {
         const newDetails = [...gameDetails];
         newDetails[index] = { ...newDetails[index], [field]: value };
 
@@ -459,19 +526,21 @@ export default function AdminResults() {
         setGameDetails(newDetails);
     };
 
-    const openStatsModal = (index) => {
+    const openStatsModal = (index: number) => {
         setEditingGameIndex(index);
         setIsStatsModalOpen(true);
     };
 
-    const handleStatsSave = (stats) => {
-        setGamesStats(prev => ({
-            ...prev,
-            [editingGameIndex]: stats
-        }));
+    const handleStatsSave = (stats: GameStats) => {
+        if (editingGameIndex !== null) {
+            setGamesStats(prev => ({
+                ...prev,
+                [editingGameIndex]: stats
+            }));
+        }
     };
 
-    const handleSubmit = async (e) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
         setMessage(null);
@@ -519,13 +588,13 @@ export default function AdminResults() {
                 setMessage({ type: 'success', text: `✅ บันทึกผลชนะบาย: ${winnerTeam}` });
 
                 // Refresh data
-                setTimeout(() => window.location.reload(), 1500);
+                setTimeout(() => refreshData(), 1500);
                 return;
             }
 
             // Normal match result
-            const scoreBlue = parseInt(formData.scoreBlue);
-            const scoreRed = parseInt(formData.scoreRed);
+            const scoreBlue = typeof formData.scoreBlue === 'string' ? parseInt(formData.scoreBlue) : formData.scoreBlue;
+            const scoreRed = typeof formData.scoreRed === 'string' ? parseInt(formData.scoreRed) : formData.scoreRed;
 
             // Prepare game details (filter only played games)
             // Duration is now stored as total seconds: (min * 60) + sec
@@ -533,7 +602,7 @@ export default function AdminResults() {
                 gameNumber: g.gameNumber,
                 winner: g.winner,
                 loser: g.winner === formData.teamBlue ? formData.teamRed : formData.teamBlue,
-                duration: (parseInt(g.durationMin) || 0) * 60 + (parseInt(g.durationSec) || 0),
+                duration: (g.durationMin || 0) * 60 + (g.durationSec || 0),
                 mvpPlayer: g.mvpPlayer,
                 mvpTeam: g.mvpTeam || g.winner,
             }));
@@ -566,18 +635,32 @@ export default function AdminResults() {
 
             // 2. Save Player Stats (if any)
             const matchId = `${selectedDay}_${cleanTeamBlue}_vs_${cleanTeamRed}`.replace(/\s+/g, '');
-            const allStats = [];
+            const allStats: Array<{
+                matchId: string;
+                gameNumber: number;
+                teamName: string;
+                playerName: string;
+                heroName: string;
+                kills: number;
+                deaths: number;
+                assists: number;
+                gold: number;
+                mvp: boolean;
+                gameDuration: number;
+                win: boolean;
+            }> = [];
 
             console.log('🔍 [DEBUG SAVE] gamesStats object:', gamesStats);
             console.log('🔍 [DEBUG SAVE] gamesStats keys:', Object.keys(gamesStats));
 
-            Object.keys(gamesStats).forEach(gameIndex => {
-                const gameStat = gamesStats[gameIndex]; // { blue: [], red: [] }
-                const gameNum = parseInt(gameIndex) + 1;
+            Object.keys(gamesStats).forEach(gameIndexStr => {
+                const gameIndex = parseInt(gameIndexStr);
+                const gameStat = (gamesStats as any)[gameIndex]; // Cast to any for dynamic indexing
+                const gameNum = gameIndex + 1;
                 console.log(`🔍 [DEBUG SAVE] Game ${gameNum} stats:`, gameStat);
 
-                if (gameStat.blue) {
-                    gameStat.blue.forEach(p => {
+                if (gameStat?.blue) {
+                    gameStat.blue.forEach((p: any) => { // Cast p to any
                         if (p.name) allStats.push({
                             matchId,
                             gameNumber: gameNum,
@@ -587,13 +670,13 @@ export default function AdminResults() {
                             kills: p.k, deaths: p.d, assists: p.a,
                             gold: p.gold || 0,
                             mvp: gameDetails[gameIndex]?.mvpPlayer === p.name,
-                            gameDuration: (parseInt(gameDetails[gameIndex]?.durationMin) || 0) * 60 + (parseInt(gameDetails[gameIndex]?.durationSec) || 0),
-                            win: gameDetails[gameIndex]?.winner === formData.teamBlue // Using original formData match logic is fine as long as values match
+                            gameDuration: (gameDetails[gameIndex]?.durationMin || 0) * 60 + (gameDetails[gameIndex]?.durationSec || 0),
+                            win: gameDetails[gameIndex]?.winner === formData.teamBlue
                         });
                     });
                 }
-                if (gameStat.red) {
-                    gameStat.red.forEach(p => {
+                if (gameStat?.red) {
+                    gameStat.red.forEach((p: any) => { // Cast p to any
                         if (p.name) allStats.push({
                             matchId,
                             gameNumber: gameNum,
@@ -603,7 +686,7 @@ export default function AdminResults() {
                             kills: p.k, deaths: p.d, assists: p.a,
                             gold: p.gold || 0,
                             mvp: gameDetails[gameIndex]?.mvpPlayer === p.name,
-                            gameDuration: (parseInt(gameDetails[gameIndex]?.durationMin) || 0) * 60 + (parseInt(gameDetails[gameIndex]?.durationSec) || 0),
+                            gameDuration: (gameDetails[gameIndex]?.durationMin || 0) * 60 + (gameDetails[gameIndex]?.durationSec || 0),
                             win: gameDetails[gameIndex]?.winner === formData.teamRed
                         });
                     });
@@ -635,16 +718,16 @@ export default function AdminResults() {
             setGamesStats({});
 
             // Reload page
-            localStorage.setItem('admin_selected_day', selectedDay);
-            setTimeout(() => window.location.reload(), 1500);
-        } catch (error) {
+            localStorage.setItem('admin_selected_day', String(selectedDay));
+            setTimeout(() => refreshData(), 1500);
+        } catch (error: any) {
             setMessage({ type: 'error', text: `❌ ${error.message}` });
         } finally {
             setLoading(false);
         }
     };
 
-    const getMatchResult = (match) => {
+    const getMatchResult = (match: Match) => {
         const matchKey = `${selectedDay}_${match.blue}_vs_${match.red}`.replace(/\s+/g, '');
         return results.find(r => r.matchId === matchKey);
     };
@@ -652,7 +735,7 @@ export default function AdminResults() {
     // Calculate total games needed based on BO3 or BO5
     const winningScore = isBO5 ? 3 : 2;
     const totalGamesNeeded = Math.max(formData.scoreBlue, formData.scoreRed) >= winningScore
-        ? parseInt(formData.scoreBlue) + parseInt(formData.scoreRed)
+        ? parseInt(formData.scoreBlue as any) + parseInt(formData.scoreRed as any)
         : (isBO5 ? 5 : 3);
 
     return (
@@ -798,7 +881,7 @@ export default function AdminResults() {
                                     <input
                                         type="checkbox"
                                         checked={isByeWin}
-                                        onChange={(e) => {
+                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                                             setIsByeWin(e.target.checked);
                                             if (!e.target.checked) setByeWinner('');
                                         }}
@@ -852,7 +935,7 @@ export default function AdminResults() {
                                             min="0"
                                             max={isBO5 ? 3 : 2}
                                             value={formData.scoreBlue}
-                                            onChange={(e) => setFormData({ ...formData, scoreBlue: e.target.value })}
+                                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, scoreBlue: parseInt(e.target.value) })}
                                             className="w-20 h-20 text-center text-3xl font-bold border-2 border-blue-300 bg-blue-50 rounded-xl focus:border-cyan-aura focus:outline-none"
                                         />
                                     </div>
@@ -864,7 +947,7 @@ export default function AdminResults() {
                                             min="0"
                                             max={isBO5 ? 3 : 2}
                                             value={formData.scoreRed}
-                                            onChange={(e) => setFormData({ ...formData, scoreRed: e.target.value })}
+                                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, scoreRed: parseInt(e.target.value) })}
                                             className="w-20 h-20 text-center text-3xl font-bold border-2 border-red-300 bg-red-50 rounded-xl focus:border-cyan-aura focus:outline-none"
                                         />
                                     </div>
@@ -896,12 +979,16 @@ export default function AdminResults() {
 
                                     {/* Render BO3 (3 games) or BO5 (5 games) */}
                                     {Array(isBO5 ? 5 : 3).fill(0).map((_, i) => i).map((index) => {
-                                        const winnerName = gameDetails[index].winner;
+                                        const scoreBlueNum = typeof formData.scoreBlue === 'string' ? parseInt(formData.scoreBlue) : formData.scoreBlue;
+                                        const scoreRedNum = typeof formData.scoreRed === 'string' ? parseInt(formData.scoreRed) : formData.scoreRed;
+                                        const totalGamesNeeded = (scoreBlueNum || 0) + (scoreRedNum || 0);
+
+                                        const winnerName = gameDetails[index]?.winner;
                                         // Filter MVP candidates based on winner (or both teams if unknown, but better unknown)
                                         const winnerRoster = winnerName ? allPlayers.filter(p => p.team === winnerName) : [];
 
                                         return (
-                                            <div key={index} className={`p-4 rounded-lg border ${gameDetails[index].winner ? 'border-green-200 bg-green-50' : 'border-gray-200'}`}>
+                                            <div key={index} className={`p-4 rounded-lg border ${gameDetails[index]?.winner ? 'border-green-200 bg-green-50' : 'border-gray-200'}`}>
                                                 <div className="flex items-center justify-between mb-3">
                                                     <div className="flex items-center gap-2">
                                                         <span className="w-8 h-8 bg-cyan-aura text-white rounded-full flex items-center justify-center font-bold text-sm">
@@ -915,12 +1002,12 @@ export default function AdminResults() {
                                                     <button
                                                         type="button"
                                                         onClick={() => openStatsModal(index)}
-                                                        className={`text-sm px-3 py-1 rounded border transition-colors ${gamesStats[index]
+                                                        className={`text-sm px-3 py-1 rounded border transition-colors ${gamesStats[index as keyof typeof gamesStats] // Cast index to keyof typeof gamesStats
                                                             ? 'bg-green-100 text-green-700 border-green-200 hover:bg-green-200'
                                                             : 'bg-white text-gray-500 border-gray-300 hover:text-cyan-aura hover:border-cyan-aura'}`}
                                                     >
-                                                        <i className={`fas ${gamesStats[index] ? 'fa-check-circle' : 'fa-chart-bar'} mr-1`}></i>
-                                                        {gamesStats[index] ? 'บันทึกสถิติแล้ว' : 'บันทึกสถิติผู้เล่น'}
+                                                        <i className={`fas ${gamesStats[index as keyof typeof gamesStats] ? 'fa-check-circle' : 'fa-chart-bar'} mr-1`}></i>
+                                                        {gamesStats[index as keyof typeof gamesStats] ? 'บันทึกสถิติแล้ว' : 'บันทึกสถิติผู้เล่น'}
                                                     </button>
                                                 </div>
 
@@ -1029,7 +1116,7 @@ export default function AdminResults() {
 
                             <button
                                 type="submit"
-                                disabled={loading || (!isByeWin && parseInt(formData.scoreBlue) === 0 && parseInt(formData.scoreRed) === 0) || (isByeWin && !byeWinner)}
+                                disabled={loading || (!isByeWin && Number(formData.scoreBlue) === 0 && Number(formData.scoreRed) === 0) || (isByeWin && !byeWinner)}
                                 className="w-full bg-gradient-to-r from-cyan-aura to-blue-600 text-white font-bold py-3 rounded-lg hover:shadow-lg transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                             >
                                 {loading ? (
@@ -1050,18 +1137,20 @@ export default function AdminResults() {
             </div>
 
             {/* Player Stats Modal */}
-            <GameStatsModal
-                isOpen={isStatsModalOpen}
-                token={token}
-                onClose={() => setIsStatsModalOpen(false)}
-                teamBlue={formData.teamBlue}
-                teamRed={formData.teamRed}
-                gameNumber={editingGameIndex + 1}
-                initialData={gamesStats[editingGameIndex]}
-                onSave={handleStatsSave}
-                allPlayers={allPlayers}
-                allHeroes={allHeroes}
-            />
+            {editingGameIndex !== null && (
+                <GameStatsModal
+                    isOpen={isStatsModalOpen}
+                    token={token}
+                    onClose={() => setIsStatsModalOpen(false)}
+                    teamBlue={formData.teamBlue}
+                    teamRed={formData.teamRed}
+                    gameNumber={editingGameIndex + 1}
+                    initialData={gamesStats[editingGameIndex]}
+                    onSave={handleStatsSave}
+                    allPlayers={allPlayers}
+                    allHeroes={allHeroes}
+                />
+            )}
 
 
 
