@@ -1,26 +1,91 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { fetchSeasonStats, fetchTeamStats, fetchPlayerStats, fetchPlayerHeroStats, fetchHeroes } from '../services/api';
 import { useLanguage } from '../context/LanguageContext';
-import TeamLogo from '../components/common/TeamLogo';
-import { StatsSkeleton, TableSkeleton } from '../components/common/Skeleton';
-import { ErrorState, EmptyState } from '../components/common/States';
-import ShareButton from '../components/common/ShareButton';
+import TeamLogo from '../components/common/TeamLogo.jsx';
+import { StatsSkeleton, TableSkeleton } from '../components/common/Skeleton.jsx';
+import { ErrorState, EmptyState } from '../components/common/States.jsx';
+import ShareButton from '../components/common/ShareButton.jsx';
+
+// Type Definitions
+interface SeasonStatsData {
+    totalMatches: number;
+    totalGames: number;
+    avgGameDuration: number;
+    highestKillGame?: { match: string; kills: number };
+    longestGame?: { match: string; duration: number };
+    topMVPPlayer?: { name: string; team: string; count: number };
+    topKillerPlayer?: { name: string; team: string; kills: number };
+    bestTeam?: { name: string; winRate: string; wins: number; games: number };
+    mostPickedHero?: { name: string; picks: number; winRate: string };
+    bestWinRateHero?: { name: string; picks: number; winRate: string };
+}
+
+interface Hero {
+    name: string;
+    imageUrl?: string;
+}
+
+interface TeamStatData {
+    teamName: string;
+    totalKills: number;
+    totalDeaths: number;
+    totalAssists: number;
+    mvpCount: number;
+    realGamesPlayed: number;
+    realWins: number;
+    realLosses: number;
+    kda: number;
+    winRate: number;
+}
+
+interface PlayerStatData {
+    realName?: string;
+    playerName: string;
+    teamName: string;
+    totalKills: number;
+    totalDeaths: number;
+    totalAssists: number;
+    gamesPlayed: number;
+    mvpCount: number;
+    wins: number;
+    winRate: number;
+    avgKillsPerGame: number;
+    avgDeathsPerGame: number;
+    avgAssistsPerGame: number;
+    mvpRate: number;
+    kda: number;
+}
+
+interface PlayerHeroData {
+    heroName: string;
+    gamesPlayed: number;
+    wins: number;
+    totalKills: number;
+    totalDeaths: number;
+    totalAssists: number;
+}
+
+interface PlayerHeroStat {
+    realName: string;
+    playerName: string;
+    topHeroes: PlayerHeroData[];
+}
 
 // Helper: Format duration (seconds) to MM:SS
-function formatDuration(seconds) {
+function formatDuration(seconds: number | undefined | null): string {
     if (!seconds || seconds <= 0) return '-';
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
     return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
-function SeasonStats() {
+function SeasonStats(): React.ReactElement {
     const { t, language } = useLanguage();
-    const [stats, setStats] = useState(null);
-    const [heroes, setHeroes] = useState([]);
+    const [stats, setStats] = useState<SeasonStatsData | null>(null);
+    const [heroes, setHeroes] = useState<Hero[]>([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         Promise.all([fetchSeasonStats(), fetchHeroes()])
@@ -32,14 +97,14 @@ function SeasonStats() {
             .finally(() => setLoading(false));
     }, []);
 
-    const getHeroImage = (heroName) => {
+    const getHeroImage = (heroName: string): string | null => {
         const hero = heroes.find(h => h.name === heroName);
         return hero?.imageUrl || null;
     };
 
     if (loading) return <StatsSkeleton />;
-    if (error) return <ErrorState message={error} />;
-    if (!stats) return <EmptyState message={t?.common?.noData || 'No data'} />;
+    if (error) return <ErrorState title={t?.common?.error || 'Error'} message={error} onRetry={() => window.location.reload()} />;
+    if (!stats) return <EmptyState title={t?.common?.noData || 'No data'} message="" />;
 
     // Stat Cards Data
     const statCards = [
@@ -119,7 +184,7 @@ function SeasonStats() {
             color: 'from-emerald-500 to-green-600',
             heroImage: getHeroImage(stats.bestWinRateHero.name),
         },
-    ].filter(Boolean);
+    ].filter(Boolean) as { icon: string; title: string; name: string; value: string; color: string; team?: string; subtext?: string; isTeam?: boolean; heroImage?: string | null }[];
 
     return (
         <div className="space-y-6">
@@ -215,17 +280,17 @@ function SeasonStats() {
     );
 }
 
-function TeamStats() {
+function TeamStats(): React.ReactElement {
     const { t, language } = useLanguage();
-    const [stats, setStats] = useState([]);
+    const [stats, setStats] = useState<TeamStatData[]>([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         fetchTeamStats()
             .then(data => {
                 // Sort by Win Rate -> Wins -> KDA -> Kills
-                const sortedData = (data || []).sort((a, b) => {
+                const sortedData = (data || []).sort((a: TeamStatData, b: TeamStatData) => {
                     const winRateA = a.realGamesPlayed > 0 ? (a.realWins / a.realGamesPlayed) : 0;
                     const winRateB = b.realGamesPlayed > 0 ? (b.realWins / b.realGamesPlayed) : 0;
                     if (winRateB !== winRateA) return winRateB - winRateA;
@@ -240,7 +305,7 @@ function TeamStats() {
     }, []);
 
     if (loading) return <TableSkeleton rows={8} cols={10} />;
-    if (error) return <ErrorState message={error} />;
+    if (error) return <ErrorState title={t?.common?.error || 'Error'} message={error} onRetry={() => window.location.reload()} />;
 
     return (
         <div className="space-y-4">
@@ -264,11 +329,11 @@ function TeamStats() {
                         </thead>
                         <tbody>
                             {stats.length === 0 ? (
-                                <tr><td colSpan="10" className="p-8 text-center text-gray-500">{t.common.noData}</td></tr>
+                                <tr><td colSpan={10} className="p-8 text-center text-gray-500">{t.common.noData}</td></tr>
                             ) : (
                                 stats.map((team, idx) => {
                                     const kda = team.kda?.toFixed(2) || '0.00';
-                                    const winRate = team.winRate?.toFixed(1) || 0;
+                                    const winRate = team.winRate?.toFixed(1) || '0';
                                     const isTop3 = idx < 3;
 
                                     return (
@@ -305,11 +370,11 @@ function TeamStats() {
                                                 <div className="flex items-center justify-center gap-2">
                                                     <div className="w-20 h-2.5 bg-gray-200 rounded-full overflow-hidden">
                                                         <div
-                                                            className={`h-full rounded-full ${winRate >= 70 ? 'bg-gradient-to-r from-green-400 to-emerald-500' : winRate >= 50 ? 'bg-gradient-to-r from-cyan-400 to-blue-500' : 'bg-gradient-to-r from-orange-400 to-red-500'}`}
+                                                            className={`h-full rounded-full ${parseFloat(winRate) >= 70 ? 'bg-gradient-to-r from-green-400 to-emerald-500' : parseFloat(winRate) >= 50 ? 'bg-gradient-to-r from-cyan-400 to-blue-500' : 'bg-gradient-to-r from-orange-400 to-red-500'}`}
                                                             style={{ width: `${winRate}%` }}
                                                         ></div>
                                                     </div>
-                                                    <span className={`font-bold text-sm ${winRate >= 70 ? 'text-green-600' : winRate >= 50 ? 'text-cyan-600' : 'text-orange-600'}`}>{winRate}%</span>
+                                                    <span className={`font-bold text-sm ${parseFloat(winRate) >= 70 ? 'text-green-600' : parseFloat(winRate) >= 50 ? 'text-cyan-600' : 'text-orange-600'}`}>{winRate}%</span>
                                                 </div>
                                             </td>
                                             {/* Kills */}
@@ -349,7 +414,7 @@ function TeamStats() {
                 ) : (
                     stats.map((team, idx) => {
                         const kda = team.kda?.toFixed(2) || '0.00';
-                        const winRate = team.winRate?.toFixed(1) || 0;
+                        const winRate = team.winRate?.toFixed(1) || '0';
                         const isTop3 = idx < 3;
 
                         return (
@@ -391,7 +456,7 @@ function TeamStats() {
                                         <div className="text-xs text-gray-500">MVP</div>
                                     </div>
                                     <div className="text-center p-2 bg-cyan-50 rounded-lg">
-                                        <div className={`font-bold ${winRate >= 70 ? 'text-green-600' : winRate >= 50 ? 'text-cyan-600' : 'text-orange-600'}`}>{winRate}%</div>
+                                        <div className={`font-bold ${parseFloat(winRate) >= 70 ? 'text-green-600' : parseFloat(winRate) >= 50 ? 'text-cyan-600' : 'text-orange-600'}`}>{winRate}%</div>
                                         <div className="text-xs text-gray-500">WR</div>
                                     </div>
                                 </div>
@@ -423,13 +488,13 @@ function TeamStats() {
 }
 
 // Enhanced PlayerStats Component
-function PlayerStats() {
+function PlayerStats(): React.ReactElement {
     const { t, language } = useLanguage();
-    const [stats, setStats] = useState([]);
-    const [heroStats, setHeroStats] = useState([]);
-    const [heroes, setHeroes] = useState([]);
+    const [stats, setStats] = useState<PlayerStatData[]>([]);
+    const [heroStats, setHeroStats] = useState<PlayerHeroStat[]>([]);
+    const [heroes, setHeroes] = useState<Hero[]>([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         Promise.all([
@@ -446,12 +511,12 @@ function PlayerStats() {
             .finally(() => setLoading(false));
     }, []);
 
-    const getHeroImage = (heroName) => {
+    const getHeroImage = (heroName: string): string | null => {
         const hero = heroes.find(h => h.name === heroName);
         return hero?.imageUrl || null;
     };
 
-    const getPlayerTopHeroes = (playerRealName) => {
+    const getPlayerTopHeroes = (playerRealName: string): PlayerHeroData[] => {
         const playerHeroStat = heroStats.find(h =>
             h.realName === playerRealName || h.playerName === playerRealName
         );
@@ -459,7 +524,7 @@ function PlayerStats() {
     };
 
     if (loading) return <TableSkeleton rows={10} cols={12} />;
-    if (error) return <ErrorState message={error} />;
+    if (error) return <ErrorState title={t?.common?.error || 'Error'} message={error} onRetry={() => window.location.reload()} />;
 
     return (
         <div className="space-y-4">
@@ -484,7 +549,7 @@ function PlayerStats() {
                         </thead>
                         <tbody>
                             {stats.length === 0 ? (
-                                <tr><td colSpan="11" className="p-8 text-center text-gray-500">{t.common.noData}</td></tr>
+                                <tr><td colSpan={11} className="p-8 text-center text-gray-500">{t.common.noData}</td></tr>
                             ) : (
                                 stats.slice(0, 50).map((p, idx) => {
                                     const topHeroes = getPlayerTopHeroes(p.realName || p.playerName);
@@ -526,10 +591,10 @@ function PlayerStats() {
                                             <td className="p-2 max-w-[120px]">
                                                 <div className="flex gap-1 justify-center">
                                                     {topHeroes.length > 0 ? (
-                                                        topHeroes.slice(0, 3).map((hero, i) => (
+                                                        topHeroes.slice(0, 3).map((hero: PlayerHeroData, i: number) => (
                                                             <div key={i} title={`${hero.heroName} (${hero.gamesPlayed} games)`}>
                                                                 {getHeroImage(hero.heroName) ? (
-                                                                    <img src={getHeroImage(hero.heroName)} alt={hero.heroName} className="w-7 h-7 rounded border border-gray-200 object-cover bg-gray-900" />
+                                                                    <img src={getHeroImage(hero.heroName)!} alt={hero.heroName} className="w-7 h-7 rounded border border-gray-200 object-cover bg-gray-900" />
                                                                 ) : (
                                                                     <div className="w-7 h-7 rounded bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-500">
                                                                         {hero.heroName?.charAt(0)}
@@ -621,10 +686,10 @@ function PlayerStats() {
                                 {/* Top Heroes */}
                                 {topHeroes.length > 0 && (
                                     <div className="flex gap-1 mb-3">
-                                        {topHeroes.slice(0, 3).map((hero, i) => (
+                                        {topHeroes.slice(0, 3).map((hero: PlayerHeroData, i: number) => (
                                             <div key={i} title={hero.heroName}>
                                                 {getHeroImage(hero.heroName) ? (
-                                                    <img src={getHeroImage(hero.heroName)} alt={hero.heroName} className="w-8 h-8 rounded border border-gray-200 object-cover bg-gray-900" />
+                                                    <img src={getHeroImage(hero.heroName)!} alt={hero.heroName} className="w-8 h-8 rounded border border-gray-200 object-cover bg-gray-900" />
                                                 ) : (
                                                     <div className="w-8 h-8 rounded bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-500">
                                                         {hero.heroName?.charAt(0)}
@@ -685,7 +750,7 @@ function PlayerStats() {
     );
 }
 
-export default function StatsPage() {
+export default function StatsPage(): React.ReactElement {
     const { t, language } = useLanguage();
     const location = useLocation();
     const path = location.pathname;
@@ -711,7 +776,7 @@ export default function StatsPage() {
                         <p className="text-cyan-aura/80 font-sans mt-1 text-xs md:text-base hidden sm:block">RoV Tournament Official Statistics</p>
                     </div>
                     <div className="flex-shrink-0 ml-2">
-                        <ShareButton title={`${t.stats.title} - RoV SN Tournament`} />
+                        <ShareButton title={`${t.stats.title} - RoV SN Tournament`} url={window.location.href} />
                     </div>
                 </div>
             </div>

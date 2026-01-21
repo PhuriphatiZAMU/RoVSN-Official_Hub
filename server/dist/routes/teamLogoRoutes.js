@@ -1,0 +1,13 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const teamLogoController_1 = require("../controllers/teamLogoController");
+const auth_1 = require("../middleware/auth");
+const cache_1 = require("../middleware/cache");
+const validate_1 = require("../middleware/validate");
+const schemas_1 = require("../validations/schemas");
+const router = (0, express_1.Router)();
+router.get('/', (0, cache_1.cacheControl)(300), teamLogoController_1.getTeamLogos);
+router.post('/', auth_1.authenticateToken, (0, validate_1.validate)(schemas_1.teamLogoSchema), teamLogoController_1.saveTeamLogo);
+router.delete('/:teamName', auth_1.authenticateToken, (0, validate_1.validate)(schemas_1.teamNameParamSchema, 'params'), teamLogoController_1.deleteTeamLogo);
+exports.default = router;

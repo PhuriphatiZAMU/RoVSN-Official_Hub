@@ -1,15 +1,66 @@
-import { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
 import { fetchSchedules, fetchResults, fetchTeamLogos } from '../services/api';
 
-const DataContext = createContext();
+// Types
+interface ScheduleMatch {
+    blue: string;
+    red: string;
+    date?: string;
+}
 
-export function DataProvider({ children }) {
-    const [schedule, setSchedule] = useState([]);
-    const [results, setResults] = useState([]);
-    const [teams, setTeams] = useState([]);
-    const [teamLogos, setTeamLogos] = useState({});
+interface ScheduleRound {
+    day: number;
+    date?: string;
+    matches: ScheduleMatch[];
+}
+
+interface MatchResult {
+    matchId: string;
+    matchDay: number | string;
+    teamBlue: string;
+    teamRed: string;
+    scoreBlue: number;
+    scoreRed: number;
+    winner: string;
+    loser: string;
+    isByeWin?: boolean;
+    mvp?: string;
+    gameDetails?: any[];
+}
+
+interface TeamStanding {
+    name: string;
+    p: number;
+    w: number;
+    l: number;
+    gd: number;
+    pts: number;
+}
+
+interface DataContextType {
+    schedule: ScheduleRound[];
+    results: MatchResult[];
+    teams: string[];
+    teamLogos: Record<string, string>;
+    standings: TeamStanding[];
+    loading: boolean;
+    error: string | null;
+    getTeamLogo: (teamName: string) => string | null;
+}
+
+const DataContext = createContext<DataContextType | undefined>(undefined);
+
+interface DataProviderProps {
+    children: ReactNode;
+}
+
+export function DataProvider({ children }: DataProviderProps) {
+    const [schedule, setSchedule] = useState<ScheduleRound[]>([]);
+    const [results, setResults] = useState<MatchResult[]>([]);
+    const [teams, setTeams] = useState<string[]>([]);
+    const [teamLogos, setTeamLogos] = useState<Record<string, string>>({});
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         async function loadData() {
@@ -28,15 +79,15 @@ export function DataProvider({ children }) {
                     setSchedule(scheduleList);
 
                     // ใช้ teams จาก API โดยตรง (ถ้ามี) หรือดึงจาก matches
-                    let teamsList = [];
+                    let teamsList: string[] = [];
                     if (scheduleData.teams && Array.isArray(scheduleData.teams)) {
                         // ดึงจาก scheduleData.teams โดยตรง
                         teamsList = scheduleData.teams;
                     } else {
                         // Fallback: ดึงจาก matches ใน schedule
-                        const allTeams = new Set();
-                        scheduleList.forEach(round => {
-                            (round.matches || []).forEach(match => {
+                        const allTeams = new Set<string>();
+                        scheduleList.forEach((round: ScheduleRound) => {
+                            (round.matches || []).forEach((match: ScheduleMatch) => {
                                 if (match.blue) allTeams.add(match.blue);
                                 if (match.red) allTeams.add(match.red);
                             });
@@ -55,13 +106,13 @@ export function DataProvider({ children }) {
                 setResults(resultsData || []);
 
                 // Convert logos array to object for quick lookup
-                const logosObj = {};
-                (logosData || []).forEach(item => {
+                const logosObj: Record<string, string> = {};
+                (logosData || []).forEach((item: { teamName: string; logoUrl: string }) => {
                     logosObj[item.teamName] = item.logoUrl;
                 });
                 setTeamLogos(logosObj);
 
-            } catch (err) {
+            } catch (err: any) {
                 setError(err.message);
                 console.error('Data loading error:', err);
             } finally {
@@ -81,7 +132,7 @@ export function DataProvider({ children }) {
 
             results.forEach(r => {
                 // Exclude Knockout Stages (>= 90) from Standings
-                if (r.matchDay && parseInt(r.matchDay) >= 90) return;
+                if (r.matchDay && parseInt(String(r.matchDay)) >= 90) return;
 
                 // Handle bye wins separately (ชนะบาย = 3 pts, 1 win, ไม่คิด GD)
                 if (r.isByeWin) {
@@ -121,9 +172,9 @@ export function DataProvider({ children }) {
         return computed;
     }, [teams, results]);
 
-    const getTeamLogo = (teamName) => teamLogos[teamName] || null;
+    const getTeamLogo = (teamName: string): string | null => teamLogos[teamName] || null;
 
-    const value = {
+    const value: DataContextType = {
         schedule,
         results,
         teams,
@@ -141,7 +192,7 @@ export function DataProvider({ children }) {
     );
 }
 
-export function useData() {
+export function useData(): DataContextType {
     const context = useContext(DataContext);
     if (!context) {
         throw new Error('useData must be used within a DataProvider');

@@ -1,11 +1,33 @@
+import React from 'react';
 import { useData } from '../context/DataContext';
 import { useLanguage } from '../context/LanguageContext';
-import TeamLogo from '../components/common/TeamLogo';
-import { MatchSkeleton } from '../components/common/Skeleton';
-import { ErrorState, EmptyState } from '../components/common/States';
-import ShareButton from '../components/common/ShareButton';
+import TeamLogo from '../components/common/TeamLogo.jsx';
+import { MatchSkeleton } from '../components/common/Skeleton.jsx';
+import { ErrorState, EmptyState } from '../components/common/States.jsx';
+import ShareButton from '../components/common/ShareButton.jsx';
 
-export default function FixturesPage() {
+interface ScheduleMatch {
+    blue: string;
+    red: string;
+    date?: string;
+}
+
+interface ScheduleRound {
+    day: number;
+    date?: string;
+    matches: ScheduleMatch[];
+}
+
+interface MatchResult {
+    matchId: string;
+    scoreBlue: number;
+    scoreRed: number;
+    winner: string;
+    isByeWin?: boolean;
+    mvp?: string;
+}
+
+export default function FixturesPage(): React.ReactElement {
     const { schedule, results, loading, error } = useData();
     const { t, language } = useLanguage();
     const isThai = language === 'th';
@@ -16,7 +38,7 @@ export default function FixturesPage() {
         </div>
     );
 
-    if (error) return <ErrorState title={t.common.error} message={error} />;
+    if (error) return <ErrorState title={t.common.error} message={error} onRetry={() => window.location.reload()} />;
 
     // Sort schedule by day
     const sortedSchedule = [...schedule].sort((a, b) => a.day - b.day);
@@ -24,7 +46,7 @@ export default function FixturesPage() {
     if (sortedSchedule.length === 0) return <EmptyState title={t.common.noData} message="" />;
 
     // Helper: Format date for display
-    const formatMatchDate = (dateString) => {
+    const formatMatchDate = (dateString: string | null | undefined): string | null => {
         if (!dateString) return null;
 
         // If already formatted string like "25 ม.ค. 2026", return as-is
@@ -60,14 +82,14 @@ export default function FixturesPage() {
                         </p>
                     </div>
                     <div className="flex-shrink-0 ml-2">
-                        <ShareButton title={`${t.nav.fixtures} - RoV SN Tournament`} />
+                        <ShareButton title={`${t.nav.fixtures} - RoV SN Tournament`} url={window.location.href} />
                     </div>
                 </div>
             </div>
 
             <div className="container mx-auto px-4">
                 <div className="max-w-3xl mx-auto space-y-6 md:space-y-8">
-                    {sortedSchedule.map((round) => (
+                    {sortedSchedule.map((round: ScheduleRound) => (
                         <div key={round.day} className="animate-fade-in-up">
                             {/* Round Header */}
                             <div className="flex items-center gap-3 mb-3 md:mb-4">
@@ -86,10 +108,10 @@ export default function FixturesPage() {
 
                             {/* Matches List */}
                             <div className="space-y-3">
-                                {round.matches.map((match, idx) => {
+                                {round.matches.map((match: ScheduleMatch, idx: number) => {
                                     // Find result if exists
                                     const matchKey = `${round.day}_${match.blue}_vs_${match.red}`.replace(/\s+/g, '');
-                                    const result = results.find(r => r.matchId === matchKey);
+                                    const result = results.find((r): r is MatchResult & typeof r => r.matchId === matchKey);
 
                                     // Get match date (from match itself or from round)
                                     const matchDate = match.date || round.date;

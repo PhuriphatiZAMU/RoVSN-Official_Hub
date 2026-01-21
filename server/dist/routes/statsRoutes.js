@@ -1,0 +1,15 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const statsController_1 = require("../controllers/statsController");
+const auth_1 = require("../middleware/auth");
+const validate_1 = require("../middleware/validate");
+const schemas_1 = require("../validations/schemas");
+const router = (0, express_1.Router)();
+router.get('/player-stats', statsController_1.getPlayerStats);
+router.get('/team-stats', statsController_1.getTeamStats);
+router.get('/season-stats', statsController_1.getSeasonStats);
+router.get('/player-hero-stats', statsController_1.getPlayerHeroStats);
+router.post('/', auth_1.authenticateToken, (0, validate_1.validate)(schemas_1.saveStatsSchema), statsController_1.saveStats);
+router.get('/match', (0, validate_1.validate)(schemas_1.matchIdQuerySchema, 'query'), statsController_1.getMatchStats);
+exports.default = router;
