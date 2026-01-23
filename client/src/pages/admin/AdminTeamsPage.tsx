@@ -97,18 +97,27 @@ export default function AdminTeamsPage() {
         }
 
         try {
-            // Update players' team assignments
-            const teamPlayers = getTeamPlayers(editingTeam?.name || '');
+            const oldName = editingTeam?.name;
+            const newName = formData.name.trim();
 
-            for (const player of teamPlayers) {
-                if (!formData.players.includes(player.name)) {
-                    // Remove player from team
-                    await axios.patch(
-                        `${API_BASE}/api/players/${player._id}/update-ign`,
-                        { team: null },
-                        { headers: { Authorization: `Bearer ${getToken()}` } }
-                    );
-                }
+            if (oldName && oldName !== newName) {
+                await axios.post(
+                    `${API_BASE}/api/players/rename-team`,
+                    { oldName, newName },
+                    { headers: { Authorization: `Bearer ${getToken()}` } }
+                );
+            }
+
+            const currentPlayers = getTeamPlayers(newName || oldName || '');
+            const newPlayerNames = formData.players;
+
+            const playersToRemove = currentPlayers.filter(p => !newPlayerNames.includes(p.name));
+            for (const p of playersToRemove) {
+                await axios.patch(
+                    `${API_BASE}/api/players/${p._id}/update-ign`,
+                    { team: null },
+                    { headers: { Authorization: `Bearer ${getToken()}` } }
+                );
             }
 
             Toast.fire({ icon: 'success', title: 'บันทึกข้อมูลทีมเรียบร้อย' });
@@ -128,21 +137,24 @@ export default function AdminTeamsPage() {
             title: team.name,
             html: `
                 <div class="text-left">
-                    ${team.logoUrl ? `<img src="${team.logoUrl}" class="w-20 h-20 mx-auto mb-4 rounded-lg object-contain bg-gray-100" />` : ''}
-                    <h4 class="font-bold text-gray-700 mb-2">สมาชิกทีม (${teamPlayers.length} คน)</h4>
-                    <div class="max-h-60 overflow-y-auto">
+                    ${team.logoUrl ? `<img src="${team.logoUrl}" class="w-24 h-24 mx-auto mb-4 rounded-lg object-contain bg-gray-50 border p-2" />` : ''}
+                    <h4 class="font-bold text-gray-700 mb-2 border-b pb-1">สมาชิกทีม (${teamPlayers.length} คน)</h4>
+                    <div class="max-h-60 overflow-y-auto space-y-1">
                         ${teamPlayers.length > 0 ? teamPlayers.map(p => `
-                            <div class="flex justify-between items-center py-2 border-b border-gray-100">
-                                <span class="font-medium">${p.name}</span>
-                                <span class="text-gray-400 text-sm">${p.inGameName || '-'}</span>
+                            <div class="flex justify-between items-center py-2 px-2 hover:bg-gray-50 rounded">
+                                <div class="flex flex-col">
+                                    <span class="font-medium text-gray-800">${p.name}</span>
+                                    <span class="text-xs text-gray-400">IGN: ${p.inGameName || '-'}</span>
+                                </div>
+                                <span class="bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-xs">Member</span>
                             </div>
-                        `).join('') : '<p class="text-gray-400">ไม่มีสมาชิก</p>'}
+                        `).join('') : '<p class="text-gray-400 text-center py-4">ไม่มีสมาชิก</p>'}
                     </div>
                 </div>
             `,
             showCloseButton: true,
             showConfirmButton: false,
-            width: 400
+            width: 450
         });
     };
 
@@ -323,49 +335,94 @@ export default function AdminTeamsPage() {
 
             {/* Edit Modal */}
             {showModal && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
-                        <div className="p-6 border-b border-gray-100">
-                            <h2 className="text-xl font-display font-bold text-uefa-dark">
-                                <i className="fas fa-edit mr-2 text-cyan-aura"></i>
-                                แก้ไขทีม
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+                        <div className="bg-gradient-to-r from-cyan-aura to-blue-600 p-6">
+                            <h2 className="text-xl font-display font-bold text-white flex items-center">
+                                <i className="fas fa-edit mr-3"></i>
+                                แก้ไขทีม {editingTeam?.name}
                             </h2>
                         </div>
-                        <div className="p-6 space-y-4">
+                        <div className="p-6 space-y-6">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">ชื่อทีม</label>
+                                <label className="block text-sm font-bold text-gray-700 mb-2">ชื่อทีม</label>
                                 <input
                                     type="text"
                                     value={formData.name}
                                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-cyan-aura focus:border-transparent"
-                                    disabled
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-aura focus:border-transparent bg-gray-50"
+                                    placeholder="ใส่ชื่อทีมใหม่..."
                                 />
+                                <p className="text-xs text-gray-500 mt-2">
+                                    <i className="fas fa-info-circle mr-1"></i>
+                                    การเปลี่ยนชื่อทีมจะอัปเดตผู้เล่นทุกคนในทีมอัตโนมัติ
+                                </p>
                             </div>
+
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">สมาชิกทีม</label>
-                                <div className="max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-2">
-                                    {getTeamPlayers(editingTeam?.name || '').map((player, i) => (
-                                        <div key={i} className="flex items-center justify-between py-2 px-2 hover:bg-gray-50 rounded">
-                                            <span>{player.name}</span>
-                                            <span className="text-gray-400 text-sm">{player.inGameName}</span>
-                                        </div>
-                                    ))}
+                                <label className="block text-sm font-bold text-gray-700 mb-2">
+                                    สมาชิกทีม ({getTeamPlayers(editingTeam?.name || '').length} คน)
+                                </label>
+                                <div className="max-h-56 overflow-y-auto border border-gray-200 rounded-lg bg-gray-50">
+                                    {getTeamPlayers(editingTeam?.name || '').length > 0 ? (
+                                        getTeamPlayers(editingTeam?.name || '').map((player, i) => (
+                                            <div key={i} className="flex items-center justify-between p-3 border-b border-gray-200 last:border-0 hover:bg-white transition-colors">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-8 h-8 rounded-full bg-cyan-100 text-cyan-700 flex items-center justify-center font-bold text-xs">
+                                                        {player.name.charAt(0)}
+                                                    </div>
+                                                    <div>
+                                                        <div className="font-bold text-sm text-gray-800">{player.name}</div>
+                                                        <div className="text-xs text-gray-500">{player.inGameName || 'No IGN'}</div>
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        if (formData.players.includes(player.name)) {
+                                                            setFormData(prev => ({
+                                                                ...prev,
+                                                                players: prev.players.filter(name => name !== player.name)
+                                                            }));
+                                                        } else {
+                                                            setFormData(prev => ({
+                                                                ...prev,
+                                                                players: [...prev.players, player.name]
+                                                            }));
+                                                        }
+                                                    }}
+                                                    className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${formData.players.includes(player.name)
+                                                            ? 'bg-red-100 text-red-500 hover:bg-red-200'
+                                                            : 'bg-green-100 text-green-500 hover:bg-green-200'
+                                                        }`}
+                                                    title={formData.players.includes(player.name) ? "นำออกจากทีม" : "คืนค่า"}
+                                                >
+                                                    <i className={`fas ${formData.players.includes(player.name) ? 'fa-minus' : 'fa-undo'}`}></i>
+                                                </button>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div className="p-4 text-center text-gray-500 text-sm">ไม่มีสมาชิก</div>
+                                    )}
                                 </div>
+                                <p className="text-xs text-orange-500 mt-2">
+                                    * กดปุ่ม (-) เพื่อนำผู้เล่นออก เมื่อบันทึกผู้เล่นจะกลายเป็นไม่มีทีม
+                                </p>
                             </div>
                         </div>
-                        <div className="p-6 border-t border-gray-100 flex gap-3">
+                        <div className="p-4 bg-gray-50 border-t border-gray-200 flex gap-3">
                             <button
                                 onClick={() => { setShowModal(false); setEditingTeam(null); }}
-                                className="flex-1 py-3 px-4 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium text-gray-600 transition-colors"
+                                className="flex-1 py-3 px-4 bg-white border border-gray-300 hover:bg-gray-100 rounded-lg font-bold text-gray-700 transition-colors shadow-sm"
                             >
                                 ยกเลิก
                             </button>
                             <button
                                 onClick={handleSaveTeam}
-                                className="flex-1 py-3 px-4 bg-cyan-aura hover:bg-cyan-500 rounded-lg font-medium text-white transition-colors"
+                                className="flex-1 py-3 px-4 bg-gradient-to-r from-cyan-aura to-blue-600 hover:shadow-cyan-aura/50 shadow-lg rounded-lg font-bold text-white transition-all transform active:scale-95"
                             >
-                                บันทึก
+                                <i className="fas fa-save mr-2"></i>
+                                บันทึกการเปลี่ยนแปลง
                             </button>
                         </div>
                     </div>

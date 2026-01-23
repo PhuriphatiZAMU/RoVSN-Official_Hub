@@ -80,24 +80,80 @@ export const addPreviousIGN = async (req: Request, res: Response) => {
 export const updateIGN = async (req: Request, res: Response) => {
     try {
         const { playerId } = req.params;
-        const { newIGN } = req.body;
+        const { newIGN, team } = req.body; // Allow updating team too for removing players
 
-        if (!newIGN) return res.status(400).json({ error: 'newIGN is required' });
+        if (!newIGN && team === undefined) return res.status(400).json({ error: 'Data is required' });
 
         const player = await PlayerPool.findById(playerId);
         if (!player) return res.status(404).json({ error: 'Player not found' });
 
-        if (player.inGameName && player.inGameName !== newIGN) {
-            player.previousIGNs = player.previousIGNs || [];
-            if (!player.previousIGNs.includes(player.inGameName)) {
-                player.previousIGNs.push(player.inGameName);
+        if (newIGN) {
+            if (player.inGameName && player.inGameName !== newIGN) {
+                player.previousIGNs = player.previousIGNs || [];
+                if (!player.previousIGNs.includes(player.inGameName)) {
+                    player.previousIGNs.push(player.inGameName);
+                }
             }
+            player.inGameName = newIGN;
         }
 
-        player.inGameName = newIGN;
+        if (team !== undefined) {
+            player.team = team;
+        }
+
         await player.save();
 
-        res.json({ message: `Updated IGN to "${newIGN}"`, player });
+        res.json({ message: `Updated player`, player });
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+export const renameTeam = async (req: Request, res: Response) => {
+    try {
+        const { oldName, newName } = req.body;
+        if (!oldName || !newName) return res.status(400).json({ error: 'Old and new team names are required' });
+
+        const result = await PlayerPool.updateMany(
+            { team: oldName },
+            { $set: { team: newName } }
+        );
+
+        res.json({
+            message: `Renamed team "${oldName}" to "${newName}"`,
+            modifiedCount: result.modifiedCount
+        });
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+export const createPlayer = async (req: Request, res: Response) => {
+    try {
+        const player = await PlayerPool.create(req.body);
+        res.status(201).json(player);
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+export const updatePlayerFull = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const player = await PlayerPool.findByIdAndUpdate(id, req.body, { new: true });
+        if (!player) return res.status(404).json({ error: 'Player not found' });
+        res.json(player);
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+export const deletePlayer = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const player = await PlayerPool.findByIdAndDelete(id);
+        if (!player) return res.status(404).json({ error: 'Player not found' });
+        res.json({ message: 'Player deleted' });
     } catch (error: any) {
         res.status(500).json({ error: error.message });
     }

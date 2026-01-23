@@ -5,7 +5,11 @@ import {
     clearAllPlayers,
     getUnmatchedIGNs,
     addPreviousIGN,
-    updateIGN
+    updateIGN,
+    createPlayer,
+    updatePlayerFull,
+    deletePlayer,
+    renameTeam
 } from '../controllers/playerController';
 import { authenticateToken } from '../middleware/auth';
 import { validate } from '../middleware/validate';
@@ -19,7 +23,13 @@ import {
 const router = Router();
 
 router.get('/', getPlayers);
+router.post('/', authenticateToken, createPlayer); // Create player
+router.put('/:id', authenticateToken, updatePlayerFull); // Update full player
+router.delete('/:id', authenticateToken, deletePlayer); // Delete player
+
 router.post('/import', authenticateToken, validate(importPlayersSchema), importPlayers);
+router.post('/rename-team', authenticateToken, renameTeam); // Rename team batch
+
 router.delete('/all/clear', authenticateToken, clearAllPlayers);
 router.get('/unmatched-igns', authenticateToken, getUnmatchedIGNs);
 router.post('/:playerId/add-previous-ign', authenticateToken, validate(playerIdParamSchema, 'params'), validate(previousIGNSchema), addPreviousIGN);
