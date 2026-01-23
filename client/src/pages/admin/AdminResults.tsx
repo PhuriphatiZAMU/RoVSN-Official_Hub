@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, FormEvent, MouseEvent } from 'react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 import GameStatsModal from '../../components/admin/GameStatsModal';
 import { postSchedule, resetResults, deleteMatchResult } from '../../services/api';
 import Swal from 'sweetalert2';
@@ -56,6 +57,7 @@ const STAGE_MAPPING: Record<number, string> = {
 export default function AdminResults() {
     const { schedule, results, teams, standings, refreshData } = useData();
     const { token } = useAuth() as { token: string | null };
+    const { t, language } = useLanguage();
 
     // Initialize selectedDay from localStorage if available, otherwise default to 1
     const [selectedDay, setSelectedDay] = useState<number>(() => {
@@ -145,7 +147,7 @@ export default function AdminResults() {
     const formatDate = (dateString: string) => {
         if (!dateString) return '';
         const date = new Date(dateString);
-        return date.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' });
+        return date.toLocaleDateString(language === 'th' ? 'th-TH' : 'en-US', { day: 'numeric', month: 'short', year: 'numeric' });
     };
 
     const handleDeleteResult = async (match: Match, e: MouseEvent<HTMLDivElement>) => {
@@ -153,14 +155,14 @@ export default function AdminResults() {
         const matchKey = `${selectedDay}_${match.blue}_vs_${match.red}`.replace(/\s+/g, '');
 
         const result = await Swal.fire({
-            title: 'ยืนยันการลบผลการแข่งขัน',
-            text: `คุณต้องการลบผลการแข่งขันคู่: ${match.blue} vs ${match.red} ใช่หรือไม่?`,
+            title: t.admin.resultsPage.confirmDelete,
+            text: t.admin.resultsPage.deleteConfirmText.replace('{match}', `${match.blue} vs ${match.red}`),
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#d33',
             cancelButtonColor: '#3085d6',
-            confirmButtonText: 'ลบข้อมูล',
-            cancelButtonText: 'ยกเลิก'
+            confirmButtonText: t.admin.resultsPage.delete,
+            cancelButtonText: t.admin.cancel
         });
 
         if (result.isConfirmed) {
@@ -168,10 +170,10 @@ export default function AdminResults() {
                 setLoading(true);
                 // @ts-ignore
                 await deleteMatchResult(matchKey, token);
-                Toast.fire({ icon: 'success', title: 'ลบผลการแข่งขันเรียบร้อย' });
+                Toast.fire({ icon: 'success', title: t.admin.resultsPage.deleteSuccess });
                 refreshData();
             } catch (err: any) {
-                Swal.fire('Error', `ลบไม่สำเร็จ: ${err.message}`, 'error');
+                Swal.fire('Error', `${t.admin.resultsPage.deleteError}: ${err.message}`, 'error');
             } finally {
                 setLoading(false);
             }
@@ -181,21 +183,21 @@ export default function AdminResults() {
     const handleGenerateClick = async (type: string) => {
         if (type === 'semi') {
             if (standings.length < 4) {
-                Swal.fire('แจ้งเตือน', `ไม่สามารถสร้างได้: พบเพียง ${standings.length} ทีม (ต้องการอย่างน้อย 4 ทีม)`, 'warning');
+                Swal.fire(t.admin.resultsPage.warning, `Could not create: Found ${standings.length} teams (Needs 4)`, 'warning');
                 return;
             }
             const top4 = standings.slice(0, 4);
-            const details = top4.map((t, i) => `${i + 1}. ${t.name} (${t.pts} แต้ม)`).join('<br>');
+            const details = top4.map((t, i) => `${i + 1}. ${t.name} (${t.pts} pts)`).join('<br>');
 
             const { value: dateStr } = await Swal.fire({
-                title: 'สร้างการแข่งขันรอบ Semi-Finals',
-                html: `ระบบจะจับคู่ 4 ทีมที่มีคะแนนสูงสุดดังนี้:<br/><div class="text-left bg-gray-50 p-3 rounded my-2 text-sm">${details}</div><br/>กรุณาเลือกวันที่แข่งขัน:`,
+                title: t.admin.resultsPage.createSemiTitle,
+                html: `${t.admin.resultsPage.createSemiTitle}. Top 4:<br/><div class="text-left bg-gray-50 p-3 rounded my-2 text-sm">${details}</div><br/>${t.admin.resultsPage.selectDate}:`,
                 input: 'date',
                 showCancelButton: true,
-                confirmButtonText: 'สร้างตาราง',
-                cancelButtonText: 'ยกเลิก',
+                confirmButtonText: t.admin.resultsPage.createSchedule,
+                cancelButtonText: t.admin.cancel,
                 inputValidator: (value) => {
-                    if (!value) return 'กรุณาเลือกวันที่';
+                    if (!value) return t.admin.resultsPage.selectDate;
                 }
             });
 
@@ -206,7 +208,7 @@ export default function AdminResults() {
         } else if (type === 'final') {
             const semiMatches = schedule.find(s => Number(s.day) === 90)?.matches;
             if (!semiMatches) {
-                Swal.fire('แจ้งเตือน', 'ไม่พบตารางแข่งรอบ Semi-Finals', 'warning');
+                Swal.fire(t.admin.resultsPage.warning, t.admin.resultsPage.semiNotFound, 'warning');
                 return;
             }
 
@@ -219,19 +221,19 @@ export default function AdminResults() {
             const winner2 = getWinner(semiMatches[1].blue, semiMatches[1].red);
 
             if (!winner1 || !winner2) {
-                Swal.fire('แจ้งเตือน', 'ผลการแข่งขันรอบ Semi-Finals ยังไม่ครบ', 'warning');
+                Swal.fire(t.admin.resultsPage.warning, t.admin.resultsPage.semiNotComplete, 'warning');
                 return;
             }
 
             const { value: dateStr } = await Swal.fire({
-                title: 'สร้างการแข่งขันรอบ Finals',
-                html: `คู่ชิงชนะเลิศ: <b>${winner1} vs ${winner2}</b><br/>กรุณาเลือกวันที่แข่งขัน:`,
+                title: t.admin.resultsPage.createFinalTitle,
+                html: `Finals: <b>${winner1} vs ${winner2}</b><br/>${t.admin.resultsPage.selectDate}:`,
                 input: 'date',
                 showCancelButton: true,
-                confirmButtonText: 'สร้างตาราง',
-                cancelButtonText: 'ยกเลิก',
+                confirmButtonText: t.admin.resultsPage.createSchedule,
+                cancelButtonText: t.admin.cancel,
                 inputValidator: (value) => {
-                    if (!value) return 'กรุณาเลือกวันที่';
+                    if (!value) return t.admin.resultsPage.selectDate;
                 }
             });
 
@@ -330,7 +332,7 @@ export default function AdminResults() {
                 }
 
                 await postSchedule(newSchedule, token);
-                Swal.fire('สำเร็จ', successMsg, 'success');
+                Swal.fire(t.admin.resultsPage.success, type === 'semi' ? t.admin.resultsPage.semiSuccess : t.admin.resultsPage.finalSuccess, 'success');
                 localStorage.setItem('admin_selected_day', String(targetDay));
                 setTimeout(() => refreshData(), 1500);
             } catch (err: any) {
@@ -560,11 +562,11 @@ export default function AdminResults() {
                 if (!response.ok) {
                     const errorData = await response.json().catch(() => ({}));
                     console.error('🔍 [DEBUG BYE] Error:', errorData);
-                    throw new Error(errorData.error || 'Failed to save result');
+                    throw new Error(errorData.error || t.admin.resultsPage.saveError);
                 }
 
                 setLoading(false);
-                Toast.fire({ icon: 'success', title: `บันทึกผลชนะบาย: ${winnerTeam}` });
+                Toast.fire({ icon: 'success', title: `${t.admin.resultsPage.winByBye}: ${winnerTeam}` });
 
                 // Refresh data
                 setTimeout(() => refreshData(), 1500);
@@ -609,7 +611,7 @@ export default function AdminResults() {
             });
 
             if (!response.ok) {
-                throw new Error('Failed to save result');
+                throw new Error(t.admin.resultsPage.saveError);
             }
 
             // 2. Save Player Stats (if any)
@@ -687,7 +689,7 @@ export default function AdminResults() {
                 console.log('🔍 [DEBUG SAVE] No player stats to save (gamesStats is empty)');
             }
 
-            Toast.fire({ icon: 'success', title: 'บันทึกผลการแข่งขันเรียบร้อย' });
+            Toast.fire({ icon: 'success', title: t.admin.resultsPage.saveSuccess });
             setFormData({ teamBlue: '', teamRed: '', scoreBlue: 0, scoreRed: 0 });
             setGameDetails([
                 { gameNumber: 1, winner: '', durationMin: 15, durationSec: 0, mvpPlayer: '', mvpTeam: '' },
@@ -700,7 +702,7 @@ export default function AdminResults() {
             localStorage.setItem('admin_selected_day', String(selectedDay));
             setTimeout(() => refreshData(), 1500);
         } catch (error: any) {
-            Swal.fire('Error', `บันทึกไม่สำเร็จ: ${error.message}`, 'error');
+            Swal.fire('Error', `${t.admin.resultsPage.saveError}: ${error.message}`, 'error');
         } finally {
             setLoading(false);
         }
@@ -723,9 +725,9 @@ export default function AdminResults() {
                 <div className="p-6 border-b border-gray-100">
                     <h2 className="text-xl font-display font-bold text-uefa-dark uppercase">
                         <i className="fas fa-trophy mr-2 text-cyan-aura"></i>
-                        จัดการผลการแข่งขัน
+                        {t.admin.resultsPage.title}
                     </h2>
-                    <p className="text-gray-500 text-sm mt-1">บันทึกผลและรายละเอียดเกมสำหรับ Statistics</p>
+                    <p className="text-gray-500 text-sm mt-1">{t.admin.resultsPage.subtitle}</p>
                 </div>
 
                 <div className="p-6">
@@ -734,12 +736,12 @@ export default function AdminResults() {
                     {/* Match Day Selector & Generators */}
                     <div className="mb-6 flex flex-col md:flex-row justify-between items-start gap-4">
                         <div className="flex-1">
-                            <label className="block text-sm font-bold text-gray-700 mb-2">เลือก Match Day / รอบการแข่งขัน</label>
+                            <label className="block text-sm font-bold text-gray-700 mb-2">{t.admin.resultsPage.selectMatchDay}</label>
                             <div className="flex flex-wrap gap-2">
                                 {schedule.length === 0 ? (
                                     <p className="text-gray-500 text-sm">
                                         <i className="fas fa-info-circle mr-1"></i>
-                                        ยังไม่มีตารางแข่งขัน
+                                        {t.admin.resultsPage.noSchedule}
                                     </p>
                                 ) : (
                                     schedule.map(round => (
@@ -768,9 +770,9 @@ export default function AdminResults() {
                                     ? 'bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100'
                                     : 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
                                     }`}
-                                title={!isRegularSeasonComplete ? "ต้องบันทึกผลการแข่งขันรอบเก็บคะแนน (Day 1-9) ให้ครบถ้วนก่อน" : ""}
+                                title={!isRegularSeasonComplete ? t.admin.resultsPage.prereqRegular : ""}
                             >
-                                <i className="fas fa-random mr-1"></i> สร้าง Semi-Finals
+                                <i className="fas fa-random mr-1"></i> {t.admin.resultsPage.createSemi}
                             </button>
                             <button
                                 type="button"
@@ -780,9 +782,9 @@ export default function AdminResults() {
                                     ? 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
                                     : 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
                                     }`}
-                                title={!isSemiFinalsComplete ? "ต้องบันทึกผลการแข่งขันรอบ Semi-Finals ให้ครบถ้วนก่อน" : ""}
+                                title={!isSemiFinalsComplete ? t.admin.resultsPage.prereqSemi : ""}
                             >
-                                <i className="fas fa-trophy mr-1"></i> สร้าง Grand Final
+                                <i className="fas fa-trophy mr-1"></i> {t.admin.resultsPage.createFinal}
                             </button>
                         </div>
                     </div>
@@ -790,7 +792,7 @@ export default function AdminResults() {
                     {/* Matches List */}
                     {dayMatches.length > 0 && (
                         <div className="mb-6">
-                            <label className="block text-sm font-bold text-gray-700 mb-2">เลือกแมตช์</label>
+                            <label className="block text-sm font-bold text-gray-700 mb-2">{t.admin.resultsPage.selectMatch}</label>
                             <div className="grid gap-3">
                                 {dayMatches.map((match, i) => {
                                     const result = getMatchResult(match);
@@ -827,16 +829,15 @@ export default function AdminResults() {
                                                             </span>
                                                         )}
                                                         <div
-                                                            onClick={(e) => handleDeleteResult(match, e)}
                                                             className="w-8 h-8 flex items-center justify-center bg-red-100 text-red-500 rounded-full hover:bg-red-500 hover:text-white transition-colors"
-                                                            title="ลบผลการแข่งขัน"
+                                                            title={t.admin.resultsPage.delete}
                                                         >
                                                             <i className="fas fa-trash-alt text-sm"></i>
                                                         </div>
                                                     </div>
                                                 );
                                             })() : (
-                                                <span className="text-gray-400 text-sm">ยังไม่มีผล</span>
+                                                <span className="text-gray-400 text-sm">{t.admin.none}</span>
                                             )}
                                         </button>
                                     );
@@ -868,11 +869,11 @@ export default function AdminResults() {
                                     />
                                     <span className="font-bold text-yellow-700">
                                         <i className="fas fa-flag-checkered mr-2"></i>
-                                        ชนะบาย (Win by Bye)
+                                        {t.admin.resultsPage.winByBye}
                                     </span>
                                 </label>
                                 <p className="text-xs text-yellow-600 text-center mt-2">
-                                    เลือกเมื่อทีมหนึ่งชนะโดยไม่ต้องแข่ง (ไม่มี score ไม่มี stats)
+                                    {t.admin.resultsPage.winByByeDesc}
                                 </p>
 
                                 {/* Bye Winner Selection */}
@@ -942,7 +943,7 @@ export default function AdminResults() {
                                         className="w-full flex items-center justify-center gap-2 text-gray-600 hover:text-cyan-aura transition-colors py-2"
                                     >
                                         <i className={`fas fa-chevron-${showAdvanced ? 'up' : 'down'}`}></i>
-                                        {showAdvanced ? 'ซ่อนรายละเอียดเกม' : 'แสดงรายละเอียดเกม (สำหรับ Statistics)'}
+                                        {showAdvanced ? t.admin.resultsPage.hideDetails : t.admin.resultsPage.showDetails}
                                     </button>
                                 </div>
                             )}
@@ -953,7 +954,7 @@ export default function AdminResults() {
 
                                     <h4 className="font-bold text-gray-700">
                                         <i className="fas fa-gamepad mr-2 text-cyan-aura"></i>
-                                        รายละเอียดแต่ละเกม ({isBO5 ? 'Best of 5' : 'Best of 3'})
+                                        {t.admin.resultsPage.gameDetailsTitle} ({isBO5 ? 'Best of 5' : 'Best of 3'})
                                     </h4>
 
                                     {/* Render BO3 (3 games) or BO5 (5 games) */}
@@ -973,9 +974,9 @@ export default function AdminResults() {
                                                         <span className="w-8 h-8 bg-cyan-aura text-white rounded-full flex items-center justify-center font-bold text-sm">
                                                             {index + 1}
                                                         </span>
-                                                        <span className="font-bold text-gray-700">เกมที่ {index + 1}</span>
+                                                        <span className="font-bold text-gray-700">{t.admin.resultsPage.game} {index + 1}</span>
                                                         {index + 1 > totalGamesNeeded && (
-                                                            <span className="text-xs text-gray-400">(ไม่จำเป็น)</span>
+                                                            <span className="text-xs text-gray-400">{t.admin.resultsPage.notNeeded}</span>
                                                         )}
                                                     </div>
                                                     <button
@@ -986,20 +987,20 @@ export default function AdminResults() {
                                                             : 'bg-white text-gray-500 border-gray-300 hover:text-cyan-aura hover:border-cyan-aura'}`}
                                                     >
                                                         <i className={`fas ${gamesStats[index as keyof typeof gamesStats] ? 'fa-check-circle' : 'fa-chart-bar'} mr-1`}></i>
-                                                        {gamesStats[index as keyof typeof gamesStats] ? 'บันทึกสถิติแล้ว' : 'บันทึกสถิติผู้เล่น'}
+                                                        {gamesStats[index as keyof typeof gamesStats] ? t.admin.resultsPage.statsSaved : t.admin.resultsPage.saveStats}
                                                     </button>
                                                 </div>
 
                                                 <div className="grid md:grid-cols-3 gap-3">
                                                     {/* Winner Selection */}
                                                     <div>
-                                                        <label className="block text-xs text-gray-500 mb-1">ผู้ชนะ</label>
+                                                        <label className="block text-xs text-gray-500 mb-1">{t.admin.resultsPage.winner}</label>
                                                         <select
                                                             value={gameDetails[index].winner}
                                                             onChange={(e) => updateGameDetail(index, 'winner', e.target.value)}
                                                             className="w-full p-2 border border-gray-300 rounded-lg focus:border-cyan-aura focus:outline-none"
                                                         >
-                                                            <option value="">-- เลือก --</option>
+                                                            <option value="">{t.admin.resultsPage.chooseWinner}</option>
                                                             <option value={formData.teamBlue}>{formData.teamBlue}</option>
                                                             <option value={formData.teamRed}>{formData.teamRed}</option>
                                                         </select>
@@ -1007,7 +1008,7 @@ export default function AdminResults() {
 
                                                     {/* Duration - Minutes and Seconds */}
                                                     <div>
-                                                        <label className="block text-xs text-gray-500 mb-1">ระยะเวลา</label>
+                                                        <label className="block text-xs text-gray-500 mb-1">{t.admin.resultsPage.duration}</label>
                                                         <div className="flex gap-2 items-center">
                                                             <div className="flex-1">
                                                                 <input
@@ -1017,9 +1018,9 @@ export default function AdminResults() {
                                                                     value={gameDetails[index].durationMin}
                                                                     onChange={(e) => updateGameDetail(index, 'durationMin', e.target.value)}
                                                                     className="w-full p-2 border border-gray-300 rounded-lg focus:border-cyan-aura focus:outline-none text-center"
-                                                                    placeholder="นาที"
+                                                                    placeholder={t.admin.resultsPage.minutes}
                                                                 />
-                                                                <span className="text-xs text-gray-400 text-center block">นาที</span>
+                                                                <span className="text-xs text-gray-400 text-center block">{t.admin.resultsPage.minutes}</span>
                                                             </div>
                                                             <span className="text-gray-400 font-bold">:</span>
                                                             <div className="flex-1">
@@ -1030,23 +1031,23 @@ export default function AdminResults() {
                                                                     value={gameDetails[index].durationSec}
                                                                     onChange={(e) => updateGameDetail(index, 'durationSec', Math.min(59, parseInt(e.target.value) || 0))}
                                                                     className="w-full p-2 border border-gray-300 rounded-lg focus:border-cyan-aura focus:outline-none text-center"
-                                                                    placeholder="วินาที"
+                                                                    placeholder={t.admin.resultsPage.seconds}
                                                                 />
-                                                                <span className="text-xs text-gray-400 text-center block">วินาที</span>
+                                                                <span className="text-xs text-gray-400 text-center block">{t.admin.resultsPage.seconds}</span>
                                                             </div>
                                                         </div>
                                                     </div>
 
                                                     {/* MVP Player Select */}
                                                     <div>
-                                                        <label className="block text-xs text-gray-500 mb-1">MVP (ชื่อในเกม)</label>
+                                                        <label className="block text-xs text-gray-500 mb-1">{t.admin.resultsPage.mvp}</label>
                                                         {winnerName && winnerRoster.length > 0 ? (
                                                             <select
                                                                 value={gameDetails[index].mvpPlayer}
                                                                 onChange={(e) => updateGameDetail(index, 'mvpPlayer', e.target.value)}
                                                                 className="w-full p-2 border border-gray-300 rounded-lg focus:border-cyan-aura focus:outline-none"
                                                             >
-                                                                <option value="">-- เลือก MVP ({winnerName}) --</option>
+                                                                <option value="">{t.admin.resultsPage.chooseMVP.replace('{team}', winnerName)}</option>
                                                                 {winnerRoster.map(p => {
                                                                     const val = p.inGameName || p.name;
                                                                     const label = p.inGameName ? `${p.inGameName} (${p.name})` : p.name;
@@ -1054,12 +1055,12 @@ export default function AdminResults() {
                                                                         <option key={p._id} value={val}>{label}</option>
                                                                     );
                                                                 })}
-                                                                <option value="Manual">-- พิมพ์เอง --</option>
+                                                                <option value="Manual">{t.admin.resultsPage.typeManual}</option>
                                                             </select>
                                                         ) : (
                                                             <input
                                                                 type="text"
-                                                                placeholder="เลือกทีมชนะก่อน..."
+                                                                placeholder={t.admin.resultsPage.selectWinnerFirst}
                                                                 disabled={!winnerName}
                                                                 value={gameDetails[index].mvpPlayer}
                                                                 onChange={(e) => updateGameDetail(index, 'mvpPlayer', e.target.value)}
@@ -1069,7 +1070,7 @@ export default function AdminResults() {
                                                         {gameDetails[index].mvpPlayer === 'Manual' && (
                                                             <input
                                                                 type="text"
-                                                                placeholder="พิมพ์ชื่อในเกม..."
+                                                                placeholder={t.admin.resultsPage.typeInGameName}
                                                                 value=""
                                                                 onChange={(e) => updateGameDetail(index, 'mvpPlayer', e.target.value)}
                                                                 className="w-full p-2 mt-1 border border-gray-300 rounded-lg focus:border-cyan-aura focus:outline-none"
@@ -1094,12 +1095,12 @@ export default function AdminResults() {
                                 {loading ? (
                                     <>
                                         <i className="fas fa-circle-notch fa-spin"></i>
-                                        กำลังบันทึก...
+                                        {t.admin.resultsPage.saving}
                                     </>
                                 ) : (
                                     <>
                                         <i className="fas fa-save"></i>
-                                        บันทึกผลการแข่งขัน
+                                        {t.admin.resultsPage.saveResult}
                                     </>
                                 )}
                             </button>
@@ -1109,20 +1110,22 @@ export default function AdminResults() {
             </div>
 
             {/* Player Stats Modal */}
-            {editingGameIndex !== null && (
-                <GameStatsModal
-                    isOpen={isStatsModalOpen}
-                    token={token}
-                    onClose={() => setIsStatsModalOpen(false)}
-                    teamBlue={formData.teamBlue}
-                    teamRed={formData.teamRed}
-                    gameNumber={editingGameIndex + 1}
-                    initialData={gamesStats[editingGameIndex]}
-                    onSave={handleStatsSave}
-                    allPlayers={allPlayers}
-                    allHeroes={allHeroes}
-                />
-            )}
-        </div>
+            {
+                editingGameIndex !== null && (
+                    <GameStatsModal
+                        isOpen={isStatsModalOpen}
+                        token={token}
+                        onClose={() => setIsStatsModalOpen(false)}
+                        teamBlue={formData.teamBlue}
+                        teamRed={formData.teamRed}
+                        gameNumber={editingGameIndex + 1}
+                        initialData={gamesStats[editingGameIndex]}
+                        onSave={handleStatsSave}
+                        allPlayers={allPlayers}
+                        allHeroes={allHeroes}
+                    />
+                )
+            }
+        </div >
     );
 }

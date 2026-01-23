@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { useConfirmModal } from '../../components/common/ConfirmModal';
 import TeamLogo from '../../components/common/TeamLogo';
 
@@ -7,6 +8,7 @@ export default function AdminDraw() {
     const envUrl = import.meta.env.VITE_API_URL || '';
     const API_BASE_URL = envUrl ? (envUrl.endsWith('/api') ? envUrl : `${envUrl}/api`) : '/api';
     const { token } = useAuth();
+    const { t } = useLanguage();
     const { showConfirm } = useConfirmModal();
 
     // Teams Management
@@ -108,7 +110,7 @@ export default function AdminDraw() {
 
                 if (!res.ok) throw new Error('Failed to save logo');
 
-                setMessage({ type: 'success', text: `บันทึกโลโก้ทีม ${selectedTeam} เรียบร้อย` });
+                setMessage({ type: 'success', text: t.admin.teamsPage.saveSuccess });
                 setLogoModalOpen(false);
                 setTimeout(() => window.location.reload(), 800);
             }
@@ -126,30 +128,30 @@ export default function AdminDraw() {
     const addTeam = () => {
         const name = newTeamName.trim();
         if (!name) {
-            setMessage({ type: 'error', text: 'กรุณาใส่ชื่อทีม' });
+            setMessage({ type: 'error', text: t.admin.drawPage.errorEmpty });
             return;
         }
         if (teams.includes(name)) {
-            setMessage({ type: 'error', text: 'ชื่อทีมนี้มีอยู่แล้ว' });
+            setMessage({ type: 'error', text: t.admin.drawPage.errorDuplicate });
             return;
         }
         setTeams([...teams, name]);
         setNewTeamName('');
-        setMessage({ type: 'success', text: `เพิ่มทีม "${name}" สำเร็จ` });
+        setMessage({ type: 'success', text: t.admin.drawPage.successAdd.replace('{team}', name) });
     };
 
     // ลบทีม
     const deleteTeam = (index) => {
         const teamName = teams[index];
         showConfirm({
-            title: 'ลบทีม',
-            message: `ต้องการลบทีม "${teamName}" ใช่หรือไม่?`,
+            title: t.admin.drawPage.confirmDeleteTeam,
+            message: t.admin.drawPage.confirmDeleteTeamText.replace('{team}', teamName),
             type: 'danger',
-            confirmText: 'ลบทีม',
-            cancelText: 'ยกเลิก',
+            confirmText: t.admin.drawPage.confirmDelete,
+            cancelText: t.admin.cancel,
             onConfirm: () => {
                 setTeams(prevTeams => prevTeams.filter((_, i) => i !== index));
-                setMessage({ type: 'success', text: `ลบทีม "${teamName}" สำเร็จ` });
+                setMessage({ type: 'success', text: t.admin.drawPage.successDelete.replace('{team}', teamName) });
             }
         });
     };
@@ -164,11 +166,11 @@ export default function AdminDraw() {
     const saveEdit = () => {
         const name = editingName.trim();
         if (!name) {
-            setMessage({ type: 'error', text: 'ชื่อทีมห้ามว่าง' });
+            setMessage({ type: 'error', text: t.admin.drawPage.errorEmpty });
             return;
         }
         if (teams.some((t, i) => t === name && i !== editingIndex)) {
-            setMessage({ type: 'error', text: 'ชื่อทีมนี้มีอยู่แล้ว' });
+            setMessage({ type: 'error', text: t.admin.drawPage.errorDuplicate });
             return;
         }
         const oldName = teams[editingIndex];
@@ -177,7 +179,7 @@ export default function AdminDraw() {
         setTeams(newTeams);
         setEditingIndex(null);
         setEditingName('');
-        setMessage({ type: 'success', text: `เปลี่ยนชื่อจาก "${oldName}" เป็น "${name}" สำเร็จ` });
+        setMessage({ type: 'success', text: t.admin.teamsPage.saveSuccess });
     };
 
     // ยกเลิกการแก้ไข
@@ -265,7 +267,7 @@ export default function AdminDraw() {
 
     const startDraw = () => {
         if (teams.length < 2) {
-            setMessage({ type: 'error', text: 'ต้องมีทีมอย่างน้อย 2 ทีม' });
+            setMessage({ type: 'error', text: t.admin.drawPage.errorMinTeams });
             return;
         }
 
@@ -329,7 +331,7 @@ export default function AdminDraw() {
                 throw new Error('Failed to save fixtures');
             }
 
-            setMessage({ type: 'success', text: '✅ บันทึกตารางแข่งขันเรียบร้อยแล้ว!' });
+            setMessage({ type: 'success', text: `✅ ${t.admin.drawPage.successSave}` });
 
             // Reload page to refresh data in all components
             setTimeout(() => {
@@ -345,11 +347,11 @@ export default function AdminDraw() {
     // ล้าง Fixtures ทั้งหมด
     const clearAllFixtures = () => {
         showConfirm({
-            title: 'ล้างข้อมูลทั้งหมด',
-            message: 'ต้องการลบตารางแข่งขันและผลการแข่งขันทั้งหมดใช่หรือไม่?\n\n⚠️ Standings จะถูก Reset เป็น 0\n⚠️ การกระทำนี้ไม่สามารถย้อนกลับได้!',
+            title: t.admin.drawPage.confirmClear,
+            message: t.admin.drawPage.confirmClearText,
             type: 'danger',
-            confirmText: 'ลบทั้งหมด',
-            cancelText: 'ยกเลิก',
+            confirmText: t.admin.drawPage.confirmClearBtn,
+            cancelText: t.admin.cancel,
             onConfirm: async () => {
                 setClearing(true);
                 setMessage(null);
@@ -369,7 +371,7 @@ export default function AdminDraw() {
                     const data = await response.json();
                     setMessage({
                         type: 'success',
-                        text: `🗑️ ลบข้อมูลทั้งหมดเรียบร้อย! (Schedules: ${data.deleted?.schedules || 0}, Results: ${data.deleted?.results || 0})`
+                        text: `🗑️ ${t.admin.drawPage.successClear} (Schedules: ${data.deleted?.schedules || 0}, Results: ${data.deleted?.results || 0})`
                     });
 
                     // Reload page after 1.5 seconds to refresh all data
@@ -403,9 +405,9 @@ export default function AdminDraw() {
                         <span className="w-12 h-12 bg-gradient-to-br from-cyan-aura to-blue-600 rounded-full flex items-center justify-center text-white">
                             <i className="fas fa-random"></i>
                         </span>
-                        จับสลาก League Phase
+                        {t.admin.drawPage.title}
                     </h2>
-                    <p className="text-gray-500 mt-2">Round Robin - ทุกทีมพบกันหมด</p>
+                    <p className="text-gray-500 mt-2">{t.admin.drawPage.subtitle}</p>
                 </div>
 
                 <div className="p-6">
@@ -414,7 +416,7 @@ export default function AdminDraw() {
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="font-bold text-gray-700 text-lg">
                                 <i className="fas fa-users mr-2 text-cyan-aura"></i>
-                                จัดการรายชื่อทีม ({teams.length} ทีม)
+                                {t.admin.drawPage.manageTeams} ({teams.length} {t.admin.clubs})
                             </h3>
                         </div>
 
@@ -425,7 +427,7 @@ export default function AdminDraw() {
                                 value={newTeamName}
                                 onChange={(e) => setNewTeamName(e.target.value)}
                                 onKeyPress={(e) => e.key === 'Enter' && addTeam()}
-                                placeholder="ชื่อทีมใหม่..."
+                                placeholder={t.admin.drawPage.addTeamPlaceholder}
                                 className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-cyan-aura"
                             />
                             <button
@@ -433,7 +435,7 @@ export default function AdminDraw() {
                                 className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
                             >
                                 <i className="fas fa-plus mr-1"></i>
-                                เพิ่มทีม
+                                {t.admin.drawPage.addTeam}
                             </button>
 
                         </div>
@@ -497,7 +499,7 @@ export default function AdminDraw() {
                         {teams.length < 2 && (
                             <p className="text-red-500 text-sm mt-2">
                                 <i className="fas fa-exclamation-triangle mr-1"></i>
-                                ต้องมีทีมอย่างน้อย 2 ทีม
+                                {t.admin.drawPage.errorMinTeams}
                             </p>
                         )}
                     </div>
@@ -507,7 +509,7 @@ export default function AdminDraw() {
                         <div className="mb-8 border-t border-gray-100 pt-6">
                             <h3 className="font-bold text-gray-700 text-lg mb-4">
                                 <i className="fas fa-calendar-alt mr-2 text-cyan-aura"></i>
-                                กำหนดวันแข่งขัน ({totalRounds} Match Days)
+                                {t.admin.drawPage.dateSettings} ({totalRounds} Match Days)
                             </h3>
 
 
@@ -516,7 +518,7 @@ export default function AdminDraw() {
                                     const day = i + 1;
                                     return (
                                         <div key={day} className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                                            <div className="text-xs font-bold text-gray-500 mb-1">Day {day}</div>
+                                            <div className="text-xs font-bold text-gray-500 mb-1">{t.admin.drawPage.round} {day}</div>
                                             <input
                                                 type="date"
                                                 value={customMatchDates[day] || ''}
@@ -539,7 +541,7 @@ export default function AdminDraw() {
                                 className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-cyan-aura to-blue-600 text-white font-bold rounded-lg hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 <i className="fas fa-dice"></i>
-                                เริ่มจับสลาก
+                                {t.admin.drawPage.startDraw}
                             </button>
                         )}
 
@@ -551,9 +553,9 @@ export default function AdminDraw() {
                                     className="flex items-center gap-2 px-6 py-3 bg-green-500 text-white font-bold rounded-lg hover:bg-green-600 transition-all disabled:opacity-50"
                                 >
                                     {saving ? (
-                                        <><i className="fas fa-circle-notch fa-spin"></i> กำลังบันทึก...</>
+                                        <><i className="fas fa-circle-notch fa-spin"></i> {t.admin.drawPage.saving}</>
                                     ) : (
-                                        <><i className="fas fa-save"></i> บันทึกตารางแข่งขัน</>
+                                        <><i className="fas fa-save"></i> {t.admin.drawPage.saveFixtures}</>
                                     )}
                                 </button>
                                 <button
@@ -561,7 +563,7 @@ export default function AdminDraw() {
                                     className="flex items-center gap-2 px-6 py-3 bg-gray-200 text-gray-700 font-bold rounded-lg hover:bg-gray-300 transition-all"
                                 >
                                     <i className="fas fa-redo"></i>
-                                    จับสลากใหม่
+                                    {t.admin.drawPage.resetDraw}
                                 </button>
                             </>
                         )}
@@ -573,9 +575,9 @@ export default function AdminDraw() {
                             className="flex items-center gap-2 px-6 py-3 bg-red-100 text-red-600 font-bold rounded-lg hover:bg-red-200 transition-all disabled:opacity-50 ml-auto"
                         >
                             {clearing ? (
-                                <><i className="fas fa-circle-notch fa-spin"></i> กำลังลบ...</>
+                                <><i className="fas fa-circle-notch fa-spin"></i> {t.admin.drawPage.clearing}</>
                             ) : (
-                                <><i className="fas fa-trash-alt"></i> ล้าง Fixtures ทั้งหมด</>
+                                <><i className="fas fa-trash-alt"></i> {t.admin.drawPage.clearFixtures}</>
                             )}
                         </button>
                     </div>
@@ -596,18 +598,18 @@ export default function AdminDraw() {
                     <div className="p-6 border-b border-gray-100 flex items-center justify-between">
                         <h3 className="text-xl font-display font-bold text-uefa-dark uppercase">
                             <i className="fas fa-list-ol mr-2 text-cyan-aura"></i>
-                            ผลการจับสลาก
+                            {t.admin.drawPage.resultsTitle}
                         </h3>
                         {isDrawing && (
                             <span className="px-4 py-2 bg-cyan-aura/10 text-cyan-600 rounded-full text-sm font-bold animate-pulse">
                                 <i className="fas fa-circle-notch fa-spin mr-2"></i>
-                                กำลังจับสลาก... ({currentStep}/{matchDays.reduce((acc, d) => acc + (d && d.matches ? d.matches.length : 0), 0)})
+                                {t.admin.drawPage.drawing} ({currentStep}/{matchDays.reduce((acc, d) => acc + (d && d.matches ? d.matches.length : 0), 0)})
                             </span>
                         )}
                         {drawComplete && (
                             <span className="px-4 py-2 bg-green-100 text-green-600 rounded-full text-sm font-bold">
                                 <i className="fas fa-check mr-2"></i>
-                                จับสลากเสร็จสิ้น
+                                {t.admin.drawPage.drawComplete}
                             </span>
                         )}
                     </div>
@@ -621,7 +623,7 @@ export default function AdminDraw() {
                                 >
                                     <div className="flex items-center justify-between mb-3">
                                         <h4 className="font-display font-bold text-uefa-dark">
-                                            Day {round.day}
+                                            {t.admin.drawPage.round} {round.day}
                                         </h4>
                                         <span className="text-xs text-gray-500">
                                             {round.date}
@@ -671,7 +673,7 @@ export default function AdminDraw() {
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
                     <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md mx-4 animate-fade-in">
                         <div className="flex justify-between items-center mb-6">
-                            <h3 className="text-xl font-bold text-gray-800">จัดการโลโก้ทีม {selectedTeam}</h3>
+                            <h3 className="text-xl font-bold text-gray-800">{t.admin.drawPage.manageLogo.replace('{team}', selectedTeam)}</h3>
                             <button onClick={() => setLogoModalOpen(false)} className="text-gray-400 hover:text-gray-600">
                                 <i className="fas fa-times"></i>
                             </button>
@@ -679,7 +681,7 @@ export default function AdminDraw() {
 
                         <div className="flex justify-center mb-6">
                             <div className="flex flex-col items-center">
-                                <div className="mb-2 text-sm text-gray-500">ปัจจุบัน</div>
+                                <div className="mb-2 text-sm text-gray-500">{t.admin.drawPage.current}</div>
                                 <TeamLogo teamName={selectedTeam} size="xl" />
                             </div>
                             {logoPreview && (
@@ -688,7 +690,7 @@ export default function AdminDraw() {
                                         <i className="fas fa-arrow-right"></i>
                                     </div>
                                     <div className="flex flex-col items-center">
-                                        <div className="mb-2 text-sm text-cyan-aura font-bold">ใหม่</div>
+                                        <div className="mb-2 text-sm text-cyan-aura font-bold">{t.admin.drawPage.new}</div>
                                         <img src={logoPreview} alt="New Logo" className="w-16 h-16 object-contain" />
                                     </div>
                                 </>
@@ -700,13 +702,13 @@ export default function AdminDraw() {
                                 onClick={() => setLogoUploadMode('file')}
                                 className={`flex-1 py-1 px-3 rounded text-sm font-bold transition-colors ${logoUploadMode === 'file' ? 'bg-white text-cyan-aura shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                             >
-                                อัปโหลดไฟล์
+                                {t.admin.drawPage.uploadFile}
                             </button>
                             <button
                                 onClick={() => setLogoUploadMode('url')}
                                 className={`flex-1 py-1 px-3 rounded text-sm font-bold transition-colors ${logoUploadMode === 'url' ? 'bg-white text-cyan-aura shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                             >
-                                ใช้ URL
+                                {t.admin.drawPage.useUrl}
                             </button>
                         </div>
 
@@ -720,12 +722,12 @@ export default function AdminDraw() {
                                         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                                     />
                                     <i className="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-2"></i>
-                                    <p className="text-sm text-gray-600">คลิกเพื่อเลือกรูปภาพ</p>
+                                    <p className="text-sm text-gray-600">{t.admin.drawPage.clickToSelect}</p>
                                     <p className="text-xs text-gray-400 mt-1">PNG, JPG, SVG (Max 2MB)</p>
                                 </div>
                             ) : (
                                 <div>
-                                    <label className="block text-sm text-gray-600 mb-1">ลิงก์รูปภาพ (URL)</label>
+                                    <label className="block text-sm text-gray-600 mb-1">{t.admin.drawPage.enterUrl}</label>
                                     <input
                                         type="text"
                                         value={logoUrlInput}
@@ -745,14 +747,14 @@ export default function AdminDraw() {
                                 onClick={() => setLogoModalOpen(false)}
                                 className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg font-bold"
                             >
-                                ยกเลิก
+                                {t.admin.cancel}
                             </button>
                             <button
                                 onClick={saveLogo}
                                 disabled={uploadingLogo || (!logoFile && !logoUrlInput)}
                                 className={`px-4 py-2 bg-gradient-to-r from-cyan-aura to-blue-600 text-white rounded-lg font-bold shadow-lg hover:shadow-cyan-aura/50 transition-all ${uploadingLogo ? 'opacity-70 cursor-wait' : ''}`}
                             >
-                                {uploadingLogo ? 'กำลังบันทึก...' : 'บันทึกโลโก้'}
+                                {uploadingLogo ? t.admin.drawPage.saving : t.admin.drawPage.saveLogo}
                             </button>
                         </div>
                     </div>

@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useData } from '../../context/DataContext';
+import { useLanguage } from '../../context/LanguageContext';
 import Swal from 'sweetalert2';
 
 export default function AdminSchedulePage() {
     const { schedule, results } = useData();
+    const { t } = useLanguage();
     const [selectedDay, setSelectedDay] = useState<number | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
 
@@ -63,20 +65,20 @@ export default function AdminSchedulePage() {
             content += `
                 <div class="bg-green-50 rounded-lg p-4 mb-4">
                     <div class="text-3xl font-bold text-green-600">${result.scoreBlue} - ${result.scoreRed}</div>
-                    <div class="text-sm text-green-500 mt-1">ผู้ชนะ: ${result.winner}</div>
+                    <div class="text-sm text-green-500 mt-1">${t.admin.schedulePage.winner}: ${result.winner}</div>
                 </div>
             `;
         } else if (status === 'bye') {
             content += `
                 <div class="bg-yellow-50 rounded-lg p-4 mb-4">
                     <div class="text-xl font-bold text-yellow-600">BYE</div>
-                    <div class="text-sm text-yellow-500 mt-1">ผู้ชนะ: ${result?.winner}</div>
+                    <div class="text-sm text-yellow-500 mt-1">${t.admin.schedulePage.winner}: ${result?.winner}</div>
                 </div>
             `;
         } else {
             content += `
                 <div class="bg-gray-50 rounded-lg p-4 mb-4">
-                    <div class="text-xl font-bold text-gray-400">ยังไม่แข่ง</div>
+                    <div class="text-xl font-bold text-gray-400">${t.admin.schedulePage.notPlayed}</div>
                 </div>
             `;
         }
@@ -86,7 +88,7 @@ export default function AdminSchedulePage() {
         </div>`;
 
         Swal.fire({
-            title: `แมตช์ ${matchId}`,
+            title: `${t.admin.schedulePage.matchDetails} ${matchId}`,
             html: content,
             showCloseButton: true,
             showConfirmButton: false,
@@ -105,10 +107,10 @@ export default function AdminSchedulePage() {
                 <div>
                     <h1 className="text-2xl font-display font-bold text-uefa-dark">
                         <i className="fas fa-calendar-check mr-3 text-cyan-aura"></i>
-                        ตารางแข่งขัน
+                        {t.admin.schedulePage.title}
                     </h1>
                     <p className="text-gray-500 mt-1">
-                        {schedule.length} Match Days • {schedule.reduce((acc, d) => acc + (d.matches?.length || 0), 0)} แมตช์ทั้งหมด
+                        {schedule.length} {t.admin.schedulePage.matchDays} • {schedule.reduce((acc, d) => acc + (d.matches?.length || 0), 0)} {t.admin.schedulePage.totalMatches}
                     </p>
                 </div>
                 <button
@@ -116,7 +118,7 @@ export default function AdminSchedulePage() {
                     className="px-4 py-2 bg-cyan-aura text-white rounded-lg hover:bg-cyan-500 transition-colors"
                 >
                     <i className="fas fa-sync-alt mr-2"></i>
-                    รีเฟรช
+                    {t.admin.schedulePage.refresh}
                 </button>
             </div>
 
@@ -126,7 +128,7 @@ export default function AdminSchedulePage() {
                     <i className="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
                     <input
                         type="text"
-                        placeholder="ค้นหาทีม..."
+                        placeholder={t.admin.teamsPage.search}
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-cyan-aura focus:border-transparent"
@@ -140,7 +142,7 @@ export default function AdminSchedulePage() {
                     <div className="bg-white rounded-xl shadow-sm p-4 sticky top-4">
                         <h3 className="font-bold text-uefa-dark mb-4">
                             <i className="fas fa-calendar-day mr-2 text-cyan-aura"></i>
-                            Match Days
+                            {t.admin.schedulePage.matchDays}
                         </h3>
                         <div className="space-y-2 max-h-96 overflow-y-auto">
                             {filteredSchedule.map((day) => {
@@ -167,7 +169,7 @@ export default function AdminSchedulePage() {
                                             )}
                                         </div>
                                         <div className={`text-xs mt-1 ${selectedDay === day.day ? 'text-white/70' : 'text-gray-400'}`}>
-                                            {stats.total} แมตช์
+                                            {stats.total} {t.admin.schedulePage.matches}
                                         </div>
                                     </button>
                                 );
@@ -182,7 +184,7 @@ export default function AdminSchedulePage() {
                         <div className="p-5 border-b border-gray-100">
                             <h3 className="font-bold text-uefa-dark">
                                 <i className="fas fa-gamepad mr-2 text-cyan-aura"></i>
-                                {selectedDay ? `Day ${selectedDay} - ${selectedDayData?.matches?.length || 0} แมตช์` : 'เลือก Match Day'}
+                                {selectedDay ? `Day ${selectedDay} - ${selectedDayData?.matches?.length || 0} ${t.admin.schedulePage.matches}` : t.admin.schedulePage.selectDay}
                             </h3>
                         </div>
                         <div className="p-5">
@@ -227,7 +229,7 @@ export default function AdminSchedulePage() {
                                                     <div className="ml-4">
                                                         {status === 'completed' && (
                                                             <span className="px-3 py-1 bg-green-500 text-white text-xs font-bold rounded-full">
-                                                                เสร็จสิ้น
+                                                                {t.admin.schedulePage.completed}
                                                             </span>
                                                         )}
                                                         {status === 'bye' && (
@@ -237,7 +239,7 @@ export default function AdminSchedulePage() {
                                                         )}
                                                         {status === 'pending' && (
                                                             <span className="px-3 py-1 bg-gray-300 text-gray-600 text-xs font-bold rounded-full">
-                                                                รอแข่ง
+                                                                {t.admin.schedulePage.pending}
                                                             </span>
                                                         )}
                                                     </div>
@@ -253,7 +255,7 @@ export default function AdminSchedulePage() {
                             ) : (
                                 <div className="text-center py-12">
                                     <i className="fas fa-calendar-times text-5xl text-gray-300 mb-4"></i>
-                                    <p className="text-gray-500">ไม่มีแมตช์ในวันนี้</p>
+                                    <p className="text-gray-500">{t.admin.schedulePage.noMatchesToday}</p>
                                 </div>
                             )}
                         </div>
@@ -264,14 +266,14 @@ export default function AdminSchedulePage() {
             {schedule.length === 0 && (
                 <div className="bg-white rounded-xl shadow-sm p-12 text-center">
                     <i className="fas fa-calendar-plus text-6xl text-gray-300 mb-4"></i>
-                    <h3 className="text-xl font-bold text-gray-600 mb-2">ยังไม่มีตารางแข่งขัน</h3>
-                    <p className="text-gray-400 mb-6">กรุณาจับสลากทีมก่อนเพื่อสร้างตารางแข่งขัน</p>
+                    <h3 className="text-xl font-bold text-gray-600 mb-2">{t.admin.schedulePage.noSchedule}</h3>
+                    <p className="text-gray-400 mb-6">{t.admin.schedulePage.createScheduleHint}</p>
                     <a
                         href="/admin/draw"
                         className="inline-flex items-center gap-2 px-6 py-3 bg-cyan-aura text-white rounded-lg hover:bg-cyan-500 transition-colors"
                     >
                         <i className="fas fa-random"></i>
-                        ไปจับสลากทีม
+                        {t.admin.schedulePage.goToDraw}
                     </a>
                 </div>
             )}

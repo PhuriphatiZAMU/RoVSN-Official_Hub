@@ -12,8 +12,11 @@ interface AuthContextType {
     logout: () => void;
 }
 
+import { useLanguage } from '../../context/LanguageContext';
+
 export default function AdminLayout() {
     const { user, logout } = useAuth() as AuthContextType;
+    const { language, changeLanguage } = useLanguage();
     const location = useLocation();
     const navigate = useNavigate();
     const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -100,6 +103,22 @@ export default function AdminLayout() {
 
                 {/* User Info */}
                 <div className="p-4 border-t border-gray-700">
+                    {/* Language Switcher */}
+                    <div className="flex justify-center mb-4">
+                        <button
+                            onClick={() => changeLanguage(language === 'th' ? 'en' : 'th')}
+                            className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
+                        >
+                            <div className="w-5 h-5 rounded-full overflow-hidden flex items-center justify-center bg-gray-700 text-[10px] font-bold">
+                                {language.toUpperCase()}
+                            </div>
+                            <span className="text-sm font-medium text-gray-200">
+                                {language === 'th' ? 'ภาษาไทย' : 'English'}
+                            </span>
+                            <i className="fas fa-chevron-right text-xs text-gray-500 ml-1"></i>
+                        </button>
+                    </div>
+
                     <div className="flex items-center gap-3 mb-4">
                         <div className="w-10 h-10 bg-cyan-aura/20 rounded-full flex items-center justify-center">
                             <i className="fas fa-user text-cyan-aura"></i>

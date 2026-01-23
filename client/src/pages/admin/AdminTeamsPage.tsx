@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import Swal from 'sweetalert2';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
@@ -22,6 +23,7 @@ interface Player {
 
 export default function AdminTeamsPage() {
     const { token } = useAuth();
+    const { t } = useLanguage();
     const [teams, setTeams] = useState<Team[]>([]);
     const [players, setPlayers] = useState<Player[]>([]);
     const [logos, setLogos] = useState<any[]>([]);
@@ -69,7 +71,7 @@ export default function AdminTeamsPage() {
             setTeams(teamList.sort((a, b) => a.name.localeCompare(b.name)));
         } catch (error) {
             console.error('Error fetching data:', error);
-            Toast.fire({ icon: 'error', title: 'ไม่สามารถโหลดข้อมูลได้' });
+            Toast.fire({ icon: 'error', title: t.admin.loadError });
         } finally {
             setLoading(false);
         }
@@ -92,7 +94,7 @@ export default function AdminTeamsPage() {
 
     const handleSaveTeam = async () => {
         if (!formData.name.trim()) {
-            Toast.fire({ icon: 'warning', title: 'กรุณากรอกชื่อทีม' });
+            Toast.fire({ icon: 'warning', title: t.admin.teamsPage.enterTeamName });
             return;
         }
 
@@ -120,13 +122,13 @@ export default function AdminTeamsPage() {
                 );
             }
 
-            Toast.fire({ icon: 'success', title: 'บันทึกข้อมูลทีมเรียบร้อย' });
+            Toast.fire({ icon: 'success', title: t.admin.teamsPage.saveSuccess });
             setShowModal(false);
             setEditingTeam(null);
             fetchData();
         } catch (error) {
             console.error('Error saving team:', error);
-            Toast.fire({ icon: 'error', title: 'ไม่สามารถบันทึกได้' });
+            Toast.fire({ icon: 'error', title: t.admin.teamsPage.saveError });
         }
     };
 
@@ -138,7 +140,7 @@ export default function AdminTeamsPage() {
             html: `
                 <div class="text-left">
                     ${team.logoUrl ? `<img src="${team.logoUrl}" class="w-24 h-24 mx-auto mb-4 rounded-lg object-contain bg-gray-50 border p-2" />` : ''}
-                    <h4 class="font-bold text-gray-700 mb-2 border-b pb-1">สมาชิกทีม (${teamPlayers.length} คน)</h4>
+                    <h4 class="font-bold text-gray-700 mb-2 border-b pb-1">${t.admin.teamsPage.teamMembers} (${teamPlayers.length})</h4>
                     <div class="max-h-60 overflow-y-auto space-y-1">
                         ${teamPlayers.length > 0 ? teamPlayers.map(p => `
                             <div class="flex justify-between items-center py-2 px-2 hover:bg-gray-50 rounded">
@@ -148,7 +150,7 @@ export default function AdminTeamsPage() {
                                 </div>
                                 <span class="bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-xs">Member</span>
                             </div>
-                        `).join('') : '<p class="text-gray-400 text-center py-4">ไม่มีสมาชิก</p>'}
+                        `).join('') : `<p class="text-gray-400 text-center py-4">${t.admin.teamsPage.noMembers}</p>`}
                     </div>
                 </div>
             `,
@@ -164,20 +166,20 @@ export default function AdminTeamsPage() {
 
     const handleUploadLogo = async (teamName: string) => {
         const { value: file } = await Swal.fire({
-            title: `อัปโหลดโลโก้ทีม ${teamName}`,
+            title: `${t.admin.teamsPage.uploadLogo} ${teamName}`,
             input: 'file',
             inputAttributes: {
                 'accept': 'image/*',
                 'aria-label': 'Upload your profile picture'
             },
-            html: '<p class="text-sm text-gray-500">รองรับไฟล์ PNG, JPG, SVG (Max 2MB)</p>',
+            html: `<p class="text-sm text-gray-500">${t.admin.teamsPage.fileType}</p>`,
             showCancelButton: true,
-            confirmButtonText: 'อัปโหลด',
-            cancelButtonText: 'ยกเลิก',
+            confirmButtonText: t.admin.teamsPage.upload,
+            cancelButtonText: t.admin.cancel,
             showLoaderOnConfirm: true,
             preConfirm: async (file) => {
                 if (!file) {
-                    Swal.showValidationMessage('กรุณาเลือกไฟล์');
+                    Swal.showValidationMessage(t.admin.teamsPage.selectFile);
                     return;
                 }
                 const formData = new FormData();
@@ -208,7 +210,7 @@ export default function AdminTeamsPage() {
         });
 
         if (file) {
-            Toast.fire({ icon: 'success', title: 'อัปโหลดโลโก้เรียบร้อย' });
+            Toast.fire({ icon: 'success', title: t.admin.teamsPage.uploadSuccess });
             fetchData();
         }
     };
@@ -228,9 +230,9 @@ export default function AdminTeamsPage() {
                 <div>
                     <h1 className="text-2xl font-display font-bold text-uefa-dark">
                         <i className="fas fa-users-cog mr-3 text-cyan-aura"></i>
-                        จัดการทีม
+                        {t.admin.teamsPage.title}
                     </h1>
-                    <p className="text-gray-500 mt-1">ดูและจัดการข้อมูลทีมทั้งหมด ({teams.length} ทีม)</p>
+                    <p className="text-gray-500 mt-1">{t.admin.teamsPage.subtitle.replace('{count}', teams.length.toString())}</p>
                 </div>
             </div>
 
@@ -240,7 +242,7 @@ export default function AdminTeamsPage() {
                     <i className="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
                     <input
                         type="text"
-                        placeholder="ค้นหาทีม..."
+                        placeholder={t.admin.teamsPage.search}
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-cyan-aura focus:border-transparent"
@@ -272,7 +274,7 @@ export default function AdminTeamsPage() {
                                     <div
                                         className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
                                         onClick={() => handleUploadLogo(team.name)}
-                                        title="เปลี่ยนโลโก้"
+                                        title={t.admin.teamsPage.changeLogo}
                                     >
                                         <i className="fas fa-camera text-white"></i>
                                     </div>
@@ -283,7 +285,7 @@ export default function AdminTeamsPage() {
                                     <h3 className="font-bold text-uefa-dark truncate">{team.name}</h3>
                                     <p className="text-sm text-gray-500 mt-1">
                                         <i className="fas fa-user-friends mr-1"></i>
-                                        {teamPlayers.length} สมาชิก
+                                        {teamPlayers.length} {t.admin.teamsPage.members}
                                     </p>
 
                                     {/* Player Avatars */}
@@ -312,13 +314,13 @@ export default function AdminTeamsPage() {
                                     onClick={() => handleViewTeamDetails(team)}
                                     className="flex-1 py-2 px-3 bg-gray-50 hover:bg-gray-100 rounded-lg text-sm font-medium text-gray-600 transition-colors"
                                 >
-                                    <i className="fas fa-eye mr-1"></i> ดูรายละเอียด
+                                    <i className="fas fa-eye mr-1"></i> {t.admin.teamsPage.viewDetails}
                                 </button>
                                 <button
                                     onClick={() => handleEditTeam(team)}
                                     className="flex-1 py-2 px-3 bg-cyan-aura/10 hover:bg-cyan-aura/20 rounded-lg text-sm font-medium text-cyan-600 transition-colors"
                                 >
-                                    <i className="fas fa-edit mr-1"></i> แก้ไข
+                                    <i className="fas fa-edit mr-1"></i> {t.admin.update}
                                 </button>
                             </div>
                         </div>
@@ -329,7 +331,7 @@ export default function AdminTeamsPage() {
             {filteredTeams.length === 0 && (
                 <div className="text-center py-12">
                     <i className="fas fa-users text-5xl text-gray-300 mb-4"></i>
-                    <p className="text-gray-500">ไม่พบทีมที่ค้นหา</p>
+                    <p className="text-gray-500">{t.admin.teamsPage.noTeamsFound}</p>
                 </div>
             )}
 
@@ -340,28 +342,28 @@ export default function AdminTeamsPage() {
                         <div className="bg-gradient-to-r from-cyan-aura to-blue-600 p-6">
                             <h2 className="text-xl font-display font-bold text-white flex items-center">
                                 <i className="fas fa-edit mr-3"></i>
-                                แก้ไขทีม {editingTeam?.name}
+                                {t.admin.teamsPage.editTeam} {editingTeam?.name}
                             </h2>
                         </div>
                         <div className="p-6 space-y-6">
                             <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-2">ชื่อทีม</label>
+                                <label className="block text-sm font-bold text-gray-700 mb-2">{t.admin.teamsPage.teamName}</label>
                                 <input
                                     type="text"
                                     value={formData.name}
                                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-aura focus:border-transparent bg-gray-50"
-                                    placeholder="ใส่ชื่อทีมใหม่..."
+                                    placeholder={t.admin.teamsPage.placeholderName}
                                 />
                                 <p className="text-xs text-gray-500 mt-2">
                                     <i className="fas fa-info-circle mr-1"></i>
-                                    การเปลี่ยนชื่อทีมจะอัปเดตผู้เล่นทุกคนในทีมอัตโนมัติ
+                                    {t.admin.teamsPage.renameWarning}
                                 </p>
                             </div>
 
                             <div>
                                 <label className="block text-sm font-bold text-gray-700 mb-2">
-                                    สมาชิกทีม ({getTeamPlayers(editingTeam?.name || '').length} คน)
+                                    {t.admin.teamsPage.teamMembers} ({getTeamPlayers(editingTeam?.name || '').length})
                                 </label>
                                 <div className="max-h-56 overflow-y-auto border border-gray-200 rounded-lg bg-gray-50">
                                     {getTeamPlayers(editingTeam?.name || '').length > 0 ? (
@@ -395,18 +397,18 @@ export default function AdminTeamsPage() {
                                                         ? 'bg-red-100 text-red-500 hover:bg-red-200'
                                                         : 'bg-green-100 text-green-500 hover:bg-green-200'
                                                         }`}
-                                                    title={formData.players.includes(player.name) ? "นำออกจากทีม" : "คืนค่า"}
+                                                    title={formData.players.includes(player.name) ? t.admin.teamsPage.removeMember : t.admin.teamsPage.restoreMember}
                                                 >
                                                     <i className={`fas ${formData.players.includes(player.name) ? 'fa-minus' : 'fa-undo'}`}></i>
                                                 </button>
                                             </div>
                                         ))
                                     ) : (
-                                        <div className="p-4 text-center text-gray-500 text-sm">ไม่มีสมาชิก</div>
+                                        <div className="p-4 text-center text-gray-500 text-sm">{t.admin.teamsPage.noMembers}</div>
                                     )}
                                 </div>
                                 <p className="text-xs text-orange-500 mt-2">
-                                    * กดปุ่ม (-) เพื่อนำผู้เล่นออก เมื่อบันทึกผู้เล่นจะกลายเป็นไม่มีทีม
+                                    {t.admin.teamsPage.removeHint}
                                 </p>
                             </div>
                         </div>
@@ -415,14 +417,14 @@ export default function AdminTeamsPage() {
                                 onClick={() => { setShowModal(false); setEditingTeam(null); }}
                                 className="flex-1 py-3 px-4 bg-white border border-gray-300 hover:bg-gray-100 rounded-lg font-bold text-gray-700 transition-colors shadow-sm"
                             >
-                                ยกเลิก
+                                {t.admin.cancel}
                             </button>
                             <button
                                 onClick={handleSaveTeam}
                                 className="flex-1 py-3 px-4 bg-gradient-to-r from-cyan-aura to-blue-600 hover:shadow-cyan-aura/50 shadow-lg rounded-lg font-bold text-white transition-all transform active:scale-95"
                             >
                                 <i className="fas fa-save mr-2"></i>
-                                บันทึกการเปลี่ยนแปลง
+                                {t.admin.teamsPage.saveChanges}
                             </button>
                         </div>
                     </div>

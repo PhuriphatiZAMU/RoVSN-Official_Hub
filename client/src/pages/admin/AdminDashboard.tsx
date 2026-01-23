@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useData } from '../../context/DataContext';
+import { useLanguage } from '../../context/LanguageContext';
 import axios from 'axios';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -26,6 +27,7 @@ interface QuickAction {
 
 export default function AdminDashboard() {
     const { schedule, results, teams, standings } = useData();
+    const { t, language } = useLanguage();
     const [dbStats, setDbStats] = useState<DashboardStats>({
         teams: 0,
         matches: 0,
@@ -67,25 +69,25 @@ export default function AdminDashboard() {
     }, [teams, schedule, results]);
 
     const statsCards = [
-        { label: 'ทีมทั้งหมด', value: dbStats.teams, icon: 'fas fa-users', color: 'from-blue-500 to-blue-600', link: '/admin/draw' },
-        { label: 'แมตช์ทั้งหมด', value: dbStats.matches, icon: 'fas fa-gamepad', color: 'from-green-500 to-green-600', link: '/admin/results' },
-        { label: 'ผลแข่งเสร็จสิ้น', value: dbStats.results, icon: 'fas fa-check-circle', color: 'from-purple-500 to-purple-600', link: '/admin/results' },
-        { label: 'Match Days', value: dbStats.matchDays, icon: 'fas fa-calendar-alt', color: 'from-orange-500 to-orange-600', link: '/admin/draw' },
-        { label: 'ผู้เล่นใน Pool', value: dbStats.players, icon: 'fas fa-user-friends', color: 'from-cyan-500 to-cyan-600', link: '/admin/players' },
-        { label: 'ฮีโร่ทั้งหมด', value: dbStats.heroes, icon: 'fas fa-mask', color: 'from-pink-500 to-pink-600', link: '/admin/heroes' },
-        { label: 'โลโก้ทีม', value: dbStats.logos, icon: 'fas fa-image', color: 'from-indigo-500 to-indigo-600', link: '/admin/logos' },
-        { label: 'Game Stats', value: dbStats.gameStats, icon: 'fas fa-chart-bar', color: 'from-red-500 to-red-600', link: '/admin/results' },
+        { label: t.admin.dashboard.totalTeams, value: dbStats.teams, icon: 'fas fa-users', color: 'from-blue-500 to-blue-600', link: '/admin/teams' },
+        { label: t.admin.dashboard.totalMatches, value: dbStats.matches, icon: 'fas fa-gamepad', color: 'from-green-500 to-green-600', link: '/admin/results' },
+        { label: t.admin.dashboard.finishedMatches, value: dbStats.results, icon: 'fas fa-check-circle', color: 'from-purple-500 to-purple-600', link: '/admin/results' },
+        { label: t.admin.dashboard.matchDays, value: dbStats.matchDays, icon: 'fas fa-calendar-alt', color: 'from-orange-500 to-orange-600', link: '/admin/schedule' },
+        { label: t.admin.dashboard.poolPlayers, value: dbStats.players, icon: 'fas fa-user-friends', color: 'from-cyan-500 to-cyan-600', link: '/admin/players' },
+        { label: t.admin.dashboard.totalHeroes, value: dbStats.heroes, icon: 'fas fa-mask', color: 'from-pink-500 to-pink-600', link: '/admin/heroes' },
+        { label: t.admin.dashboard.teamLogos, value: dbStats.logos, icon: 'fas fa-image', color: 'from-indigo-500 to-indigo-600', link: '/admin/logos' },
+        { label: t.admin.dashboard.gameStats, value: dbStats.gameStats, icon: 'fas fa-chart-bar', color: 'from-red-500 to-red-600', link: '/admin/game-stats' },
     ];
 
     const quickActions: QuickAction[] = [
-        { label: 'จับสลากทีม', icon: 'fas fa-random', href: '/admin/draw', color: 'bg-blue-500', description: 'จัดกลุ่มและจับสลากแข่งขัน' },
-        { label: 'บันทึกผลแข่ง', icon: 'fas fa-plus-circle', href: '/admin/results', color: 'bg-green-500', description: 'เพิ่มผลการแข่งขันใหม่' },
-        { label: 'จัดการผู้เล่น', icon: 'fas fa-user-edit', href: '/admin/players', color: 'bg-purple-500', description: 'เพิ่ม/แก้ไขข้อมูลผู้เล่น' },
-        { label: 'จัดการฮีโร่', icon: 'fas fa-mask', href: '/admin/heroes', color: 'bg-pink-500', description: 'เพิ่ม/แก้ไขข้อมูลฮีโร่' },
-        { label: 'จัดการโลโก้', icon: 'fas fa-image', href: '/admin/logos', color: 'bg-indigo-500', description: 'อัปโหลดโลโก้ทีม' },
-        { label: 'จัดการทีม', icon: 'fas fa-users-cog', href: '/admin/teams', color: 'bg-orange-500', description: 'จัดการข้อมูลทีม' },
-        { label: 'ตารางแข่งขัน', icon: 'fas fa-calendar-check', href: '/admin/schedule', color: 'bg-cyan-500', description: 'จัดการตารางแข่ง' },
-        { label: 'สถิติเกม', icon: 'fas fa-chart-line', href: '/admin/game-stats', color: 'bg-red-500', description: 'แก้ไขสถิติผู้เล่น' },
+        { label: t.admin.dashboard.draw, icon: 'fas fa-random', href: '/admin/draw', color: 'bg-blue-500', description: t.admin.dashboard.drawDesc },
+        { label: t.admin.dashboard.recordResult, icon: 'fas fa-plus-circle', href: '/admin/results', color: 'bg-green-500', description: t.admin.dashboard.recordResultDesc },
+        { label: t.admin.dashboard.managePlayers, icon: 'fas fa-user-edit', href: '/admin/players', color: 'bg-purple-500', description: t.admin.dashboard.managePlayersDesc },
+        { label: t.admin.dashboard.manageHeroes, icon: 'fas fa-mask', href: '/admin/heroes', color: 'bg-pink-500', description: t.admin.dashboard.manageHeroesDesc },
+        { label: t.admin.dashboard.manageLogos, icon: 'fas fa-image', href: '/admin/logos', color: 'bg-indigo-500', description: t.admin.dashboard.manageLogosDesc },
+        { label: t.admin.dashboard.manageTeams, icon: 'fas fa-users-cog', href: '/admin/teams', color: 'bg-orange-500', description: t.admin.dashboard.manageTeamsDesc },
+        { label: t.admin.dashboard.manageSchedule, icon: 'fas fa-calendar-check', href: '/admin/schedule', color: 'bg-cyan-500', description: t.admin.dashboard.manageScheduleDesc },
+        { label: t.admin.dashboard.manageStats, icon: 'fas fa-chart-line', href: '/admin/game-stats', color: 'bg-red-500', description: t.admin.dashboard.manageStatsDesc },
     ];
 
     const recentResults = [...results]
@@ -103,20 +105,20 @@ export default function AdminDashboard() {
                 <div>
                     <h1 className="text-2xl font-display font-bold text-uefa-dark">
                         <i className="fas fa-tachometer-alt mr-3 text-cyan-aura"></i>
-                        Admin Dashboard
+                        {t.admin.dashboard.title}
                     </h1>
-                    <p className="text-gray-500 mt-1">จัดการข้อมูลทัวร์นาเมนต์ทั้งหมด</p>
+                    <p className="text-gray-500 mt-1">{t.admin.dashboard.subtitle}</p>
                 </div>
                 <div className="text-sm text-gray-400">
                     <i className="fas fa-clock mr-1"></i>
-                    อัปเดตล่าสุด: {new Date().toLocaleTimeString('th-TH')}
+                    {t.admin.dashboard.lastUpdate}: {new Date().toLocaleTimeString(language === 'th' ? 'th-TH' : 'en-US')}
                 </div>
             </div>
 
             {/* Tournament Progress */}
             <div className="bg-white rounded-xl shadow-sm p-6 border-l-4 border-cyan-aura">
                 <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-lg font-bold text-uefa-dark">ความคืบหน้าทัวร์นาเมนต์</h2>
+                    <h2 className="text-lg font-bold text-uefa-dark">{t.admin.dashboard.progress}</h2>
                     <span className="text-2xl font-bold text-cyan-aura">
                         {dbStats.matches > 0 ? Math.round((dbStats.results / dbStats.matches) * 100) : 0}%
                     </span>
@@ -130,15 +132,15 @@ export default function AdminDashboard() {
                 <div className="flex justify-between text-sm text-gray-500">
                     <span>
                         <i className="fas fa-check-circle text-green-500 mr-1"></i>
-                        แข่งจบแล้ว: <strong>{dbStats.results}</strong>
+                        {t.admin.dashboard.completed}: <strong>{dbStats.results}</strong>
                     </span>
                     <span>
                         <i className="fas fa-hourglass-half text-orange-500 mr-1"></i>
-                        รอแข่งขัน: <strong>{dbStats.matches - dbStats.results}</strong>
+                        {t.admin.dashboard.remaining}: <strong>{dbStats.matches - dbStats.results}</strong>
                     </span>
                     <span>
                         <i className="fas fa-flag text-gray-400 mr-1"></i>
-                        ทั้งหมด: <strong>{dbStats.matches}</strong>
+                        {t.admin.dashboard.total}: <strong>{dbStats.matches}</strong>
                     </span>
                 </div>
             </div>
@@ -170,7 +172,7 @@ export default function AdminDashboard() {
             <div className="bg-white rounded-xl shadow-sm p-6">
                 <h2 className="text-lg font-display font-bold text-uefa-dark uppercase mb-4 flex items-center">
                     <i className="fas fa-bolt mr-2 text-cyan-aura"></i>
-                    Quick Actions
+                    {t.admin.dashboard.quickActions}
                 </h2>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     {quickActions.map((action, i) => (
@@ -195,10 +197,10 @@ export default function AdminDashboard() {
                     <div className="p-5 border-b border-gray-100 flex items-center justify-between">
                         <h2 className="text-lg font-display font-bold text-uefa-dark uppercase flex items-center">
                             <i className="fas fa-history mr-2 text-cyan-aura"></i>
-                            ผลการแข่งขันล่าสุด
+                            {t.admin.dashboard.recentResults}
                         </h2>
                         <Link to="/admin/results" className="text-cyan-aura text-sm hover:underline">
-                            ดูทั้งหมด →
+                            {t.admin.dashboard.viewAll} →
                         </Link>
                     </div>
                     <div className="p-5">
@@ -229,7 +231,7 @@ export default function AdminDashboard() {
                         ) : (
                             <div className="text-gray-400 text-center py-8">
                                 <i className="fas fa-inbox text-4xl mb-2"></i>
-                                <p>ยังไม่มีผลการแข่งขัน</p>
+                                <p>{t.admin.dashboard.noResults}</p>
                             </div>
                         )}
                     </div>
@@ -240,10 +242,10 @@ export default function AdminDashboard() {
                     <div className="p-5 border-b border-gray-100 flex items-center justify-between">
                         <h2 className="text-lg font-display font-bold text-uefa-dark uppercase flex items-center">
                             <i className="fas fa-trophy mr-2 text-cyan-aura"></i>
-                            อันดับทีมชั้นนำ
+                            {t.admin.dashboard.topTeams}
                         </h2>
                         <a href="/standings" target="_blank" className="text-cyan-aura text-sm hover:underline">
-                            ดูทั้งหมด →
+                            {t.admin.dashboard.viewAll} →
                         </a>
                     </div>
                     <div className="p-5">
@@ -271,7 +273,7 @@ export default function AdminDashboard() {
                         ) : (
                             <div className="text-gray-400 text-center py-8">
                                 <i className="fas fa-medal text-4xl mb-2"></i>
-                                <p>ยังไม่มีข้อมูลอันดับ</p>
+                                <p>{t.admin.dashboard.noStandings}</p>
                             </div>
                         )}
                     </div>
@@ -282,16 +284,16 @@ export default function AdminDashboard() {
             <div className="bg-gradient-to-r from-cyan-aura/10 to-blue-500/10 rounded-xl p-6 border border-cyan-aura/20">
                 <h2 className="text-lg font-display font-bold text-uefa-dark uppercase mb-4 flex items-center">
                     <i className="fas fa-external-link-alt mr-2 text-cyan-aura"></i>
-                    ดูหน้าสาธารณะ
+                    {t.admin.dashboard.publicPages}
                 </h2>
                 <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
                     {[
-                        { label: 'หน้าแรก', href: '/', icon: 'fas fa-home' },
-                        { label: 'ตารางแข่ง', href: '/fixtures', icon: 'fas fa-calendar' },
-                        { label: 'ตารางคะแนน', href: '/standings', icon: 'fas fa-list-ol' },
-                        { label: 'สถิติ', href: '/stats', icon: 'fas fa-chart-pie' },
-                        { label: 'ทีม', href: '/clubs', icon: 'fas fa-users' },
-                        { label: 'รูปแบบแข่ง', href: '/format', icon: 'fas fa-sitemap' },
+                        { label: t.admin.dashboard.home, href: '/', icon: 'fas fa-home' },
+                        { label: t.admin.dashboard.fixtures, href: '/fixtures', icon: 'fas fa-calendar' },
+                        { label: t.admin.dashboard.standings, href: '/standings', icon: 'fas fa-list-ol' },
+                        { label: t.admin.dashboard.stats, href: '/stats', icon: 'fas fa-chart-pie' },
+                        { label: t.admin.dashboard.clubs, href: '/clubs', icon: 'fas fa-users' },
+                        { label: t.admin.dashboard.format, href: '/format', icon: 'fas fa-sitemap' },
                     ].map((page, i) => (
                         <a
                             key={i}

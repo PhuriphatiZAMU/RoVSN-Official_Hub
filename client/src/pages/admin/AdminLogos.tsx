@@ -4,25 +4,27 @@ import { useAuth } from '../../context/AuthContext';
 import { postTeamLogo } from '../../services/api';
 import TeamLogo from '../../components/common/TeamLogo';
 import { useConfirmModal } from '../../components/common/ConfirmModal';
+import { useLanguage } from '../../context/LanguageContext';
 
 export default function AdminLogos() {
     const { teams, teamLogos } = useData();
     const { token } = useAuth();
-    const { showConfirm } = useConfirmModal();
+    const { showConfirm } = useConfirmModal() as any;
+    const { t } = useLanguage();
 
     const [selectedTeam, setSelectedTeam] = useState('');
     const [logoUrl, setLogoUrl] = useState('');
     const [uploadMode, setUploadMode] = useState('file'); // 'file' | 'url'
-    const [logoFile, setLogoFile] = useState(null);
+    const [logoFile, setLogoFile] = useState<File | null>(null);
     const [logoPreview, setLogoPreview] = useState('');
     const [loading, setLoading] = useState(false);
-    const [message, setMessage] = useState(null);
+    const [message, setMessage] = useState<{ type: string; text: string } | null>(null);
 
     const envUrl = import.meta.env.VITE_API_URL || '';
     const API_BASE_URL = envUrl ? (envUrl.endsWith('/api') ? envUrl : `${envUrl}/api`) : '/api';
 
-    const handleFileChange = (e) => {
-        const file = e.target.files[0];
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
         if (file) {
             setLogoFile(file);
             setLogoPreview(URL.createObjectURL(file));
@@ -30,7 +32,7 @@ export default function AdminLogos() {
         }
     };
 
-    const handleSubmit = async (e) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!selectedTeam) return;
         if (uploadMode === 'url' && !logoUrl) return;
@@ -61,7 +63,7 @@ export default function AdminLogos() {
             // 2. Save Team Logo URL
             if (finalUrl) {
                 await postTeamLogo({ teamName: selectedTeam, logoUrl: finalUrl }, token);
-                setMessage({ type: 'success', text: 'อัปเดตโลโก้สำเร็จ!' });
+                setMessage({ type: 'success', text: t.admin.logosPage.successUpdate });
                 setSelectedTeam('');
                 setLogoUrl('');
                 setLogoFile(null);
@@ -70,17 +72,17 @@ export default function AdminLogos() {
                 // Reload page to refresh data
                 setTimeout(() => window.location.reload(), 1500);
             }
-        } catch (error) {
-            setMessage({ type: 'error', text: `เกิดข้อผิดพลาด: ${error.message}` });
+        } catch (error: any) {
+            setMessage({ type: 'error', text: `${t.admin.logosPage.errorGeneric}: ${error.message}` });
         } finally {
             setLoading(false);
         }
     };
 
-    const handleDelete = (teamName) => {
+    const handleDelete = (teamName: string) => {
         showConfirm({
-            title: `ลบโลโก้ทีม ${teamName}`,
-            message: 'คุณต้องการลบโลโก้นี้ใช่หรือไม่? การกระทำนี้ไม่สามารถเรียกคืนได้',
+            title: t.admin.logosPage.deleteConfirm.replace('{team}', teamName),
+            message: t.admin.logosPage.deleteConfirmText,
             onConfirm: async () => {
                 try {
                     const res = await fetch(`${API_BASE_URL}/team-logos/${encodeURIComponent(teamName)}`, {
@@ -90,11 +92,11 @@ export default function AdminLogos() {
 
                     if (!res.ok) throw new Error('Failed to delete logo');
 
-                    setMessage({ type: 'success', text: `ลบโลโก้ทีม ${teamName} เรียบร้อย` });
+                    setMessage({ type: 'success', text: t.admin.logosPage.successDelete.replace('{team}', teamName) });
                     // Reload to refresh
                     setTimeout(() => window.location.reload(), 1000);
-                } catch (error) {
-                    setMessage({ type: 'error', text: `เกิดข้อผิดพลาด: ${error.message}` });
+                } catch (error: any) {
+                    setMessage({ type: 'error', text: `${t.admin.logosPage.errorGeneric}: ${error.message}` });
                 }
             }
         });
@@ -107,7 +109,7 @@ export default function AdminLogos() {
                 <div className="p-6 border-b border-gray-100">
                     <h2 className="text-xl font-display font-bold text-uefa-dark uppercase">
                         <i className="fas fa-upload mr-2 text-cyan-aura"></i>
-                        อัปโหลดโลโก้ทีม
+                        {t.admin.logosPage.title}
                     </h2>
                 </div>
 
@@ -115,14 +117,14 @@ export default function AdminLogos() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {/* Team Select */}
                         <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-2">เลือกทีม</label>
+                            <label className="block text-sm font-bold text-gray-700 mb-2">{t.admin.logosPage.selectTeam}</label>
                             <select
                                 value={selectedTeam}
                                 onChange={(e) => setSelectedTeam(e.target.value)}
                                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-cyan-aura focus:outline-none text-base"
                                 required
                             >
-                                <option value="">-- เลือกทีม --</option>
+                                <option value="">{t.admin.logosPage.selectTeamPlaceholder}</option>
                                 {teams.map(team => (
                                     <option key={team} value={team}>{team}</option>
                                 ))}
@@ -138,14 +140,14 @@ export default function AdminLogos() {
                                     onClick={() => setUploadMode('file')}
                                     className={`py-2 sm:py-1 px-4 rounded text-sm font-bold transition-colors w-full sm:w-auto ${uploadMode === 'file' ? 'bg-white text-cyan-aura shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                                 >
-                                    อัปโหลดไฟล์
+                                    {t.admin.logosPage.uploadFile}
                                 </button>
                                 <button
                                     type="button"
                                     onClick={() => setUploadMode('url')}
                                     className={`py-2 sm:py-1 px-4 rounded text-sm font-bold transition-colors w-full sm:w-auto ${uploadMode === 'url' ? 'bg-white text-cyan-aura shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                                 >
-                                    ใช้ URL
+                                    {t.admin.logosPage.useUrl}
                                 </button>
                             </div>
                         </div>
@@ -161,7 +163,7 @@ export default function AdminLogos() {
                                         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                                     />
                                     <i className="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-3"></i>
-                                    <p className="text-gray-600 font-medium text-sm sm:text-base">คลิกหรือลากไฟล์มาวางที่นี่</p>
+                                    <p className="text-gray-600 font-medium text-sm sm:text-base">{t.admin.logosPage.dropZone}</p>
                                     <p className="text-xs sm:text-sm text-gray-400 mt-1">PNG, JPG, SVG (Max 2MB)</p>
                                     {logoFile && (
                                         <div className="mt-4 text-cyan-aura font-bold break-all">
@@ -173,8 +175,8 @@ export default function AdminLogos() {
                             ) : (
                                 <div>
                                     <label className="block text-sm font-bold text-gray-700 mb-2">
-                                        URL โลโก้
-                                        <span className="font-normal text-gray-500 ml-2 hidden sm:inline">(รองรับรูปจาก URL ภายนอก)</span>
+                                        {t.admin.logosPage.urlLabel}
+                                        <span className="font-normal text-gray-500 ml-2 hidden sm:inline">{t.admin.logosPage.urlHelp}</span>
                                     </label>
                                     <input
                                         type="url"
@@ -195,16 +197,16 @@ export default function AdminLogos() {
                     {/* Preview */}
                     {(logoPreview) && (
                         <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-                            <label className="block text-sm font-bold text-gray-700 mb-2">ตัวอย่างโลโก้</label>
+                            <label className="block text-sm font-bold text-gray-700 mb-2">{t.admin.logosPage.preview}</label>
                             <div className="flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
                                 <img
                                     src={logoPreview}
                                     alt="Preview"
                                     className="w-24 h-24 object-contain bg-white rounded-lg border p-2"
-                                    onError={(e) => e.target.src = 'https://via.placeholder.com/80?text=Error'}
+                                    onError={(e: any) => e.target.src = 'https://via.placeholder.com/80?text=Error'}
                                 />
                                 <div>
-                                    <p className="font-bold text-lg text-uefa-dark">{selectedTeam || 'ทีมที่เลือก'}</p>
+                                    <p className="font-bold text-lg text-uefa-dark">{selectedTeam || t.admin.logosPage.selectTeam}</p>
                                     {uploadMode === 'url' && <p className="text-sm text-gray-500 break-all">{logoUrl}</p>}
                                     {uploadMode === 'file' && <p className="text-sm text-gray-500 break-all">{logoFile?.name}</p>}
                                 </div>
@@ -245,7 +247,7 @@ export default function AdminLogos() {
                 <div className="p-6 border-b border-gray-100">
                     <h2 className="text-xl font-display font-bold text-uefa-dark uppercase">
                         <i className="fas fa-images mr-2 text-cyan-aura"></i>
-                        โลโก้ทีมปัจจุบัน
+                        {t.admin.logosPage.currentLogos}
                     </h2>
                 </div>
 
@@ -274,9 +276,9 @@ export default function AdminLogos() {
                                 </div>
                                 <p className={`text-xs mt-1 text-left ${teamLogos[team] ? 'text-green-600' : 'text-gray-400'}`}>
                                     {teamLogos[team] ? (
-                                        <><i className="fas fa-check mr-1"></i>มีโลโก้</>
+                                        <><i className="fas fa-check mr-1"></i>{t.admin.logosPage.hasLogo}</>
                                     ) : (
-                                        <><i className="fas fa-times mr-1"></i>ยังไม่มีโลโก้</>
+                                        <><i className="fas fa-times mr-1"></i>{t.admin.logosPage.noLogo}</>
                                     )}
                                 </p>
                             </div>
