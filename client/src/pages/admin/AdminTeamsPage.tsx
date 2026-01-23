@@ -48,7 +48,7 @@ export default function AdminTeamsPage() {
             const [playersRes, logosRes, scheduleRes] = await Promise.all([
                 axios.get(`${API_BASE}/api/players`),
                 axios.get(`${API_BASE}/api/team-logos`),
-                axios.get(`${API_BASE}/api/schedule`)
+                axios.get(`${API_BASE}/api/schedules`)
             ]);
 
             setPlayers(playersRes.data || []);
@@ -392,8 +392,8 @@ export default function AdminTeamsPage() {
                                                         }
                                                     }}
                                                     className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${formData.players.includes(player.name)
-                                                            ? 'bg-red-100 text-red-500 hover:bg-red-200'
-                                                            : 'bg-green-100 text-green-500 hover:bg-green-200'
+                                                        ? 'bg-red-100 text-red-500 hover:bg-red-200'
+                                                        : 'bg-green-100 text-green-500 hover:bg-green-200'
                                                         }`}
                                                     title={formData.players.includes(player.name) ? "นำออกจากทีม" : "คืนค่า"}
                                                 >
