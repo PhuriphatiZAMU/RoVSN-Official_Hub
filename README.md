@@ -13,7 +13,7 @@
 ## ✨ Features
 
 ### 🌍 Public Interface (For Fans)
-- **📊 Live Standings:** Real-time updates of team points, wins, and losses.
+- **📊 Standings:** updates of team points, wins, and losses.
 - **📅 Match Schedule:** View upcoming fixtures and past match results.
 - **📈 Player & Hero Stats:** Detailed statistics including MVP, KDA, Most Picked/Banned Heroes.
 - **📰 News & Updates:** Latest announcements regarding the tournament.
