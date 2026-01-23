@@ -844,13 +844,136 @@ app.post('/api/extract-rov-stats', authenticateToken, uploadMemory.single('image
     }
 });
 
+// Standings API - Calculate standings directly from database
+app.get('/api/standings', cacheControl(60), async (req, res) => {
+    try {
+        // Use MongoDB Aggregation to calculate standings directly from results
+        const standings = await Result.aggregate([
+            // Step 1: Filter out knockout stages (matchDay >= 90)
+            {
+                $match: {
+                    $expr: {
+                        $lt: [{ $toInt: { $ifNull: ['$matchDay', 0] } }, 90]
+                    }
+                }
+            },
+            // Step 2: Create two records per result (one for each team)
+            {
+                $facet: {
+                    // Blue team perspective
+                    blueTeam: [
+                        {
+                            $project: {
+                                teamName: '$teamBlue',
+                                opponent: '$teamRed',
+                                scoreFor: '$scoreBlue',
+                                scoreAgainst: '$scoreRed',
+                                isByeWin: { $ifNull: ['$isByeWin', false] },
+                                winner: '$winner',
+                                loser: '$loser'
+                            }
+                        }
+                    ],
+                    // Red team perspective
+                    redTeam: [
+                        {
+                            $project: {
+                                teamName: '$teamRed',
+                                opponent: '$teamBlue',
+                                scoreFor: '$scoreRed',
+                                scoreAgainst: '$scoreBlue',
+                                isByeWin: { $ifNull: ['$isByeWin', false] },
+                                winner: '$winner',
+                                loser: '$loser'
+                            }
+                        }
+                    ]
+                }
+            },
+            // Step 3: Combine both perspectives
+            {
+                $project: {
+                    allTeamRecords: { $concatArrays: ['$blueTeam', '$redTeam'] }
+                }
+            },
+            { $unwind: '$allTeamRecords' },
+            { $replaceRoot: { newRoot: '$allTeamRecords' } },
+            // Step 4: Calculate stats per team
+            {
+                $group: {
+                    _id: '$teamName',
+                    // Total matches played
+                    p: { $sum: 1 },
+                    // Wins (when team is winner)
+                    w: {
+                        $sum: {
+                            $cond: [{ $eq: ['$teamName', '$winner'] }, 1, 0]
+                        }
+                    },
+                    // Losses (when team is loser)
+                    l: {
+                        $sum: {
+                            $cond: [{ $eq: ['$teamName', '$loser'] }, 1, 0]
+                        }
+                    },
+                    // Game Difference (only for non-bye matches)
+                    gd: {
+                        $sum: {
+                            $cond: [
+                                '$isByeWin',
+                                0, // Bye wins don't count for GD
+                                { $subtract: ['$scoreFor', '$scoreAgainst'] }
+                            ]
+                        }
+                    },
+                    // Points (3 for win)
+                    pts: {
+                        $sum: {
+                            $cond: [{ $eq: ['$teamName', '$winner'] }, 3, 0]
+                        }
+                    }
+                }
+            },
+            // Step 5: Sort by Points > GD > Name
+            {
+                $sort: {
+                    pts: -1,
+                    gd: -1,
+                    _id: 1
+                }
+            },
+            // Step 6: Format output
+            {
+                $project: {
+                    _id: 0,
+                    name: '$_id',
+                    p: 1,
+                    w: 1,
+                    l: 1,
+                    gd: 1,
+                    pts: 1
+                }
+            }
+        ]);
+
+        res.json(standings);
+    } catch (error) {
+        console.error('Standings calculation error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // --- Serve Static Assets (Production/Deployment) ---
 const clientBuildPath = path.join(__dirname, '../client/dist');
 if (fs.existsSync(clientBuildPath)) {
     console.log("📂 Serving static files from client/dist");
     app.use(express.static(clientBuildPath));
-    // SPA Fallback: Serve index.html for any unknown route
-    app.get('*', (req, res) => {
+    // SPA Fallback: Serve index.html for any unknown route (except /api/*)
+    app.get('*', (req, res, next) => {
+        // Don't catch API routes - let them 404 properly
+        if (req.path.startsWith('/api/')) {
+            return res.status(404).json({ error: 'API endpoint not found' });
+        }
         res.sendFile(path.join(clientBuildPath, 'index.html'));
     });
 } else {

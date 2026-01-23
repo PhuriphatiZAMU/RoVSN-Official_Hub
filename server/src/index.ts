@@ -22,6 +22,7 @@ import teamLogoRoutes from './routes/teamLogoRoutes';
 import heroRoutes from './routes/heroRoutes';
 import uploadRoutes from './routes/uploadRoutes';
 import aiRoutes from './routes/aiRoutes';
+import standingsRoutes from './routes/standingsRoutes';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -70,6 +71,7 @@ app.use('/api/players', playerRoutes);
 app.use('/api/team-logos', teamLogoRoutes);
 app.use('/api/heroes', heroRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/standings', standingsRoutes);
 app.use('/api', aiRoutes); // For /api/extract-rov-stats
 
 // --- Serve Static Assets (Production/Deployment) ---
@@ -79,6 +81,10 @@ if (fs.existsSync(clientBuildPath)) {
     app.use(express.static(clientBuildPath));
     // SPA Fallback: Serve index.html for any unknown route
     app.get('*', (req: Request, res: Response) => {
+        // Don't catch API routes - let them 404 properly
+        if (req.path.startsWith('/api/')) {
+            return res.status(404).json({ error: 'API endpoint not found' });
+        }
         res.sendFile(path.join(clientBuildPath, 'index.html'));
     });
 } else {

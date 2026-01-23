@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
-import { fetchSchedules, fetchResults, fetchTeamLogos } from '../services/api';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { fetchSchedules, fetchResults, fetchTeamLogos, fetchStandings } from '../services/api';
 
 // Types
 interface ScheduleMatch {
@@ -60,6 +60,7 @@ export function DataProvider({ children }: DataProviderProps) {
     const [results, setResults] = useState<MatchResult[]>([]);
     const [teams, setTeams] = useState<string[]>([]);
     const [teamLogos, setTeamLogos] = useState<Record<string, string>>({});
+    const [standings, setStandings] = useState<TeamStanding[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [refreshKey, setRefreshKey] = useState(0);
@@ -75,10 +76,11 @@ export function DataProvider({ children }: DataProviderProps) {
                 setLoading(true);
                 setError(null);
 
-                const [scheduleData, resultsData, logosData] = await Promise.all([
+                const [scheduleData, resultsData, logosData, standingsData] = await Promise.all([
                     fetchSchedules().catch(() => null),
                     fetchResults().catch(() => []),
-                    fetchTeamLogos().catch(() => [])
+                    fetchTeamLogos().catch(() => []),
+                    fetchStandings().catch(() => [])
                 ]);
 
                 if (scheduleData) {
@@ -112,6 +114,10 @@ export function DataProvider({ children }: DataProviderProps) {
 
                 setResults(resultsData || []);
 
+                // Set standings from API (calculated directly from database)
+                console.log('📊 Loaded standings from API:', standingsData?.length || 0);
+                setStandings(standingsData || []);
+
                 // Convert logos array to object for quick lookup
                 const logosObj: Record<string, string> = {};
                 (logosData || []).forEach((item: { teamName: string; logoUrl: string }) => {
@@ -130,54 +136,7 @@ export function DataProvider({ children }: DataProviderProps) {
         loadData();
     }, [refreshKey]); // Trigger reload when refreshKey changes
 
-    // Calculate standings from results (memoized)
-    const standings = useMemo(() => {
-        console.log('📊 Computing standings from teams:', teams.length, 'results:', results.length);
-
-        const computed = teams.map(teamName => {
-            let p = 0, w = 0, l = 0, gd = 0, pts = 0;
-
-            results.forEach(r => {
-                // Exclude Knockout Stages (>= 90) from Standings
-                if (r.matchDay && parseInt(String(r.matchDay)) >= 90) return;
-
-                // Handle bye wins separately (ชนะบาย = 3 pts, 1 win, ไม่คิด GD)
-                if (r.isByeWin) {
-                    if (r.winner === teamName) {
-                        p++; // Played
-                        w++; // Win
-                        pts += 3; // 3 points
-                        // No GD calculation for bye wins
-                    } else if (r.loser === teamName) {
-                        p++; // Played
-                        l++; // Loss
-                        // No GD calculation for bye wins
-                    }
-                    return;
-                }
-
-                // Normal match
-                if (r.teamBlue === teamName) {
-                    p++;
-                    if (r.scoreBlue > r.scoreRed) { w++; pts += 3; } else { l++; }
-                    gd += (r.scoreBlue - r.scoreRed);
-                } else if (r.teamRed === teamName) {
-                    p++;
-                    if (r.scoreRed > r.scoreBlue) { w++; pts += 3; } else { l++; }
-                    gd += (r.scoreRed - r.scoreBlue);
-                }
-            });
-
-            return { name: teamName, p, w, l, gd, pts };
-        }).sort((a, b) => {
-            if (b.pts !== a.pts) return b.pts - a.pts;
-            if (b.gd !== a.gd) return b.gd - a.gd;
-            return a.name.localeCompare(b.name);
-        });
-
-        console.log('📊 Standings computed:', computed);
-        return computed;
-    }, [teams, results]);
+    // Standings are now fetched directly from API (calculated in database)
 
     const getTeamLogo = (teamName: string): string | null => teamLogos[teamName] || null;
 
