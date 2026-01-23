@@ -26,6 +26,7 @@ interface MatchResult {
     isByeWin?: boolean;
     mvp?: string;
     gameDetails?: any[];
+    createdAt?: string;
 }
 
 interface TeamStanding {

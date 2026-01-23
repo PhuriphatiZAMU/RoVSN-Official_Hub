@@ -3,6 +3,7 @@ import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import GameStatsModal from '../../components/admin/GameStatsModal';
 import { postSchedule, resetResults, deleteMatchResult } from '../../services/api';
+import Swal from 'sweetalert2';
 
 // Type definitions
 interface GameDetail {
@@ -26,20 +27,6 @@ interface PlayerStat {
 interface GameStats {
     blue: PlayerStat[];
     red: PlayerStat[];
-}
-
-interface ConfirmModal {
-    isOpen: boolean;
-    type: string | null;
-    title: string;
-    details: string;
-    dateInput: boolean;
-    data?: string;
-}
-
-interface Message {
-    type: 'success' | 'error' | 'info';
-    text: string;
 }
 
 interface Match {
@@ -83,7 +70,6 @@ export default function AdminResults() {
     };
 
     const [loading, setLoading] = useState<boolean>(false);
-    const [message, setMessage] = useState<Message | null>(null);
     const [formData, setFormData] = useState({
         teamBlue: '',
         teamRed: '',
@@ -114,16 +100,6 @@ export default function AdminResults() {
     const dayData = schedule.find(r => Number(r.day) === selectedDay);
     const dayMatches = dayData?.matches || [];
     const isBO5 = selectedDay >= 90;
-
-    // Custom Confirm Modal State
-    const [confirmModal, setConfirmModal] = useState<ConfirmModal>({
-        isOpen: false,
-        type: null,
-        title: '',
-        details: '',
-        dateInput: false
-    });
-    const [generatedDate, setGeneratedDate] = useState<string>('');
 
     // Player Pool Data for Auto-complete
     const [allPlayers, setAllPlayers] = useState<Player[]>([]);
@@ -156,105 +132,14 @@ export default function AdminResults() {
         if (token) fetchPlayersPool();
     }, [API_BASE_URL, token]);
 
-    const handleDeleteResult = (match: Match, e: MouseEvent<HTMLDivElement>): void => {
-        e.stopPropagation();
-        const matchKey = `${selectedDay}_${match.blue}_vs_${match.red}`.replace(/\s+/g, '');
-
-        setConfirmModal({
-            isOpen: true,
-            type: 'delete',
-            title: 'ยืนยันการลบผลการแข่งขัน',
-            details: `คุณต้องการลบผลการแข่งขันคู่:\n${match.blue} vs ${match.red}\nใช่หรือไม่? การกระทำนี้ไม่สามารถย้อนกลับได้`,
-            dateInput: false,
-            data: matchKey
-        });
-    };
-
-    // 1. Prepare & Open Modal
-    // 1. Prepare & Open Modal
-    const handleGenerateClick = (type: string) => {
-        setGeneratedDate(''); // Reset date
-        if (type === 'semi') {
-            if (standings.length < 4) {
-                alert(`ไม่สามารถสร้างได้: พบเพียง ${standings.length} ทีม (ต้องการอย่างน้อย 4 ทีม)`);
-                return;
-            }
-            const top4 = standings.slice(0, 4);
-            const details = top4.map((t, i) => `${i + 1}. ${t.name} (${t.pts} แต้ม)`).join('\n');
-            setConfirmModal({
-                isOpen: true,
-                type: 'semi',
-                title: 'สร้างการแข่งขันรอบ Semi-Finals',
-                details: `ระบบจะจับคู่ 4 ทีมที่มีคะแนนสูงสุดดังนี้:\n\n${details}\n\nกรุณาเลือกวันที่แข่งขันด้านล่าง`,
-                dateInput: true
-            });
-        } else if (type === 'final') {
-        } else if (type === 'final') {
-            const semiMatches = schedule.find(s => Number(s.day) === 90)?.matches;
-            if (!semiMatches) {
-                alert('ไม่พบตารางแข่งรอบ Semi-Finals');
-                return;
-            }
-            // Check results logic...
-            const getWinner = (blue: string, red: string) => {
-                const matchKey = `90_${blue}_vs_${red}`.replace(/\s+/g, '');
-                const res = results.find(r => r.matchId === matchKey);
-                return res ? res.winner : null;
-            };
-            const getLoser = (blue: string, red: string) => {
-                const matchKey = `90_${blue}_vs_${red}`.replace(/\s+/g, '');
-                const res = results.find(r => r.matchId === matchKey);
-                return res ? res.loser : null;
-            };
-            const winner1 = getWinner(semiMatches[0].blue, semiMatches[0].red);
-            const winner2 = getWinner(semiMatches[1].blue, semiMatches[1].red);
-            const loser1 = getLoser(semiMatches[0].blue, semiMatches[0].red);
-            const loser2 = getLoser(semiMatches[1].blue, semiMatches[1].red);
-
-            if (!winner1 || !winner2) {
-                alert('ผลการแข่งขันรอบ Semi-Finals ยังไม่ครบ');
-                return;
-            }
-            setConfirmModal({
-                isOpen: true,
-                type: 'final',
-                title: 'สร้างการแข่งขันรอบ Finals',
-                details: `คู่ชิงชนะเลิศ: ${winner1} vs ${winner2}\nคู่ชิงที่ 3: ${loser1} vs ${loser2}`,
-                dateInput: true
-            });
-        }
-    };
-
-    // Helper: Check Completion
-    const isRegularSeasonComplete = useMemo(() => {
-        // Check Days 1-9
-        for (let d = 1; d <= 9; d++) {
-            const daySch = schedule.find(s => Number(s.day) === d);
-            if (!daySch || !daySch.matches) continue; // If no schedule for this day, skip or strict? Let's say skip if not defined.
-
-            // Check if all matches in this day have results
-            const allMatchesDone = daySch.matches.every(m => {
-                const matchKey = `${d}_${m.blue}_vs_${m.red}`.replace(/\s+/g, '');
-                return results.some(r => r.matchId === matchKey);
-            });
-
-            if (!allMatchesDone) return false;
-        }
-        return true;
-    }, [schedule, results]);
-
-    const isSemiFinalsComplete = useMemo(() => {
-        const semiSch = schedule.find(s => Number(s.day) === 90);
-        if (!semiSch || !semiSch.matches) return false;
-
-        return semiSch.matches.every(m => {
-            const matchKey = `90_${m.blue}_vs_${m.red}`.replace(/\s+/g, '');
-            const res = results.find(r => r.matchId === matchKey);
-            return !!res && !!res.winner; // Must have winner
-        });
-    }, [schedule, results]);
-
-
+    // Toast Mixin
+    const Toast = Swal.mixin({
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true,
+    });
 
     // Helper Format Date
     const formatDate = (dateString: string) => {
@@ -263,33 +148,132 @@ export default function AdminResults() {
         return date.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' });
     };
 
-    // 2. Execute Action
-    const executeGeneration = async () => {
-        setConfirmModal(prev => ({ ...prev, isOpen: false }));
+    const handleDeleteResult = async (match: Match, e: MouseEvent<HTMLDivElement>) => {
+        e.stopPropagation();
+        const matchKey = `${selectedDay}_${match.blue}_vs_${match.red}`.replace(/\s+/g, '');
 
-        // CASE: DELETE RESULT
-        if (confirmModal.type === 'delete') {
+        const result = await Swal.fire({
+            title: 'ยืนยันการลบผลการแข่งขัน',
+            text: `คุณต้องการลบผลการแข่งขันคู่: ${match.blue} vs ${match.red} ใช่หรือไม่?`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'ลบข้อมูล',
+            cancelButtonText: 'ยกเลิก'
+        });
+
+        if (result.isConfirmed) {
             try {
                 setLoading(true);
                 // @ts-ignore
-                await deleteMatchResult(confirmModal.data, token);
-                alert('ลบผลการแข่งขันเรียบร้อย');
+                await deleteMatchResult(matchKey, token);
+                Toast.fire({ icon: 'success', title: 'ลบผลการแข่งขันเรียบร้อย' });
                 refreshData();
             } catch (err: any) {
-                alert(`ลบไม่สำเร็จ: ${err.message}`);
+                Swal.fire('Error', `ลบไม่สำเร็จ: ${err.message}`, 'error');
             } finally {
                 setLoading(false);
             }
-            return;
         }
+    };
 
-        const formattedDate = generatedDate ? formatDate(generatedDate) : '';
+    const handleGenerateClick = async (type: string) => {
+        if (type === 'semi') {
+            if (standings.length < 4) {
+                Swal.fire('แจ้งเตือน', `ไม่สามารถสร้างได้: พบเพียง ${standings.length} ทีม (ต้องการอย่างน้อย 4 ทีม)`, 'warning');
+                return;
+            }
+            const top4 = standings.slice(0, 4);
+            const details = top4.map((t, i) => `${i + 1}. ${t.name} (${t.pts} แต้ม)`).join('<br>');
+
+            const { value: dateStr } = await Swal.fire({
+                title: 'สร้างการแข่งขันรอบ Semi-Finals',
+                html: `ระบบจะจับคู่ 4 ทีมที่มีคะแนนสูงสุดดังนี้:<br/><div class="text-left bg-gray-50 p-3 rounded my-2 text-sm">${details}</div><br/>กรุณาเลือกวันที่แข่งขัน:`,
+                input: 'date',
+                showCancelButton: true,
+                confirmButtonText: 'สร้างตาราง',
+                cancelButtonText: 'ยกเลิก',
+                inputValidator: (value) => {
+                    if (!value) return 'กรุณาเลือกวันที่';
+                }
+            });
+
+            if (dateStr) {
+                executeGenerationAction(type, dateStr);
+            }
+
+        } else if (type === 'final') {
+            const semiMatches = schedule.find(s => Number(s.day) === 90)?.matches;
+            if (!semiMatches) {
+                Swal.fire('แจ้งเตือน', 'ไม่พบตารางแข่งรอบ Semi-Finals', 'warning');
+                return;
+            }
+
+            const getWinner = (blue: string, red: string) => {
+                const matchKey = `90_${blue}_vs_${red}`.replace(/\s+/g, '');
+                const res = results.find(r => r.matchId === matchKey);
+                return res ? res.winner : null;
+            };
+            const winner1 = getWinner(semiMatches[0].blue, semiMatches[0].red);
+            const winner2 = getWinner(semiMatches[1].blue, semiMatches[1].red);
+
+            if (!winner1 || !winner2) {
+                Swal.fire('แจ้งเตือน', 'ผลการแข่งขันรอบ Semi-Finals ยังไม่ครบ', 'warning');
+                return;
+            }
+
+            const { value: dateStr } = await Swal.fire({
+                title: 'สร้างการแข่งขันรอบ Finals',
+                html: `คู่ชิงชนะเลิศ: <b>${winner1} vs ${winner2}</b><br/>กรุณาเลือกวันที่แข่งขัน:`,
+                input: 'date',
+                showCancelButton: true,
+                confirmButtonText: 'สร้างตาราง',
+                cancelButtonText: 'ยกเลิก',
+                inputValidator: (value) => {
+                    if (!value) return 'กรุณาเลือกวันที่';
+                }
+            });
+
+            if (dateStr) {
+                executeGenerationAction(type, dateStr);
+            }
+        }
+    };
+
+    // Helper: Check Completion
+    const isRegularSeasonComplete = useMemo(() => {
+        // Check Days 1-9
+        for (let d = 1; d <= 9; d++) {
+            const daySch = schedule.find(s => Number(s.day) === d);
+            if (!daySch || !daySch.matches) continue;
+            const allMatchesDone = daySch.matches.every(m => {
+                const matchKey = `${d}_${m.blue}_vs_${m.red}`.replace(/\s+/g, '');
+                return results.some(r => r.matchId === matchKey);
+            });
+            if (!allMatchesDone) return false;
+        }
+        return true;
+    }, [schedule, results]);
+
+    const isSemiFinalsComplete = useMemo(() => {
+        const semiSch = schedule.find(s => Number(s.day) === 90);
+        if (!semiSch || !semiSch.matches) return false;
+        return semiSch.matches.every(m => {
+            const matchKey = `90_${m.blue}_vs_${m.red}`.replace(/\s+/g, '');
+            const res = results.find(r => r.matchId === matchKey);
+            return !!res && !!res.winner;
+        });
+    }, [schedule, results]);
+
+    const executeGenerationAction = async (type: string, dateStr: string) => {
+        const formattedDate = dateStr ? formatDate(dateStr) : '';
 
         let newSchedule = null;
         let successMsg = '';
         let targetDay = '';
 
-        if (confirmModal.type === 'semi') {
+        if (type === 'semi') {
             const top4 = standings.slice(0, 4);
             const semiMatches = [
                 { blue: top4[0].name, red: top4[1].name, date: formattedDate },
@@ -305,9 +289,7 @@ export default function AdminResults() {
             successMsg = 'สร้างตาราง Semi-Finals เรียบร้อย!';
             targetDay = '90';
 
-        } else if (confirmModal.type === 'final') {
-            // Logic repeated slightly but safer to re-calc or just grab from context again? 
-            // Ideally we should have stored calculated matches in state, but re-calc is cheap here.
+        } else if (type === 'final') {
             const semiSch = schedule.find(s => Number(s.day) === 90);
             if (!semiSch || !semiSch.matches) return;
             const semiMatches = semiSch.matches;
@@ -342,18 +324,17 @@ export default function AdminResults() {
                 if (targetDay) {
                     try {
                         await resetResults(targetDay, token);
-                        console.log(`Results for day ${targetDay} cleared.`);
                     } catch (e: any) {
                         console.warn(`Warning: Could not clear old results: ${e.message}`);
                     }
                 }
 
                 await postSchedule(newSchedule, token);
-                alert(`${successMsg} ระบบจะรีเฟรชข้อมูลใน 2 วินาที...`);
+                Swal.fire('สำเร็จ', successMsg, 'success');
                 localStorage.setItem('admin_selected_day', String(targetDay));
-                setTimeout(() => refreshData(), 2000);
+                setTimeout(() => refreshData(), 1500);
             } catch (err: any) {
-                alert(`Failed: ${err.message}`);
+                Swal.fire('Error', `Failed: ${err.message}`, 'error');
             } finally {
                 setLoading(false);
             }
@@ -480,7 +461,7 @@ export default function AdminResults() {
             }
 
             setShowAdvanced(!existingResult.isByeWin); // Hide advanced if bye win
-            setMessage({ type: 'info', text: existingResult.isByeWin ? '📝 ผลชนะบาย - ไม่มีสถิติ' : '📝 กำลังแก้ไขผลการแข่งขันที่บันทึกไว้แล้ว' });
+            Toast.fire({ icon: 'info', title: existingResult.isByeWin ? 'โหมดแก้ไข: ผลชนะบาย' : 'โหมดแก้ไข: ผลการแข่งขัน' });
         } else {
             // No existing result - create fresh form
             setFormData({
@@ -503,7 +484,6 @@ export default function AdminResults() {
             setGamesStats({});
             setIsByeWin(false);
             setByeWinner('');
-            setMessage(null);
         }
     };
 
@@ -543,14 +523,13 @@ export default function AdminResults() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
-        setMessage(null);
 
         try {
             // Handle Win by Bye (ชนะบาย)
             if (isByeWin) {
                 // Validate bye winner is selected
                 if (!byeWinner) {
-                    setMessage({ type: 'error', text: '❌ กรุณาเลือกทีมที่ชนะบาย' });
+                    Swal.fire('แจ้งเตือน', 'กรุณาเลือกทีมที่ชนะบาย', 'warning');
                     setLoading(false);
                     return;
                 }
@@ -585,7 +564,7 @@ export default function AdminResults() {
                 }
 
                 setLoading(false);
-                setMessage({ type: 'success', text: `✅ บันทึกผลชนะบาย: ${winnerTeam}` });
+                Toast.fire({ icon: 'success', title: `บันทึกผลชนะบาย: ${winnerTeam}` });
 
                 // Refresh data
                 setTimeout(() => refreshData(), 1500);
@@ -708,7 +687,7 @@ export default function AdminResults() {
                 console.log('🔍 [DEBUG SAVE] No player stats to save (gamesStats is empty)');
             }
 
-            setMessage({ type: 'success', text: '✅ บันทึกผลการแข่งขันและสถิติสำเร็จ!' });
+            Toast.fire({ icon: 'success', title: 'บันทึกผลการแข่งขันเรียบร้อย' });
             setFormData({ teamBlue: '', teamRed: '', scoreBlue: 0, scoreRed: 0 });
             setGameDetails([
                 { gameNumber: 1, winner: '', durationMin: 15, durationSec: 0, mvpPlayer: '', mvpTeam: '' },
@@ -721,7 +700,7 @@ export default function AdminResults() {
             localStorage.setItem('admin_selected_day', String(selectedDay));
             setTimeout(() => refreshData(), 1500);
         } catch (error: any) {
-            setMessage({ type: 'error', text: `❌ ${error.message}` });
+            Swal.fire('Error', `บันทึกไม่สำเร็จ: ${error.message}`, 'error');
         } finally {
             setLoading(false);
         }
@@ -1105,14 +1084,7 @@ export default function AdminResults() {
                                 </div>
                             )}
 
-                            {message && (
-                                <div className={`mb-4 p-3 rounded-lg text-center ${message.type === 'success' ? 'bg-green-100 text-green-700' :
-                                    message.type === 'info' ? 'bg-blue-100 text-blue-700' :
-                                        'bg-red-100 text-red-700'
-                                    }`}>
-                                    {message.text}
-                                </div>
-                            )}
+                            {/* Message is now handled by Toast */}
 
                             <button
                                 type="submit"
@@ -1150,57 +1122,6 @@ export default function AdminResults() {
                     allPlayers={allPlayers}
                     allHeroes={allHeroes}
                 />
-            )}
-
-
-
-            {/* Custom Confirm Modal */}
-            {confirmModal.isOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
-                    <div className="bg-white rounded-xl shadow-2xl max-w-md w-full overflow-hidden">
-                        <div className="bg-gradient-to-r from-cyan-aura to-blue-600 p-4">
-                            <h3 className="text-white font-bold text-lg">
-                                <i className="fas fa-question-circle mr-2"></i>
-                                {confirmModal.title}
-                            </h3>
-                        </div>
-                        <div className="p-6">
-                            <p className="text-gray-700 whitespace-pre-wrap leading-relaxed mb-4">{confirmModal.details}</p>
-
-                            {confirmModal.dateInput && (
-                                <div className="mt-4 p-4 bg-gray-50 border rounded-lg">
-                                    <label className="block text-sm font-bold text-gray-700 mb-2">
-                                        <i className="fas fa-calendar-alt mr-2 text-cyan-aura"></i>
-                                        เลือกวันที่แข่งขัน
-                                    </label>
-                                    <input
-                                        type="date"
-                                        value={generatedDate}
-                                        onChange={(e) => setGeneratedDate(e.target.value)}
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-aura focus:border-transparent"
-                                        required
-                                    />
-                                    <p className="text-xs text-gray-500 mt-1">วันที่นี้จะถูกแสดงในตารางแข่งขัน</p>
-                                </div>
-                            )}
-                        </div>
-                        <div className="p-4 bg-gray-50 border-t flex justify-end gap-3">
-                            <button
-                                onClick={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
-                                className="px-4 py-2 text-gray-600 font-bold hover:bg-gray-200 rounded-lg transition-colors"
-                            >
-                                ยกเลิก
-                            </button>
-                            <button
-                                onClick={executeGeneration}
-                                disabled={confirmModal.dateInput && !generatedDate}
-                                className="px-4 py-2 bg-cyan-aura text-uefa-dark font-bold rounded-lg shadow hover:shadow-cyan-aura/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                ยืนยัน / ดำเนินการ
-                            </button>
-                        </div>
-                    </div>
-                </div>
             )}
         </div>
     );

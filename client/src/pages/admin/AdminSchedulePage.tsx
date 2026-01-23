@@ -14,7 +14,7 @@ export default function AdminSchedulePage() {
     }, [schedule, selectedDay]);
 
     const getMatchId = (day: number, index: number, blue: string, red: string) => {
-        return `D${day}M${index + 1}`;
+        return `${day}_${blue}_vs_${red}`.replace(/\s+/g, '');
     };
 
     const getMatchStatus = (matchId: string) => {
@@ -152,8 +152,8 @@ export default function AdminSchedulePage() {
                                         key={day.day}
                                         onClick={() => setSelectedDay(day.day)}
                                         className={`w-full p-3 rounded-lg text-left transition-all ${selectedDay === day.day
-                                                ? 'bg-cyan-aura text-white shadow-md'
-                                                : 'bg-gray-50 hover:bg-gray-100 text-gray-700'
+                                            ? 'bg-cyan-aura text-white shadow-md'
+                                            : 'bg-gray-50 hover:bg-gray-100 text-gray-700'
                                             }`}
                                     >
                                         <div className="flex items-center justify-between">
@@ -197,8 +197,8 @@ export default function AdminSchedulePage() {
                                                 key={index}
                                                 onClick={() => handleViewMatchDetails(match, matchId)}
                                                 className={`p-4 rounded-xl border cursor-pointer transition-all hover:shadow-md ${status === 'completed' ? 'bg-green-50 border-green-200' :
-                                                        status === 'bye' ? 'bg-yellow-50 border-yellow-200' :
-                                                            'bg-gray-50 border-gray-200 hover:border-cyan-aura'
+                                                    status === 'bye' ? 'bg-yellow-50 border-yellow-200' :
+                                                        'bg-gray-50 border-gray-200 hover:border-cyan-aura'
                                                     }`}
                                             >
                                                 <div className="flex items-center justify-between">

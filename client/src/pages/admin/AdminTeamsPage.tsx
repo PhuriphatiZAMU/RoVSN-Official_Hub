@@ -150,6 +150,57 @@ export default function AdminTeamsPage() {
         team.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
+    const handleUploadLogo = async (teamName: string) => {
+        const { value: file } = await Swal.fire({
+            title: `อัปโหลดโลโก้ทีม ${teamName}`,
+            input: 'file',
+            inputAttributes: {
+                'accept': 'image/*',
+                'aria-label': 'Upload your profile picture'
+            },
+            html: '<p class="text-sm text-gray-500">รองรับไฟล์ PNG, JPG, SVG (Max 2MB)</p>',
+            showCancelButton: true,
+            confirmButtonText: 'อัปโหลด',
+            cancelButtonText: 'ยกเลิก',
+            showLoaderOnConfirm: true,
+            preConfirm: async (file) => {
+                if (!file) {
+                    Swal.showValidationMessage('กรุณาเลือกไฟล์');
+                    return;
+                }
+                const formData = new FormData();
+                formData.append('logo', file);
+                try {
+                    const uploadRes = await axios.post(`${API_BASE}/api/upload`, formData, {
+                        headers: {
+                            'Content-Type': 'multipart/form-data',
+                            'Authorization': `Bearer ${getToken()}`
+                        }
+                    });
+                    const logoUrl = uploadRes.data.url;
+
+                    // Save to team-logos
+                    await axios.post(`${API_BASE}/api/team-logos`, {
+                        teamName,
+                        logoUrl
+                    }, {
+                        headers: { Authorization: `Bearer ${getToken()}` }
+                    });
+
+                    return logoUrl;
+                } catch (error: any) {
+                    Swal.showValidationMessage(`Upload failed: ${error.response?.data?.error || error.message}`);
+                }
+            },
+            allowOutsideClick: () => !Swal.isLoading()
+        });
+
+        if (file) {
+            Toast.fire({ icon: 'success', title: 'อัปโหลดโลโก้เรียบร้อย' });
+            fetchData();
+        }
+    };
+
     if (loading) {
         return (
             <div className="flex items-center justify-center h-64">
@@ -198,12 +249,21 @@ export default function AdminTeamsPage() {
                         >
                             <div className="flex items-start gap-4">
                                 {/* Logo */}
-                                <div className="w-16 h-16 rounded-xl bg-gray-100 flex items-center justify-center overflow-hidden flex-shrink-0">
+                                <div className="group relative w-16 h-16 rounded-xl bg-gray-100 flex items-center justify-center overflow-hidden flex-shrink-0 border border-gray-200">
                                     {logo ? (
-                                        <img src={logo} alt={team.name} className="w-full h-full object-contain" />
+                                        <img src={logo} alt={team.name} className="w-full h-full object-contain p-1" />
                                     ) : (
                                         <i className="fas fa-users text-2xl text-gray-300"></i>
                                     )}
+
+                                    {/* Upload Overlay */}
+                                    <div
+                                        className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
+                                        onClick={() => handleUploadLogo(team.name)}
+                                        title="เปลี่ยนโลโก้"
+                                    >
+                                        <i className="fas fa-camera text-white"></i>
+                                    </div>
                                 </div>
 
                                 {/* Info */}

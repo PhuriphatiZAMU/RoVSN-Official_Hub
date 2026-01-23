@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, ChangeEvent } from 'react';
+import Swal from 'sweetalert2';
 
 interface Player {
     _id: string;
@@ -201,11 +202,11 @@ export default function GameStatsModal({
             setBluePlayers(mapStats(finalBlueGroup, blueRoster));
             setRedPlayers(mapStats(finalRedGroup, redRoster));
 
-            alert(`✨ เรียบร้อย! ดึงข้อมูลได้ ${aiData.length} รายการ`);
+            Swal.fire('สำเร็จ', `ดึงข้อมูลได้ ${aiData.length} รายการ`, 'success');
 
         } catch (error: any) {
             console.error('AI Error:', error);
-            alert(`❌ เกิดข้อผิดพลาด: ${error.message}`);
+            Swal.fire('Error', `เกิดข้อผิดพลาด: ${error.message}`, 'error');
         } finally {
             setUploading(false);
             // Reset file input

@@ -88,7 +88,13 @@ export default function AdminDashboard() {
         { label: 'สถิติเกม', icon: 'fas fa-chart-line', href: '/admin/game-stats', color: 'bg-red-500', description: 'แก้ไขสถิติผู้เล่น' },
     ];
 
-    const recentResults = [...results].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 5);
+    const recentResults = [...results]
+        .sort((a, b) => {
+            const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+            const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+            return timeB - timeA;
+        })
+        .slice(0, 5);
 
     return (
         <div className="space-y-8">
@@ -104,6 +110,36 @@ export default function AdminDashboard() {
                 <div className="text-sm text-gray-400">
                     <i className="fas fa-clock mr-1"></i>
                     อัปเดตล่าสุด: {new Date().toLocaleTimeString('th-TH')}
+                </div>
+            </div>
+
+            {/* Tournament Progress */}
+            <div className="bg-white rounded-xl shadow-sm p-6 border-l-4 border-cyan-aura">
+                <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-lg font-bold text-uefa-dark">ความคืบหน้าทัวร์นาเมนต์</h2>
+                    <span className="text-2xl font-bold text-cyan-aura">
+                        {dbStats.matches > 0 ? Math.round((dbStats.results / dbStats.matches) * 100) : 0}%
+                    </span>
+                </div>
+                <div className="w-full bg-gray-100 rounded-full h-4 mb-2 overflow-hidden">
+                    <div
+                        className="bg-gradient-to-r from-cyan-aura to-blue-600 h-4 rounded-full transition-all duration-1000"
+                        style={{ width: `${dbStats.matches > 0 ? (dbStats.results / dbStats.matches) * 100 : 0}%` }}
+                    ></div>
+                </div>
+                <div className="flex justify-between text-sm text-gray-500">
+                    <span>
+                        <i className="fas fa-check-circle text-green-500 mr-1"></i>
+                        แข่งจบแล้ว: <strong>{dbStats.results}</strong>
+                    </span>
+                    <span>
+                        <i className="fas fa-hourglass-half text-orange-500 mr-1"></i>
+                        รอแข่งขัน: <strong>{dbStats.matches - dbStats.results}</strong>
+                    </span>
+                    <span>
+                        <i className="fas fa-flag text-gray-400 mr-1"></i>
+                        ทั้งหมด: <strong>{dbStats.matches}</strong>
+                    </span>
                 </div>
             </div>
 
@@ -217,9 +253,9 @@ export default function AdminDashboard() {
                                     <div key={i} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
                                         <div className="flex items-center gap-3">
                                             <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${i === 0 ? 'bg-gradient-to-br from-yellow-400 to-yellow-600 text-white' :
-                                                    i === 1 ? 'bg-gradient-to-br from-gray-300 to-gray-500 text-white' :
-                                                        i === 2 ? 'bg-gradient-to-br from-orange-400 to-orange-600 text-white' :
-                                                            'bg-gray-200 text-gray-600'
+                                                i === 1 ? 'bg-gradient-to-br from-gray-300 to-gray-500 text-white' :
+                                                    i === 2 ? 'bg-gradient-to-br from-orange-400 to-orange-600 text-white' :
+                                                        'bg-gray-200 text-gray-600'
                                                 }`}>
                                                 {i + 1}
                                             </div>
