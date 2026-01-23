@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import Swal from 'sweetalert2';
+import { useAuth } from '../../context/AuthContext';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
@@ -20,6 +21,7 @@ interface Player {
 }
 
 export default function AdminTeamsPage() {
+    const { token } = useAuth();
     const [teams, setTeams] = useState<Team[]>([]);
     const [players, setPlayers] = useState<Player[]>([]);
     const [logos, setLogos] = useState<any[]>([]);
@@ -28,8 +30,6 @@ export default function AdminTeamsPage() {
     const [editingTeam, setEditingTeam] = useState<Team | null>(null);
     const [showModal, setShowModal] = useState(false);
     const [formData, setFormData] = useState<Team>({ name: '', players: [] });
-
-    const getToken = () => sessionStorage.getItem('auth_token');
 
     const Toast = Swal.mixin({
         toast: true,
@@ -104,7 +104,7 @@ export default function AdminTeamsPage() {
                 await axios.post(
                     `${API_BASE}/api/players/rename-team`,
                     { oldName, newName },
-                    { headers: { Authorization: `Bearer ${getToken()}` } }
+                    { headers: { Authorization: `Bearer ${token}` } }
                 );
             }
 
@@ -116,7 +116,7 @@ export default function AdminTeamsPage() {
                 await axios.patch(
                     `${API_BASE}/api/players/${p._id}/update-ign`,
                     { team: null },
-                    { headers: { Authorization: `Bearer ${getToken()}` } }
+                    { headers: { Authorization: `Bearer ${token}` } }
                 );
             }
 
@@ -186,7 +186,7 @@ export default function AdminTeamsPage() {
                     const uploadRes = await axios.post(`${API_BASE}/api/upload`, formData, {
                         headers: {
                             'Content-Type': 'multipart/form-data',
-                            'Authorization': `Bearer ${getToken()}`
+                            'Authorization': `Bearer ${token}`
                         }
                     });
                     const logoUrl = uploadRes.data.url;
@@ -196,7 +196,7 @@ export default function AdminTeamsPage() {
                         teamName,
                         logoUrl
                     }, {
-                        headers: { Authorization: `Bearer ${getToken()}` }
+                        headers: { Authorization: `Bearer ${token}` }
                     });
 
                     return logoUrl;

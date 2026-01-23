@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import Swal from 'sweetalert2';
+import { useAuth } from '../../context/AuthContext';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
@@ -16,27 +17,40 @@ interface HistoryEntry {
 }
 
 export default function AdminResultHistory() {
+    const { token, logout } = useAuth();
     const [history, setHistory] = useState<HistoryEntry[]>([]);
     const [loading, setLoading] = useState(true);
     const [filterAction, setFilterAction] = useState<string>('');
     const [searchMatch, setSearchMatch] = useState<string>('');
-
-    const getToken = () => sessionStorage.getItem('auth_token');
 
     useEffect(() => {
         fetchHistory();
     }, []);
 
     const fetchHistory = async () => {
+        if (!token) return;
+
         try {
             setLoading(true);
             const response = await axios.get(`${API_BASE}/api/results/recent-changes?limit=100`, {
-                headers: { Authorization: `Bearer ${getToken()}` }
+                headers: { Authorization: `Bearer ${token}` }
             });
             setHistory(response.data || []);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error fetching history:', error);
-            Swal.fire({ icon: 'error', title: 'Error', text: 'ไม่สามารถโหลดประวัติได้' });
+            if (error.response && error.response.status === 403) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Session Expired',
+                    text: 'กรุณาเข้าสู่ระบบใหม่',
+                    confirmButtonText: 'Login'
+                }).then(() => {
+                    logout(); // Use logout from context
+                    window.location.href = '/login';
+                });
+            } else {
+                Swal.fire({ icon: 'error', title: 'Error', text: 'ไม่สามารถโหลดประวัติได้' });
+            }
         } finally {
             setLoading(false);
         }

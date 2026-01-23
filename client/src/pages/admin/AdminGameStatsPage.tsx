@@ -40,7 +40,7 @@ export default function AdminGameStatsPage() {
     const [sortBy, setSortBy] = useState<'kda' | 'kills' | 'mvp' | 'winRate'>('kda');
     const [filterTeam, setFilterTeam] = useState('');
 
-    const getToken = () => sessionStorage.getItem('auth_token');
+
 
     const Toast = Swal.mixin({
         toast: true,
@@ -245,8 +245,8 @@ export default function AdminGameStatsPage() {
                                     <td className="px-4 py-3">
                                         {index < 3 ? (
                                             <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white font-bold text-sm ${index === 0 ? 'bg-gradient-to-br from-yellow-400 to-yellow-600' :
-                                                    index === 1 ? 'bg-gradient-to-br from-gray-300 to-gray-500' :
-                                                        'bg-gradient-to-br from-orange-400 to-orange-600'
+                                                index === 1 ? 'bg-gradient-to-br from-gray-300 to-gray-500' :
+                                                    'bg-gradient-to-br from-orange-400 to-orange-600'
                                                 }`}>
                                                 {index + 1}
                                             </div>
@@ -266,8 +266,8 @@ export default function AdminGameStatsPage() {
                                     <td className="px-4 py-3 text-center font-mono font-bold text-gray-600">{player.gamesPlayed}</td>
                                     <td className="px-4 py-3 text-center">
                                         <span className={`font-bold text-sm ${player.winRate >= 70 ? 'text-green-600' :
-                                                player.winRate >= 50 ? 'text-cyan-600' :
-                                                    'text-orange-500'
+                                            player.winRate >= 50 ? 'text-cyan-600' :
+                                                'text-orange-500'
                                             }`}>
                                             {player.winRate}%
                                         </span>
