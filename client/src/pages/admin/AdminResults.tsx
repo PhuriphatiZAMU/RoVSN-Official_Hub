@@ -833,6 +833,7 @@ export default function AdminResults() {
                                                         <div
                                                             className="w-8 h-8 flex items-center justify-center bg-red-100 text-red-500 rounded-full hover:bg-red-500 hover:text-white transition-colors"
                                                             title={t.admin.resultsPage.delete}
+                                                            onClick={(e) => handleDeleteResult(match, e)}
                                                         >
                                                             <i className="fas fa-trash-alt text-sm"></i>
                                                         </div>
