@@ -28,8 +28,22 @@ export const saveResult = async (req: Request, res: Response) => {
         let winner: string | null = null;
         let loser: string | null = null;
 
-        if (scoreBlue > scoreRed) { winner = teamBlue; loser = teamRed; }
-        else { winner = teamRed; loser = teamBlue; }
+        if (isByeWin) {
+            if (req.body.winner === teamBlue || req.body.winner === teamRed) {
+                winner = req.body.winner;
+                loser = (winner === teamBlue) ? teamRed : teamBlue;
+            } else {
+                // Fallback: Default to blue win if not specified (though frontend should send it)
+                // or handle error. For now, try to use provided loser if available
+                if (req.body.loser === teamBlue || req.body.loser === teamRed) {
+                    loser = req.body.loser;
+                    winner = (loser === teamBlue) ? teamRed : teamBlue;
+                }
+            }
+        } else {
+            if (scoreBlue > scoreRed) { winner = teamBlue; loser = teamRed; }
+            else { winner = teamRed; loser = teamBlue; }
+        }
 
         const matchId = `${matchDay}_${teamBlue}_vs_${teamRed}`.replace(/\s+/g, '');
 

@@ -554,6 +554,8 @@ export default function AdminResults() {
                         scoreRed: 0,
                         gameDetails: [],
                         isByeWin: true,
+                        winner: winnerTeam,
+                        loser: byeWinner === 'blue' ? formData.teamRed : formData.teamBlue,
                     })
                 });
 
