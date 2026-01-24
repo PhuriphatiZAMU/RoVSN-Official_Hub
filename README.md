@@ -10,14 +10,16 @@
 
 > **🌐 Official Website:** [https://ro-v-sn-tournament-official.vercel.app/](https://ro-v-sn-tournament-official.vercel.app/)
 
-**RoV SN Tournament Official** is a comprehensive full-stack web application designed to manage and showcase the **RoV (Arena of Valor)** e-sports tournament. It provides a seamless experience for fans to track standings and schedules, while offering a robust admin dashboard for organizers to manage the competition data in real-time.
+**RoV SN Tournament Official** is a comprehensive full-stack web application designed to manage and showcase the e-sports tournament for **Songphinongwitthaya School (SN)**.
+
+This platform serves as the central hub for the school's **RoV (Arena of Valor)** competition, connecting students, participants, and organizers. It provides a seamless experience for fans to track standings and schedules, while offering a robust admin dashboard for organizers to manage the competition data in real-time.
 
 ---
 
 ## ✨ Features
 
-### 🌍 Public Interface (For Fans)
-- **📊 Standings:** updates of team points, wins, and losses.
+### 🌍 Public Interface (For Fans & Students)
+- **📊 Standings:** Live updates of team points, wins, and losses.
 - **📅 Match Schedule:** View upcoming fixtures and past match results.
 - **📈 Player & Hero Stats:** Detailed statistics including MVP, KDA, Most Picked/Banned Heroes.
 - **📰 News & Updates:** Latest announcements regarding the tournament.
@@ -138,13 +140,13 @@ npm run dev
 
 ## 👤 Author
 
-**Phuriphat Hemkul**
+**Phuriphat Hemakul**
 
-* GitHub: [@PhuriphatiZAMU](https://github.com/PhuriphatiZAMU)
-* Email: [phuriphathem@gmail.com](mailto:phuriphathem@gmail.com)
+* **GitHub:** [@PhuriphatiZAMU](https://github.com/PhuriphatiZAMU)
+* **Email:** [phuriphathem@gmail.com](mailto:phuriphathem@gmail.com)
 
 ---
 
 <div align="center">
-<i>Developed for the RoV SN Tournament Community 🎮</i>
+<i>Developed for the <b>Songphinongwitthaya School (SN)</b> Community 🎮</i>
 </div>
