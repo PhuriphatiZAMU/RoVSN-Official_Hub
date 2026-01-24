@@ -148,7 +148,3 @@ npm run dev
 <div align="center">
 <i>Developed for the RoV SN Tournament Community 🎮</i>
 </div>
-
-```
-
-```
