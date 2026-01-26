@@ -1,19 +1,25 @@
 # 🏆 RoV SN Tournament Official Website
 
+[![Official Website](https://img.shields.io/badge/Official_Website-Visit_Now-2ea44f?style=for-the-badge&logo=vercel&logoColor=white)](https://ro-v-sn-tournament-official.vercel.app/)
+
 ![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
 ![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
 ![Node.js](https://img.shields.io/badge/Node.js-43853D?style=for-the-badge&logo=node.js&logoColor=white)
 ![MongoDB](https://img.shields.io/badge/MongoDB-4EA94B?style=for-the-badge&logo=mongodb&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white)
 
-**RoV SN Tournament Official** is a comprehensive full-stack web application designed to manage and showcase the **RoV (Arena of Valor)** e-sports tournament. It provides a seamless experience for fans to track standings and schedules, while offering a robust admin dashboard for organizers to manage the competition data in real-time.
+> **🌐 Official Website:** [https://ro-v-sn-tournament-official.vercel.app/](https://ro-v-sn-tournament-official.vercel.app/)
+
+**RoV SN Tournament Official** is a comprehensive full-stack web application designed to manage and showcase the e-sports tournament for **Songphinongwitthaya School (SN)**.
+
+This platform serves as the central hub for the school's **RoV (Arena of Valor)** competition, connecting students, participants, and organizers. It provides a seamless experience for fans to track standings and schedules, while offering a robust admin dashboard for organizers to manage the competition data in real-time.
 
 ---
 
 ## ✨ Features
 
-### 🌍 Public Interface (For Fans)
-- **📊 Standings:** updates of team points, wins, and losses.
+### 🌍 Public Interface (For Fans & Students)
+- **📊 Standings:** Live updates of team points, wins, and losses.
 - **📅 Match Schedule:** View upcoming fixtures and past match results.
 - **📈 Player & Hero Stats:** Detailed statistics including MVP, KDA, Most Picked/Banned Heroes.
 - **📰 News & Updates:** Latest announcements regarding the tournament.
@@ -134,13 +140,13 @@ npm run dev
 
 ## 👤 Author
 
-**Phuriphat Hemkul**
+**Phuriphat Hemakul**
 
-* GitHub: [@PhuriphatiZAMU](https://github.com/PhuriphatiZAMU)
-* Email: [phuriphathem@gmail.com](mailto:phuriphathem@gmail.com)
+* **GitHub:** [@PhuriphatiZAMU](https://github.com/PhuriphatiZAMU)
+* **Email:** [phuriphathem@gmail.com](mailto:phuriphathem@gmail.com)
 
 ---
 
 <div align="center">
-<i>Developed for the RoV SN Tournament Community 🎮</i>
+<i>Developed for the <b>Songphinongwitthaya School (SN)</b> Community 🎮</i>
 </div>
