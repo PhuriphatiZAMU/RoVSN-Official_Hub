@@ -10,7 +10,7 @@ const getUsername = (req: Request): string => {
 
 export const getResults = async (req: Request, res: Response) => {
     try {
-        const results = await Result.find().sort({ matchDay: 1 });
+        const results = await Result.find().sort({ matchDay: 1 }).lean();
         res.json(results);
     } catch (error: any) {
         res.status(500).json({ error: error.message });

@@ -15,8 +15,8 @@ export interface IResult extends Document {
 }
 
 const ResultSchema: Schema = new Schema({
-    matchId: String,
-    matchDay: mongoose.Schema.Types.Mixed, // Can be Number or String based on original code usage
+    matchId: { type: String, index: true },
+    matchDay: { type: mongoose.Schema.Types.Mixed, index: 1 }, // Can be Number or String based on original code usage
     teamBlue: String,
     teamRed: String,
     scoreBlue: Number,

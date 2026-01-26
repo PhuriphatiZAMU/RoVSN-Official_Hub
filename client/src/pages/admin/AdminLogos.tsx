@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
-import { postTeamLogo } from '../../services/api';
+import { apiService } from '../../services/api';
 import TeamLogo from '../../components/common/TeamLogo';
 import { useConfirmModal } from '../../components/common/ConfirmModal';
 import { useLanguage } from '../../context/LanguageContext';
@@ -48,21 +48,13 @@ export default function AdminLogos() {
             if (uploadMode === 'file' && logoFile) {
                 const formData = new FormData();
                 formData.append('logo', logoFile);
-
-                const uploadRes = await fetch(`${API_BASE_URL}/upload`, {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${token}` },
-                    body: formData
-                });
-
-                if (!uploadRes.ok) throw new Error('Upload failed');
-                const result = await uploadRes.json();
+                const result = await apiService.uploadImage(formData);
                 finalUrl = result.url;
             }
 
             // 2. Save Team Logo URL
             if (finalUrl) {
-                await postTeamLogo({ teamName: selectedTeam, logoUrl: finalUrl }, token);
+                await apiService.createTeamLogo({ teamName: selectedTeam, logoUrl: finalUrl });
                 setMessage({ type: 'success', text: t.admin.logosPage.successUpdate });
                 setSelectedTeam('');
                 setLogoUrl('');
@@ -85,12 +77,7 @@ export default function AdminLogos() {
             message: t.admin.logosPage.deleteConfirmText,
             onConfirm: async () => {
                 try {
-                    const res = await fetch(`${API_BASE_URL}/team-logos/${encodeURIComponent(teamName)}`, {
-                        method: 'DELETE',
-                        headers: { 'Authorization': `Bearer ${token}` }
-                    });
-
-                    if (!res.ok) throw new Error('Failed to delete logo');
+                    await apiService.deleteTeamLogo(teamName);
 
                     setMessage({ type: 'success', text: t.admin.logosPage.successDelete.replace('{team}', teamName) });
                     // Reload to refresh

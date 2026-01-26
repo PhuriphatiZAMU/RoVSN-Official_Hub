@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { fetchSeasonStats, fetchTeamStats, fetchPlayerStats, fetchPlayerHeroStats, fetchHeroes } from '../services/api';
+import { apiService } from '../services/api';
 import { useLanguage } from '../context/LanguageContext';
 import TeamLogo from '../components/common/TeamLogo.jsx';
 import { StatsSkeleton, TableSkeleton } from '../components/common/Skeleton.jsx';
@@ -88,7 +88,7 @@ function SeasonStats(): React.ReactElement {
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        Promise.all([fetchSeasonStats(), fetchHeroes()])
+        Promise.all([apiService.getSeasonStats(), apiService.getHeroes()])
             .then(([seasonData, heroData]) => {
                 setStats(seasonData);
                 setHeroes(heroData || []);
@@ -287,7 +287,7 @@ function TeamStats(): React.ReactElement {
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        fetchTeamStats()
+        apiService.getTeamStats()
             .then(data => {
                 // Sort by Win Rate -> Wins -> KDA -> Kills
                 const sortedData = (data || []).sort((a: TeamStatData, b: TeamStatData) => {
@@ -498,9 +498,9 @@ function PlayerStats(): React.ReactElement {
 
     useEffect(() => {
         Promise.all([
-            fetchPlayerStats(),
-            fetchPlayerHeroStats(),
-            fetchHeroes()
+            apiService.getPlayerStats(),
+            apiService.getPlayerHeroStats(),
+            apiService.getHeroes()
         ])
             .then(([playerData, heroStatData, heroData]) => {
                 setStats(playerData || []);

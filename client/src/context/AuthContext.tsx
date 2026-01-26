@@ -1,11 +1,21 @@
-import { createContext, useContext, useState, useEffect } from 'react';
-import { login as apiLogin } from '../services/api';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { apiService } from '../services/api';
+import { AuthUser } from '../types';
 
-const AuthContext = createContext<any>(null);
+interface AuthContextType {
+    user: AuthUser | null;
+    token: string | null;
+    loading: boolean;
+    isAuthenticated: boolean;
+    login: (username: string, password: string) => Promise<{ success: boolean; error?: string }>;
+    logout: () => void;
+}
 
-export function AuthProvider({ children }) {
-    const [user, setUser] = useState(null);
-    const [token, setToken] = useState(sessionStorage.getItem('token'));
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+    const [user, setUser] = useState<AuthUser | null>(null);
+    const [token, setToken] = useState<string | null>(sessionStorage.getItem('token'));
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -22,18 +32,20 @@ export function AuthProvider({ children }) {
                     // Token expired
                     sessionStorage.removeItem('token');
                     setToken(null);
+                    setUser(null);
                 }
             } catch {
                 sessionStorage.removeItem('token');
                 setToken(null);
+                setUser(null);
             }
         }
         setLoading(false);
     }, []);
 
-    const login = async (username, password) => {
+    const login = async (username: string, password: string) => {
         try {
-            const response = await apiLogin(username, password);
+            const response = await apiService.login(username, password);
             const { token: newToken } = response;
 
             sessionStorage.setItem('token', newToken);
@@ -44,8 +56,8 @@ export function AuthProvider({ children }) {
             setUser({ username: payload.username, role: payload.role });
 
             return { success: true };
-        } catch (error) {
-            return { success: false, error: error.message };
+        } catch (error: any) {
+            return { success: false, error: error.message || 'Login failed' };
         }
     };
 
@@ -55,7 +67,7 @@ export function AuthProvider({ children }) {
         setUser(null);
     };
 
-    const value = {
+    const value: AuthContextType = {
         user,
         token,
         loading,

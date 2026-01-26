@@ -1,4 +1,23 @@
 // API Response Types
+export interface Team {
+    _id: string;
+    name: string;
+    logo?: string;
+    logoShort?: string;
+    description?: string;
+}
+
+export interface Standing {
+    team: string; // Team Name
+    played: number;
+    won: number;
+    lost: number;
+    points: number;
+    gamesWon: number;
+    gamesLost: number;
+    gameDiff: number;
+}
+
 
 export interface Schedule {
     _id: string;
@@ -170,6 +189,10 @@ export interface PlayerHeroStat {
         totalAssists: number;
     }[];
 }
+
+// Aliases for compatibility
+export type MatchResult = Result;
+export type ScheduleItem = Schedule;
 
 // Auth Types
 export interface AuthUser {

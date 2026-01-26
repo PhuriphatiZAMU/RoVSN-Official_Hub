@@ -3,7 +3,7 @@ import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import GameStatsModal from '../../components/admin/GameStatsModal';
-import { postSchedule, resetResults, deleteMatchResult } from '../../services/api';
+import { apiService } from '../../services/api';
 import Swal from 'sweetalert2';
 
 // Type definitions
@@ -110,23 +110,15 @@ export default function AdminResults() {
     useEffect(() => {
         const fetchPlayersPool = async () => {
             try {
-                const res = await fetch(`${API_BASE_URL}/players`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (res.ok) {
-                    const data = await res.json();
-                    setAllPlayers(data);
-                }
+                const data = await apiService.getPlayers();
+                setAllPlayers(data);
             } catch (err) {
                 console.error("Failed to load player pool:", err);
             }
 
             try {
-                const heroRes = await fetch(`${API_BASE_URL}/heroes`);
-                if (heroRes.ok) {
-                    const heroData = await heroRes.json();
-                    setAllHeroes(heroData);
-                }
+                const heroData = await apiService.getHeroes();
+                setAllHeroes(heroData);
             } catch (err) {
                 console.error("Failed to load heroes:", err);
             }
@@ -168,8 +160,7 @@ export default function AdminResults() {
         if (result.isConfirmed) {
             try {
                 setLoading(true);
-                // @ts-ignore
-                await deleteMatchResult(matchKey, token);
+                await apiService.deleteResult(matchKey);
                 Toast.fire({ icon: 'success', title: t.admin.resultsPage.deleteSuccess });
                 refreshData();
             } catch (err: any) {
@@ -325,13 +316,13 @@ export default function AdminResults() {
                 // Reset old results for this round to prevent data corruption
                 if (targetDay) {
                     try {
-                        await resetResults(targetDay, token);
+                        await apiService.resetResults(targetDay);
                     } catch (e: any) {
                         console.warn(`Warning: Could not clear old results: ${e.message}`);
                     }
                 }
 
-                await postSchedule(newSchedule, token);
+                await apiService.createSchedule(newSchedule);
                 Swal.fire(t.admin.resultsPage.success, type === 'semi' ? t.admin.resultsPage.semiSuccess : t.admin.resultsPage.finalSuccess, 'success');
                 localStorage.setItem('admin_selected_day', String(targetDay));
                 setTimeout(() => refreshData(), 1500);
@@ -413,17 +404,10 @@ export default function AdminResults() {
                 // Use the ACTUAL matchId from the database result, not the one we just generated
                 // This handles cases where we found the result via loose search (name mismatch)
                 const targetMatchId = existingResult.matchId;
-                const statsUrl = `${API_BASE_URL}/stats/match?matchId=${encodeURIComponent(targetMatchId)}`;
-                console.log('🔍 [DEBUG] Fetching stats from:', statsUrl);
-                const statsRes = await fetch(statsUrl, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                console.log('🔍 [DEBUG] Stats response status:', statsRes.status);
+                const statsData = await apiService.getMatchStats(targetMatchId);
+                console.log('🔍 [DEBUG] Stats data from API:', statsData);
 
-                if (statsRes.ok) {
-                    const statsData = await statsRes.json();
-                    console.log('🔍 [DEBUG] Stats data from API:', statsData);
-
+                if (statsData) {
                     // Convert flat stats array to gamesStats format: { 0: { blue: [], red: [] }, ... }
                     const loadedGamesStats: Record<number, GameStats> = {};
 
@@ -540,32 +524,17 @@ export default function AdminResults() {
 
                 console.log('🔍 [DEBUG BYE] Saving bye win for:', winnerTeam);
 
-                const response = await fetch(`${API_BASE_URL}/results`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({
-                        matchDay: selectedDay,
-                        teamBlue: formData.teamBlue,
-                        teamRed: formData.teamRed,
-                        scoreBlue: 0, // Bye win = 0-0 (ไม่มีผลได้เสีย)
-                        scoreRed: 0,
-                        gameDetails: [],
-                        isByeWin: true,
-                        winner: winnerTeam,
-                        loser: byeWinner === 'blue' ? formData.teamRed : formData.teamBlue,
-                    })
+                await apiService.createResult({
+                    matchDay: selectedDay,
+                    teamBlue: formData.teamBlue,
+                    teamRed: formData.teamRed,
+                    scoreBlue: 0,
+                    scoreRed: 0,
+                    gameDetails: [],
+                    isByeWin: true,
+                    winner: winnerTeam,
+                    loser: byeWinner === 'blue' ? formData.teamRed : formData.teamBlue,
                 });
-
-                console.log('🔍 [DEBUG BYE] Response status:', response.status);
-
-                if (!response.ok) {
-                    const errorData = await response.json().catch(() => ({}));
-                    console.error('🔍 [DEBUG BYE] Error:', errorData);
-                    throw new Error(errorData.error || t.admin.resultsPage.saveError);
-                }
 
                 setLoading(false);
                 Toast.fire({ icon: 'success', title: `${t.admin.resultsPage.winByBye}: ${winnerTeam}` });
@@ -595,26 +564,15 @@ export default function AdminResults() {
             const cleanTeamBlue = formData.teamBlue.trim();
             const cleanTeamRed = formData.teamRed.trim();
 
-            const response = await fetch(`${API_BASE_URL}/results`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    matchDay: selectedDay,
-                    teamBlue: cleanTeamBlue,
-                    teamRed: cleanTeamRed,
-                    scoreBlue,
-                    scoreRed,
-                    gameDetails: playedGames,
-                    isByeWin: false,
-                })
+            await apiService.createResult({
+                matchDay: selectedDay,
+                teamBlue: cleanTeamBlue,
+                teamRed: cleanTeamRed,
+                scoreBlue,
+                scoreRed,
+                gameDetails: playedGames,
+                isByeWin: false,
             });
-
-            if (!response.ok) {
-                throw new Error(t.admin.resultsPage.saveError);
-            }
 
             // 2. Save Player Stats (if any)
             const matchId = `${selectedDay}_${cleanTeamBlue}_vs_${cleanTeamRed}`.replace(/\s+/g, '');
@@ -680,12 +638,7 @@ export default function AdminResults() {
             console.log('🔍 [DEBUG SAVE] allStats content:', allStats);
 
             if (allStats.length > 0) {
-                const statsResponse = await fetch(`${API_BASE_URL}/stats`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify(allStats)
-                });
-                const statsResult = await statsResponse.json();
+                const statsResult = await apiService.saveGameStats(allStats);
                 console.log('🔍 [DEBUG SAVE] Stats save response:', statsResult);
             } else {
                 console.log('🔍 [DEBUG SAVE] No player stats to save (gamesStats is empty)');

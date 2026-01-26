@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { fetchSchedules, fetchResults, fetchTeamLogos, fetchStandings } from '../services/api';
+import { apiService } from '../services/api';
 
 // Types
 interface ScheduleMatch {
@@ -78,10 +78,10 @@ export function DataProvider({ children }: DataProviderProps) {
                 setError(null);
 
                 const [scheduleData, resultsData, logosData, standingsData] = await Promise.all([
-                    fetchSchedules().catch(() => null),
-                    fetchResults().catch(() => []),
-                    fetchTeamLogos().catch(() => []),
-                    fetchStandings().catch(() => [])
+                    apiService.getSchedule().catch(() => []),
+                    apiService.getResults().catch(() => []),
+                    apiService.getTeams().catch(() => []),
+                    apiService.getStandings().catch(() => [])
                 ]);
 
                 if (scheduleData) {
@@ -121,8 +121,11 @@ export function DataProvider({ children }: DataProviderProps) {
 
                 // Convert logos array to object for quick lookup
                 const logosObj: Record<string, string> = {};
-                (logosData || []).forEach((item: { teamName: string; logoUrl: string }) => {
-                    logosObj[item.teamName] = item.logoUrl;
+                (logosData || []).forEach((item: any) => {
+                    // Start of Selection
+                    const teamName = item.name || item.teamName; // Support both format
+                    const logoUrl = item.logo || item.logoUrl;
+                    if (teamName) logosObj[teamName] = logoUrl;
                 });
                 setTeamLogos(logosObj);
 
