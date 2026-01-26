@@ -68,7 +68,7 @@ async function runBenchmark() {
     console.log('------------------------------------------------');
     console.log(`🎯 Results Summary (${successCount}/${REQUEST_COUNT} success)`);
     console.log('------------------------------------------------');
-    console.log(`⏱️  Total Time Taken:  ${totalTime} s`);
+    console.log(`⏱️ Total Time Taken: ${totalTime} s`);
     console.log(`⚡ Avg Response Time: ${avg} ms`);
     console.log(`🐢 Slowest Request:   ${max} ms`);
     console.log(`🚀 Fastest Request:   ${min} ms`);
@@ -76,7 +76,7 @@ async function runBenchmark() {
     console.log('------------------------------------------------');
 
     if (parseFloat(avg) > 200) {
-        console.log('⚠️  Suggestion: API seems slow (>200ms). Consider using .lean() or Indexing.');
+        console.log('⚠️ Suggestion: API seems slow (>200ms). Consider using .lean() or Indexing.');
     } else {
         console.log('✨ Performance looks good!');
     }
