@@ -8,7 +8,7 @@
 ![MongoDB](https://img.shields.io/badge/MongoDB-4EA94B?style=for-the-badge&logo=mongodb&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white)
 
-> **🌐 Official Website:** [https://ro-v-sn-tournament-official.vercel.app/](https://ro-v-sn-tournament-official.vercel.app/)
+> **🌐 Official Website:** [RoV SN Tournament Official](https://ro-v-sn-tournament-official.vercel.app/)
 
 **RoV SN Tournament Official** is a comprehensive full-stack web application designed to manage and showcase the e-sports tournament for **Songphinongwitthaya School (SN)**.
 
