@@ -24,6 +24,7 @@ const teamLogoRoutes_1 = __importDefault(require("./routes/teamLogoRoutes"));
 const heroRoutes_1 = __importDefault(require("./routes/heroRoutes"));
 const uploadRoutes_1 = __importDefault(require("./routes/uploadRoutes"));
 const aiRoutes_1 = __importDefault(require("./routes/aiRoutes"));
+const standingsRoutes_1 = __importDefault(require("./routes/standingsRoutes"));
 const app = (0, express_1.default)();
 const PORT = process.env.PORT || 3000;
 // --- Middleware ---
@@ -65,6 +66,7 @@ app.use('/api/players', playerRoutes_1.default);
 app.use('/api/team-logos', teamLogoRoutes_1.default);
 app.use('/api/heroes', heroRoutes_1.default);
 app.use('/api/upload', uploadRoutes_1.default);
+app.use('/api/standings', standingsRoutes_1.default);
 app.use('/api', aiRoutes_1.default); // For /api/extract-rov-stats
 // --- Serve Static Assets (Production/Deployment) ---
 const clientBuildPath = path_1.default.join(__dirname, '../../client/dist');
@@ -73,6 +75,10 @@ if (fs_1.default.existsSync(clientBuildPath)) {
     app.use(express_1.default.static(clientBuildPath));
     // SPA Fallback: Serve index.html for any unknown route
     app.get('*', (req, res) => {
+        // Don't catch API routes - let them 404 properly
+        if (req.path.startsWith('/api/')) {
+            return res.status(404).json({ error: 'API endpoint not found' });
+        }
         res.sendFile(path_1.default.join(clientBuildPath, 'index.html'));
     });
 }

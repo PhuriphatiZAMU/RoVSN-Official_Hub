@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Hero = exports.TeamLogo = exports.PlayerPool = exports.GameStat = exports.Result = exports.Schedule = void 0;
+exports.ResultHistory = exports.Hero = exports.TeamLogo = exports.PlayerPool = exports.GameStat = exports.Result = exports.Schedule = void 0;
 var Schedule_1 = require("./Schedule");
 Object.defineProperty(exports, "Schedule", { enumerable: true, get: function () { return __importDefault(Schedule_1).default; } });
 var Result_1 = require("./Result");
@@ -16,3 +16,5 @@ var TeamLogo_1 = require("./TeamLogo");
 Object.defineProperty(exports, "TeamLogo", { enumerable: true, get: function () { return __importDefault(TeamLogo_1).default; } });
 var Hero_1 = require("./Hero");
 Object.defineProperty(exports, "Hero", { enumerable: true, get: function () { return __importDefault(Hero_1).default; } });
+var ResultHistory_1 = require("./ResultHistory");
+Object.defineProperty(exports, "ResultHistory", { enumerable: true, get: function () { return __importDefault(ResultHistory_1).default; } });

@@ -4,7 +4,7 @@ import Footer from './Footer';
 
 export default function Layout() {
     return (
-        <div className="min-h-screen flex flex-col">
+        <div className="min-h-screen flex flex-col relative">
             <Navbar />
             {/* Main content with padding-top to account for fixed navbar */}
             <main className="flex-grow pt-20">

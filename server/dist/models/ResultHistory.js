@@ -34,17 +34,16 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
-const ResultSchema = new mongoose_1.Schema({
-    matchId: { type: String, index: true },
-    matchDay: { type: mongoose_1.default.Schema.Types.Mixed, index: 1 }, // Can be Number or String based on original code usage
-    teamBlue: String,
-    teamRed: String,
-    scoreBlue: Number,
-    scoreRed: Number,
-    winner: String,
-    loser: String,
-    gameDetails: Array,
-    isByeWin: { type: Boolean, default: false },
-    createdAt: { type: Date, default: Date.now }
+const ResultHistorySchema = new mongoose_1.Schema({
+    matchId: { type: String, required: true, index: true },
+    action: { type: String, enum: ['create', 'update', 'delete'], required: true },
+    previousData: { type: mongoose_1.Schema.Types.Mixed },
+    newData: { type: mongoose_1.Schema.Types.Mixed },
+    changedBy: { type: String, required: true },
+    changedAt: { type: Date, default: Date.now },
+    reason: { type: String }
 });
-exports.default = mongoose_1.default.model('Result', ResultSchema, 'results');
+// Index for quick queries
+ResultHistorySchema.index({ matchId: 1, changedAt: -1 });
+ResultHistorySchema.index({ changedAt: -1 });
+exports.default = mongoose_1.default.model('ResultHistory', ResultHistorySchema, 'resulthistory');

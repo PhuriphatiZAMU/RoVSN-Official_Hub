@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateIGN = exports.addPreviousIGN = exports.getUnmatchedIGNs = exports.clearAllPlayers = exports.importPlayers = exports.getPlayers = void 0;
+exports.deletePlayer = exports.updatePlayerFull = exports.createPlayer = exports.renameTeam = exports.updateIGN = exports.addPreviousIGN = exports.getUnmatchedIGNs = exports.clearAllPlayers = exports.importPlayers = exports.getPlayers = void 0;
 const PlayerPool_1 = __importDefault(require("../models/PlayerPool"));
 const GameStat_1 = __importDefault(require("../models/GameStat"));
 const getPlayers = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -90,24 +90,81 @@ exports.addPreviousIGN = addPreviousIGN;
 const updateIGN = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { playerId } = req.params;
-        const { newIGN } = req.body;
-        if (!newIGN)
-            return res.status(400).json({ error: 'newIGN is required' });
+        const { newIGN, team } = req.body; // Allow updating team too for removing players
+        if (!newIGN && team === undefined)
+            return res.status(400).json({ error: 'Data is required' });
         const player = yield PlayerPool_1.default.findById(playerId);
         if (!player)
             return res.status(404).json({ error: 'Player not found' });
-        if (player.inGameName && player.inGameName !== newIGN) {
-            player.previousIGNs = player.previousIGNs || [];
-            if (!player.previousIGNs.includes(player.inGameName)) {
-                player.previousIGNs.push(player.inGameName);
+        if (newIGN) {
+            if (player.inGameName && player.inGameName !== newIGN) {
+                player.previousIGNs = player.previousIGNs || [];
+                if (!player.previousIGNs.includes(player.inGameName)) {
+                    player.previousIGNs.push(player.inGameName);
+                }
             }
+            player.inGameName = newIGN;
         }
-        player.inGameName = newIGN;
+        if (team !== undefined) {
+            player.team = team;
+        }
         yield player.save();
-        res.json({ message: `Updated IGN to "${newIGN}"`, player });
+        res.json({ message: `Updated player`, player });
     }
     catch (error) {
         res.status(500).json({ error: error.message });
     }
 });
 exports.updateIGN = updateIGN;
+const renameTeam = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { oldName, newName } = req.body;
+        if (!oldName || !newName)
+            return res.status(400).json({ error: 'Old and new team names are required' });
+        const result = yield PlayerPool_1.default.updateMany({ team: oldName }, { $set: { team: newName } });
+        res.json({
+            message: `Renamed team "${oldName}" to "${newName}"`,
+            modifiedCount: result.modifiedCount
+        });
+    }
+    catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+exports.renameTeam = renameTeam;
+const createPlayer = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const player = yield PlayerPool_1.default.create(req.body);
+        res.status(201).json(player);
+    }
+    catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+exports.createPlayer = createPlayer;
+const updatePlayerFull = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { id } = req.params;
+        const player = yield PlayerPool_1.default.findByIdAndUpdate(id, req.body, { new: true });
+        if (!player)
+            return res.status(404).json({ error: 'Player not found' });
+        res.json(player);
+    }
+    catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+exports.updatePlayerFull = updatePlayerFull;
+const deletePlayer = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { id } = req.params;
+        const player = yield PlayerPool_1.default.findByIdAndDelete(id);
+        if (!player)
+            return res.status(404).json({ error: 'Player not found' });
+        res.json({ message: 'Player deleted' });
+    }
+    catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+exports.deletePlayer = deletePlayer;
