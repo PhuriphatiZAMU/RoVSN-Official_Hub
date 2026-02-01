@@ -94,7 +94,11 @@ export default function FixturesPage(): React.ReactElement {
                             {/* Round Header */}
                             <div className="flex items-center gap-3 mb-3 md:mb-4">
                                 <span className="bg-cyan-aura text-uefa-dark font-display font-bold px-3 py-1 rounded text-xs md:text-sm uppercase tracking-wide shadow-lg shadow-cyan-aura/20 whitespace-nowrap">
-                                    {isThai ? `วันที่ ${round.day}` : `Day ${round.day}`}
+                                    {(() => {
+                                        if (round.day === 90) return 'Semi Final';
+                                        if (round.day === 91) return 'Grand Final';
+                                        return isThai ? `วันที่ ${round.day}` : `Day ${round.day}`;
+                                    })()}
                                 </span>
                                 {/* Show round date if available */}
                                 {round.date && (
