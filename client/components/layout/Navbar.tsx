@@ -176,24 +176,6 @@ export default function Navbar() {
                             </Link>
                         ))}
                     </div>
-
-                    {/* Mobile Footer */}
-                    <div className="p-6 border-t border-white/10 bg-deep-space/50">
-                        <div className="text-center">
-                            <p className="text-gray-500 text-xs mb-2">RoV SN TOURNAMENT 2026</p>
-                            <div className="flex justify-center gap-4">
-                                <a href="#" className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-gray-400 hover:bg-blue-600 hover:text-white transition-all">
-                                    <i className="fab fa-facebook-f"></i>
-                                </a>
-                                <a href="#" className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-gray-400 hover:bg-pink-500 hover:text-white transition-all">
-                                    <i className="fab fa-instagram"></i>
-                                </a>
-                                <a href="#" className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-gray-400 hover:bg-sky-500 hover:text-white transition-all">
-                                    <i className="fab fa-twitter"></i>
-                                </a>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
         </nav>

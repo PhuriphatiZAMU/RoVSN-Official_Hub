@@ -49,22 +49,22 @@ export default function Footer() {
                         <h4 className="text-white font-display text-lg font-bold mb-4">Follow Us</h4>
                         <div className="flex gap-4">
                             <a
-                                href="#"
+                                href="https://www.facebook.com/groups/663933613696478/user/61573326877157"
                                 className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-gray-400 hover:bg-blue-600 hover:text-white transition-all"
                             >
                                 <i className="fab fa-facebook-f"></i>
                             </a>
                             <a
-                                href="#"
+                                href="https://www.instagram.com/sapa_sn?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw=="
                                 className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-gray-400 hover:bg-pink-500 hover:text-white transition-all"
                             >
                                 <i className="fab fa-instagram"></i>
                             </a>
                             <a
-                                href="#"
-                                className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-gray-400 hover:bg-sky-500 hover:text-white transition-all"
+                                href="https://discord.gg/Atcmc6kmYY"
+                                className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-gray-400 hover:bg-pink-500 hover:text-white transition-all"
                             >
-                                <i className="fab fa-twitter"></i>
+                                <i className="fab fa-discord"></i>
                             </a>
                         </div>
                     </div>
