@@ -11,6 +11,15 @@
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/body-parser": "^1.19.6",
+    "@types/compression": "^1.8.1",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/mongoose": "^5.11.96",
+    "@types/multer": "^2.0.0",
+    "@types/node": "^25.0.9",
     "bcryptjs": "^3.0.3",
     "body-parser": "^1.20.2",
     "cloudinary": "^1.41.3",
@@ -22,6 +31,7 @@
     "mongoose": "^8.3.2",
     "multer": "^2.0.2",
     "multer-storage-cloudinary": "^4.0.0",
+    "typescript": "^5.9.3",
     "zod": "^4.3.5"
   },
   "keywords": [
@@ -34,17 +44,7 @@
   "author": "RoV SN Official",
   "license": "ISC",
   "devDependencies": {
-    "@types/bcryptjs": "^2.4.6",
-    "@types/body-parser": "^1.19.6",
-    "@types/compression": "^1.8.1",
-    "@types/cors": "^2.8.19",
-    "@types/express": "^5.0.6",
-    "@types/jsonwebtoken": "^9.0.10",
-    "@types/mongoose": "^5.11.96",
-    "@types/multer": "^2.0.0",
-    "@types/node": "^25.0.9",
     "nodemon": "^3.1.11",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.9.3"
+    "ts-node": "^10.9.2"
   }
 }
