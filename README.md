@@ -1,152 +1,189 @@
 # 🏆 RoV SN Tournament Official Website
 
-[![Official Website](https://img.shields.io/badge/Official_Website-Visit_Now-2ea44f?style=for-the-badge&logo=vercel&logoColor=white)](https://rov-sn-tournament-official.vercel.app/)
+เว็บไซต์อย่างเป็นทางการสำหรับการแข่งขัน **RoV SN Tournament** ระบบจัดการแข่งขัน eSports ครบวงจรที่รวมทั้งระบบหน้าบ้านสำหรับผู้ชมและระบบหลังบ้านสำหรับผู้ดูแลการแข่งขัน
 
-![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
-![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
-![Node.js](https://img.shields.io/badge/Node.js-43853D?style=for-the-badge&logo=node.js&logoColor=white)
-![MongoDB](https://img.shields.io/badge/MongoDB-4EA94B?style=for-the-badge&logo=mongodb&logoColor=white)
-![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white)
-
-> **🌐 Official Website:** [RoV SN Tournament Official](https://rov-sn-tournament-official.vercel.app/)
-
-**RoV SN Tournament Official** is a comprehensive full-stack web application designed to manage and showcase the e-sports tournament for **Songphinongwitthaya School (SN)**.
-
-This platform serves as the central hub for the school's **RoV (Arena of Valor)** competition, connecting students, participants, and organizers. It provides a seamless experience for fans to track standings and schedules, while offering a robust admin dashboard for organizers to manage the competition data in real-time.
+![Project Status](https://img.shields.io/badge/Status-Active-success)
+![Next.js](https://img.shields.io/badge/Frontend-Next.js_15-black)
+![Node.js](https://img.shields.io/badge/Backend-Express-green)
+![MongoDB](https://img.shields.io/badge/Database-MongoDB-green)
 
 ---
 
-## ✨ Features
+## 🚀 ฟีเจอร์หลัก (Key Features)
 
-### 🌍 Public Interface (For Fans & Students)
-- **📊 Standings:** Live updates of team points, wins, and losses.
-- **📅 Match Schedule:** View upcoming fixtures and past match results.
-- **📈 Player & Hero Stats:** Detailed statistics including MVP, KDA, Most Picked/Banned Heroes.
-- **📰 News & Updates:** Latest announcements regarding the tournament.
-- **🌐 Multi-Language Support:** Toggle between **Thai (TH)** and **English (EN)**.
+### 👥 สำหรับผู้ชม (Public)
+- **ตารางคะแนน (Standings):** อัปเดตคะแนน Real-time
+- **ตารางการแข่งขัน (Schedule):** ดูโปรแกรมแข่งล่วงหน้าและย้อนหลัง
+- **สถิติ (Statistics):** ข้อมูล MVP, Most Kills, Most Assists, Highest Damage ฯลฯ
+- **ข้อมูลทีม (Teams):** รายชื่อนักแข่งและโลโก้ทีม
 
-### 🛡️ Admin Dashboard (For Organizers)
-- **🔐 Secure Authentication:** Protected login system for administrators.
-- **🛠️ Data Management:**
-  - CRUD operations for **Teams** and **Players**.
-  - Update **Match Results** and scores.
-  - Manage **Hero Pool** and images.
-- **⚡ Automated Calculations:** Automatically updates standings based on match results.
+### 🛠️ สำหรับผู้ดูแล (Admin Dashboard)
+- **จัดการผลการแข่งขัน:** บันทึกคะแนนและอัปโหลดรูป Screenshot
+- **จัดการตารางแข่ง:** สร้าง/แก้ไข Match และกำหนดเวลาแข่ง
+- **ระบบ Import/Export:** นำเข้าข้อมูลผู้เล่นและทีมผ่านไฟล์ CSV
+- **Game Data:** ระบบจัดการ Hero และข้อมูล Meta ของเกม
+- **History Log:** ระบบตรวจสอบประวัติการแก้ไขคะแนนย้อนหลัง
 
 ---
 
-## 🛠️ Tech Stack
+## 🛠️ เทคโนโลยีที่ใช้ (Tech Stack)
 
-### **Frontend (Client)**
-- **Framework:** React 18 (Vite)
+**Frontend (`/client`):**
+- **Framework:** Next.js 15 (App Router)
 - **Language:** TypeScript
-- **Styling:** CSS Modules / Custom CSS
-- **Routing:** React Router DOM
-- **State Management:** Context API (Auth, Data, Language)
+- **Styling:** Tailwind CSS + Framer Motion
+- **State Management:** React Context API
+- **Icons:** Lucide React
 
-### **Backend (Server)**
+**Backend (`/server`):**
 - **Runtime:** Node.js
 - **Framework:** Express.js
-- **Database:** MongoDB (Mongoose ODM)
-- **Language:** TypeScript
-- **Image Handling:** Cloudinary / Local Uploads (Multer)
+- **Database:** MongoDB (Mongoose)
+- **Authentication:** JWT (JSON Web Token)
+- **File Storage:** Local Storage / Cloudinary (Optional)
 
 ---
 
-## 📂 Project Structure
+## ⚙️ การติดตั้งและใช้งาน (Installation & Usage)
 
-```bash
-rov-sn-tournament-official/
-├── client/                 # Frontend (React + Vite)
-│   ├── src/
-│   │   ├── components/     # Reusable UI components (Navbar, Footer, etc.)
-│   │   ├── context/        # Global state (Auth, Language)
-│   │   ├── pages/          # Page views (Home, Standings, AdminDashboard)
-│   │   └── services/       # API integration logic
-│   └── public/             # Static assets (Logos, Icons)
-│
-├── server/                 # Backend (Node.js + Express)
-│   ├── src/
-│   │   ├── controllers/    # Request handlers
-│   │   ├── models/         # Mongoose schemas (Hero, Match, Player)
-│   │   ├── routes/         # API endpoints
-│   │   └── middleware/     # Auth and validation middleware
-│   └── uploads/            # Local file storage
-└── README.md
-
-```
-
----
-
-## 🚀 Getting Started
-
-Follow these steps to run the project locally.
+โปรเจกต์นี้แยกส่วน Frontend และ Backend ชัดเจน (Monorepo Structure)
 
 ### 1. Prerequisites
+- Node.js (v18 หรือสูงกว่า)
+- MongoDB Database
 
-* Node.js (v16 or higher)
-* MongoDB (Local or Atlas URL)
-
-### 2. Setup Backend (Server)
-
-Navigate to the server directory and install dependencies:
-
+### 2. ติดตั้ง Dependencies
 ```bash
+# ติดตั้งฝั่ง Server
 cd server
+npm install
+
+# ติดตั้งฝั่ง Client
+cd ../client
 npm install
 
 ```
 
-Create a `.env` file in the `server/` directory:
+### 3. การตั้งค่า Environment Variables (.env)
+
+สร้างไฟล์ `.env` ในโฟลเดอร์ `server/` และ `client/` ตามตัวอย่าง:
+
+**Server (`server/.env`):**
 
 ```env
-PORT=5000
-MONGODB_URI=your_mongodb_connection_string
-JWT_SECRET=your_jwt_secret_key
-# Optional: Cloudinary Config
+PORT=3001
+MONGO_URI=mongodb://localhost:27017/rov-tournament
+JWT_SECRET=your_super_secret_key
+# Optional for Cloudinary
 CLOUDINARY_CLOUD_NAME=...
 CLOUDINARY_API_KEY=...
 CLOUDINARY_API_SECRET=...
 
 ```
 
-Start the server:
+**Client (`client/.env.local`):**
 
-```bash
-npm run dev
-# Server will run on http://localhost:5000
+```env
+NEXT_PUBLIC_API_URL=http://localhost:3001/api
 
 ```
 
-### 3. Setup Frontend (Client)
+---
 
-Open a new terminal, navigate to the client directory:
+## 🖥️ การรันในโหมดพัฒนา (Development)
+
+ต้องเปิด Terminal 2 หน้าต่างเพื่อรันคู่กัน:
+
+**Terminal 1 (Backend):**
+
+```bash
+cd server
+npm run dev
+# Server จะรันที่ http://localhost:3001
+
+```
+
+**Terminal 2 (Frontend):**
 
 ```bash
 cd client
-npm install
-
-```
-
-Start the development server:
-
-```bash
 npm run dev
-# Application will run on http://localhost:5173
+# Client จะรันที่ http://localhost:3000
 
 ```
 
 ---
 
-## 👤 Author
+## 🚀 การรันในโหมด Production (Deployment)
 
-**Phuriphat Hemakul**
+โปรเจกต์นี้รองรับการรันด้วย **PM2** เพื่อจัดการ Process ทั้งสองฝั่งพร้อมกัน
 
-* **GitHub:** [@PhuriphatiZAMU](https://github.com/PhuriphatiZAMU)
-* **Email:** [phuriphathem@gmail.com](mailto:phuriphathem@gmail.com)
+1. **Build โปรเจกต์:**
+```bash
+# Build Server
+cd server
+npm run build
+
+# Build Client
+cd ../client
+npm run build
+
+```
+
+
+2. **Start ด้วย PM2:**
+รันคำสั่งที่ root ของโปรเจกต์ (ที่มีไฟล์ `ecosystem.config.js`)
+```bash
+pm2 start ecosystem.config.js
+
+```
+
+
+3. **ตรวจสอบสถานะ:**
+```bash
+pm2 status
+pm2 logs
+
+```
+
+
 
 ---
 
-<div align="center">
-<i>Developed for the <b>Songphinongwitthaya School (SN)</b> Community 🎮</i>
-</div>
+## 📂 โครงสร้างโฟลเดอร์ (Folder Structure)
+
+```
+.
+├── client/                 # Next.js Frontend
+│   ├── app/                # App Router Pages
+│   ├── components/         # UI Components
+│   ├── lib/                # API Clients & Utils
+│   └── public/             # Static Assets
+│
+├── server/                 # Express Backend
+│   ├── src/
+│   │   ├── controllers/    # Route Logic
+│   │   ├── models/         # MongoDB Schemas
+│   │   ├── routes/         # API Routes
+│   │   └── middleware/     # Auth & Validation
+│   └── uploads/            # Local File Storage
+│
+└── ecosystem.config.js     # PM2 Configuration
+
+```
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License.
+
+```
+
+### สิ่งที่เปลี่ยนแปลง:
+1.  **Tech Stack:** เปลี่ยนจาก Vite/React เป็น **Next.js 15 (App Router)**
+2.  **Deployment:** เพิ่มส่วนการใช้งาน **PM2** และ `ecosystem.config.js`
+3.  **Commands:** ปรับคำสั่งติดตั้งและการรันแยก folder `client` และ `server` ชัดเจน
+4.  **Structure:** อัปเดตผังโฟลเดอร์ให้ตรงกับปัจจุบัน
+
+```
