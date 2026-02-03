@@ -1,6 +1,5 @@
 'use client';
 
-import Image from 'next/image';
 import ShareButton from '@/components/common/ShareButton';
 import { useLanguage } from '@/components/providers/LanguageProvider';
 
@@ -10,18 +9,11 @@ export default function FormatContent() {
 
     return (
         <>
-            {/* Header with Logo */}
+            {/* Header */}
             <div className="bg-gradient-to-br from-uefa-dark via-slate-800 to-uefa-dark py-8 md:py-12 mb-4 md:mb-8 shadow-lg border-b-4 border-cyan-aura">
                 <div className="container mx-auto px-4">
                     <div className="flex flex-col md:flex-row items-center justify-between gap-4">
                         <div className="flex items-center gap-4">
-                            <Image
-                                src="/logo.png"
-                                alt="RoV SN Tournament Logo"
-                                width={80}
-                                height={80}
-                                className="drop-shadow-2xl"
-                            />
                             <div className="text-center md:text-left">
                                 <h1 className="text-2xl md:text-4xl font-display font-bold text-white uppercase tracking-wider">
                                     🏆 {isThai ? 'ระบบการแข่งขัน' : 'Tournament Format'}
