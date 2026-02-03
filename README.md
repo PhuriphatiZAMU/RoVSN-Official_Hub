@@ -1,6 +1,6 @@
 # 🏆 RoV SN Tournament Official Website
 
-[![Official Website](https://img.shields.io/badge/Official_Website-Visit_Now-2ea44f?style=for-the-badge&logo=vercel&logoColor=white)](https://ro-v-sn-tournament-official.vercel.app/)
+[![Official Website](https://img.shields.io/badge/Official_Website-Visit_Now-2ea44f?style=for-the-badge&logo=vercel&logoColor=white)](https://rov-sn-tournament-official.vercel.app/)
 
 ![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
 ![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
@@ -8,7 +8,7 @@
 ![MongoDB](https://img.shields.io/badge/MongoDB-4EA94B?style=for-the-badge&logo=mongodb&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white)
 
-> **🌐 Official Website:** [RoV SN Tournament Official](https://ro-v-sn-tournament-official.vercel.app/)
+> **🌐 Official Website:** [RoV SN Tournament Official](https://rov-sn-tournament-official.vercel.app/)
 
 **RoV SN Tournament Official** is a comprehensive full-stack web application designed to manage and showcase the e-sports tournament for **Songphinongwitthaya School (SN)**.
 
