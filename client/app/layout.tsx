@@ -27,11 +27,17 @@ export const metadata: Metadata = {
   description: "Official tournament management system for RoV SN Tournament 2026. View fixtures, standings, stats, and more.",
   keywords: ["RoV", "Tournament", "Arena of Valor", "Esports", "SN Tournament"],
   authors: [{ name: "RoV SN Tournament Team" }],
+  icons: {
+    icon: "/logo.png",
+    shortcut: "/logo.png",
+    apple: "/logo.png",
+  },
   openGraph: {
     title: "RoV SN Tournament 2026",
     description: "Official tournament management system for RoV SN Tournament 2026",
     type: "website",
     locale: "th_TH",
+    images: ["/logo.png"],
   },
 };
 
