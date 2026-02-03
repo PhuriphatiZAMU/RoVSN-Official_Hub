@@ -28,6 +28,7 @@
   "homepage": "https://github.com/PhuriphatiZAMU/RoV-SN-Tournament-Official#readme",
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
+    "@vercel/speed-insights": "^1.3.1",
     "bcryptjs": "^3.0.3",
     "body-parser": "^2.2.2",
     "cloudinary": "^1.41.3",

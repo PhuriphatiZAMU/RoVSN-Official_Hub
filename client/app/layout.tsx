@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Kanit, Oswald } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers/Providers";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const kanit = Kanit({
   weight: ['300', '400', '500', '600', '700'],
@@ -55,6 +56,7 @@ export default function RootLayout({
         <Providers>
           {children}
         </Providers>
+        <SpeedInsights />
       </body>
     </html>
   );
