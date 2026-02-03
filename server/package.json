@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node dist/index.js",
     "dev": "nodemon --exec ts-node src/index.ts",
-    "build": "tsc",
+    "build": "echo 'Skipping build as we use pre-compiled dist'",
+    "build:local": "tsc",
     "dev:legacy": "nodemon server.js"
   },
   "dependencies": {
