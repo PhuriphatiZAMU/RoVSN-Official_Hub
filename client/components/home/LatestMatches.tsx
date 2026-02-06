@@ -122,7 +122,7 @@ export default function LatestMatches({ latestMatches, upcomingMatches, teamLogo
                         <div className="bg-gradient-to-r from-gray-50 to-white px-3 py-1 text-[10px] md:text-xs flex items-center justify-between border-t border-gray-100">
                             {/* Match Date */}
                             {date && (
-                                <span className="text-gray-500 flex items-center gap-1">
+                                <span className="text-gray-500 flex items-center gap-1" suppressHydrationWarning>
                                     <i className="far fa-calendar text-cyan-aura/70"></i>
                                     {formatMatchDate(date)}
                                 </span>
