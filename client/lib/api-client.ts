@@ -21,8 +21,24 @@ const api = axios.create({
     headers: {
         'Content-Type': 'application/json',
     },
-    withCredentials: true, // Important for cookies
+    // withCredentials: true, // Not needed for Token-based auth, but kept for compatibility if needed
 });
+
+// Add a request interceptor to attach the token
+api.interceptors.request.use(
+    (config) => {
+        if (typeof window !== 'undefined') {
+            const token = localStorage.getItem('token');
+            if (token) {
+                config.headers['Authorization'] = `Bearer ${token}`;
+            }
+        }
+        return config;
+    },
+    (error) => {
+        return Promise.reject(error);
+    }
+);
 
 // Interceptor to handle auth errors
 api.interceptors.response.use(

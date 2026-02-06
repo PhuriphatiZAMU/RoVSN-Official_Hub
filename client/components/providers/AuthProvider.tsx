@@ -29,53 +29,64 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<AuthUser | null>(null);
     const [loading, setLoading] = useState(true);
 
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://rov-sn-tournament-api.onrender.com/api';
+
+    // Helper to get token
+    const getToken = () => typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+
     // Check authentication status by calling verify endpoint
     const checkAuth = useCallback(async () => {
+        const token = getToken();
+        if (!token) {
+            setUser(null);
+            setLoading(false);
+            return;
+        }
+
         try {
             setLoading(true);
-            const response = await fetch('/api/auth/verify', {
+            const response = await fetch(`${API_URL}/auth/verify`, {
                 method: 'GET',
-                credentials: 'include', // Important: include cookies
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
             });
 
             if (response.ok) {
                 const data = await response.json();
                 if (data.valid && data.user) {
                     setUser({
-                        id: data.user.id,
-                        username: data.user.username,
-                        role: data.user.role || 'user',
+                        id: data.user.id || 'admin',
+                        username: data.user.username || 'admin',
+                        role: data.user.role || 'admin',
                     });
                 } else {
+                    localStorage.removeItem('token');
                     setUser(null);
                 }
             } else {
+                localStorage.removeItem('token');
                 setUser(null);
             }
         } catch (error) {
             console.error('Auth check error:', error);
+            // Don't clear token on network error immediately, but user state is null
             setUser(null);
         } finally {
             setLoading(false);
         }
     }, []);
 
-    // Run auth check on mount
-    useEffect(() => {
-        checkAuth();
-    }, [checkAuth]);
-
-    // Login function - calls our API route which handles cookie setting
+    // Login function - calls our API route
     const login = useCallback(async (username: string, password: string): Promise<LoginResult> => {
         try {
             setLoading(true);
 
-            const response = await fetch('/api/auth/login', {
+            const response = await fetch(`${API_URL}/auth/login`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                credentials: 'include', // Important: include cookies
                 body: JSON.stringify({ username, password }),
             });
 
@@ -88,10 +99,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 };
             }
 
-            // The cookie is set by the API route, now verify and get user data
-            await checkAuth();
+            // Save token to localStorage
+            if (data.token) {
+                localStorage.setItem('token', data.token);
+                // Manually set user state immediately to avoid waiting for verify roundtrip if possible
+                // but checkAuth is safer
+                await checkAuth();
+                return { success: true };
+            } else {
+                return { success: false, error: 'No token received' };
+            }
 
-            return { success: true };
         } catch (error) {
             console.error('Login error:', error);
             return {
@@ -103,20 +121,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
     }, [checkAuth]);
 
-    // Logout function - calls our API route which clears the cookie
+    // Logout function
     const logout = useCallback(async () => {
         try {
             setLoading(true);
-
-            await fetch('/api/auth/logout', {
-                method: 'POST',
-                credentials: 'include',
-            });
-
+            // Optional: Call logout endpoint if backend needs it (mostly for cookies)
+            localStorage.removeItem('token');
             setUser(null);
         } catch (error) {
             console.error('Logout error:', error);
-            // Even if API fails, clear local state
             setUser(null);
         } finally {
             setLoading(false);
