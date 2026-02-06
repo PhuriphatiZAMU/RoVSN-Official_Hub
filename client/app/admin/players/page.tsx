@@ -22,7 +22,7 @@ interface PlayerFormData {
     openId: string;
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || '/api';
 
 // Helper to clean name
 const cleanName = (rawName: any) => {

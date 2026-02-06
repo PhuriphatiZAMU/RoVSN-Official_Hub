@@ -7,7 +7,7 @@ import apiService from '@/lib/api-client';
 import TeamLogo from '@/components/common/TeamLogo';
 import { useLanguage } from '@/components/providers/LanguageProvider';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || '/api';
 
 export default function AdminDrawPage() {
     const { t } = useLanguage();

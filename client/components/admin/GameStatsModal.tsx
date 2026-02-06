@@ -89,7 +89,7 @@ export default function GameStatsModal({
         try {
             // Using axios directly here to handle FormData and response specifically for this endpoint
             // Assuming apiService base logic is used but we need specific endpoint
-            const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+            const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
 
             const res = await axios.post(`${API_URL}/extract-rov-stats`, formData, {
                 headers: {

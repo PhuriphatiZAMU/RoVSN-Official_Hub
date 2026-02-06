@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const API_URL = process.env.API_URL || 'http://localhost:3000/api';
+// For server-side API routes, use the internal API URL or relative path
+const API_URL = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || '/api';
 const COOKIE_NAME = process.env.JWT_COOKIE_NAME || 'rov_auth_token';
 const COOKIE_MAX_AGE = parseInt(process.env.JWT_COOKIE_MAX_AGE || '86400', 10); // 24 hours default
 

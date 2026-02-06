@@ -5,7 +5,7 @@ import Swal from 'sweetalert2';
 import axios from 'axios';
 import { useLanguage } from '@/components/providers/LanguageProvider';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || '/api';
 
 interface Team {
     name: string;
@@ -378,8 +378,8 @@ export default function AdminTeamsPage() {
                                                     }
                                                 }}
                                                 className={`w-6 h-6 rounded-full flex items-center justify-center ${formData.players.includes(player.name)
-                                                        ? 'bg-red-100 text-red-500 hover:bg-red-200'
-                                                        : 'bg-green-100 text-green-500 hover:bg-green-200'
+                                                    ? 'bg-red-100 text-red-500 hover:bg-red-200'
+                                                    : 'bg-green-100 text-green-500 hover:bg-green-200'
                                                     }`}
                                             >
                                                 <i className={`fas ${formData.players.includes(player.name) ? 'fa-minus' : 'fa-undo'} text-xs`}></i>
