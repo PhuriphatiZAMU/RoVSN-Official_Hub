@@ -8,7 +8,7 @@ module.exports = {
                 NODE_ENV: 'production',
                 PORT: 3001,
                 // Using values from .env directly here as fallback/override for clarity
-                MONGO_URI: 'mongodb+srv://phuriphatizamu_db_user:d8fKJ0JfITZ5g5pz@cluster.bi2ornw.mongodb.net/?appName=Cluster',
+                MONGO_URI: 'mongodb+srv://phuriphatizamu_db_user:eJjaB6JO1YFr3y6Z@cluster.bi2ornw.mongodb.net/?appName=Cluster',
                 JWT_SECRET: 'secret_key_for_dev_only_123',
                 ADMIN_USERNAME: 'admin',
                 CLOUDINARY_CLOUD_NAME: 'dpnrq5nso',

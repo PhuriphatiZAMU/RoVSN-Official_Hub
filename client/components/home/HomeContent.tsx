@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useLanguage } from '@/components/providers/LanguageProvider';
 import LatestMatches from './LatestMatches';
@@ -20,6 +21,16 @@ export default function HomeContent({
     teamLogos
 }: HomeContentProps) {
     const { t } = useLanguage();
+    // Fix Hydration Error: Ensure content matches server/client by waiting for mount
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
+    if (!mounted) {
+        return <div className="container mx-auto px-4 py-12 min-h-screen"></div>; // Return empty placeholder or skeleton
+    }
 
     return (
         <div className="container mx-auto px-4 py-12">
