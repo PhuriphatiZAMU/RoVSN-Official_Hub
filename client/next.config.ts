@@ -7,15 +7,19 @@ const securityHeaders = [
     key: 'Content-Security-Policy',
     value: [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://vercel.live https://va.vercel-scripts.com",
+      // Removed 'unsafe-eval' for better security - add back if needed for specific features
+      "script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://vercel.live https://va.vercel-scripts.com",
+      // 'unsafe-inline' required for Next.js styled-jsx
       "style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com",
       "font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com data:",
-      "img-src 'self' data: blob: https: http:",
-      "connect-src 'self' https://*.vercel.app https://*.vercel-insights.com wss://*.vercel.app https://res.cloudinary.com",
+      "img-src 'self' data: blob: https://res.cloudinary.com https://flagcdn.com",
+      // Specified exact domains instead of wildcards
+      "connect-src 'self' https://rov-sn-tournament-official.vercel.app https://vitals.vercel-insights.com wss://ws-us3.pusher.com https://res.cloudinary.com",
       "frame-ancestors 'self'",
       "form-action 'self'",
       "base-uri 'self'",
       "object-src 'none'",
+      "upgrade-insecure-requests",
     ].join('; '),
   },
   // Prevent clickjacking attacks
