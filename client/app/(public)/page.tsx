@@ -1,7 +1,7 @@
 import { Metadata } from 'next';
 import Link from 'next/link';
 import { serverApi } from '@/lib/api';
-import HeroCarousel from '@/components/home/HeroCarousel';
+import HeroCarouselWrapper from '@/components/home/HeroCarouselWrapper';
 import HomeContentWrapper from '@/components/home/HomeContentWrapper';
 
 export const metadata: Metadata = {
@@ -23,10 +23,10 @@ export default async function HomePage() {
 
     return (
         <div className="bg-white min-h-screen">
-            {/* Hero Carousel */}
-            <HeroCarousel />
+            {/* Hero Carousel - Client Side Only */}
+            <HeroCarouselWrapper />
 
-            {/* Content Section - Using Client Component Wrapper for hydration safety */}
+            {/* Content Section - Client Side Only */}
             <HomeContentWrapper
                 latestMatches={data.latestMatches}
                 upcomingMatches={data.upcomingMatches}
