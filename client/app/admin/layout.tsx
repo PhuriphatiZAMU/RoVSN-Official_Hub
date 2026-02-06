@@ -16,9 +16,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     // Protect admin routes
     useEffect(() => {
         if (!loading && !isAuthenticated) {
-            router.replace('/login');
+            window.location.href = '/login';
         }
-    }, [loading, isAuthenticated, router]);
+    }, [loading, isAuthenticated]);
 
     const menuItems = [
         { path: '/admin', label: t.admin.dashboard.title, icon: 'fas fa-tachometer-alt', exact: true },
