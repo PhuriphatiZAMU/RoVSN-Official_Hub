@@ -7,7 +7,7 @@ import dynamic from 'next/dynamic';
 // Dynamically import HomeContent with SSR disabled to prevent hydration errors
 const HomeContent = dynamic(() => import('@/components/home/HomeContent'), {
     ssr: false,
-    loading: () => <div className="container mx-auto px-4 py-12 min-h-screen"></div>
+    loading: () => <div className="container mx-auto px-4 py-12 min-h-screen" />,
 });
 
 export const metadata: Metadata = {
