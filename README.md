@@ -1,32 +1,39 @@
 # 🏆 RoV SN Tournament Official Website
 
-เว็บไซต์อย่างเป็นทางการสำหรับการแข่งขัน **RoV SN Tournament** ระบบจัดการแข่งขัน eSports ครบวงจรที่รวมทั้งระบบหน้าบ้านสำหรับผู้ชมและระบบหลังบ้านสำหรับผู้ดูแลการแข่งขัน
+The official website for **RoV SN Tournament**, a comprehensive eSports tournament management system featuring both a public-facing portal for spectators and a robust backend for tournament administrators.
 
-![Project Status](https://img.shields.io/badge/Status-Active-success)
-![Next.js](https://img.shields.io/badge/Frontend-Next.js_15-black)
-![Node.js](https://img.shields.io/badge/Backend-Express-green)
-![MongoDB](https://img.shields.io/badge/Database-MongoDB-green)
-
----
-
-## 🚀 ฟีเจอร์หลัก (Key Features)
-
-### 👥 สำหรับผู้ชม (Public)
-- **ตารางคะแนน (Standings):** อัปเดตคะแนน Real-time
-- **ตารางการแข่งขัน (Schedule):** ดูโปรแกรมแข่งล่วงหน้าและย้อนหลัง
-- **สถิติ (Statistics):** ข้อมูล MVP, Most Kills, Most Assists, Highest Damage ฯลฯ
-- **ข้อมูลทีม (Teams):** รายชื่อนักแข่งและโลโก้ทีม
-
-### 🛠️ สำหรับผู้ดูแล (Admin Dashboard)
-- **จัดการผลการแข่งขัน:** บันทึกคะแนนและอัปโหลดรูป Screenshot
-- **จัดการตารางแข่ง:** สร้าง/แก้ไข Match และกำหนดเวลาแข่ง
-- **ระบบ Import/Export:** นำเข้าข้อมูลผู้เล่นและทีมผ่านไฟล์ CSV
-- **Game Data:** ระบบจัดการ Hero และข้อมูล Meta ของเกม
-- **History Log:** ระบบตรวจสอบประวัติการแก้ไขคะแนนย้อนหลัง
+[![Live Demo](https://img.shields.io/badge/Demo-Live_Website-blue?style=for-the-badge&logo=vercel)](https://rov-sn-tournament-official.vercel.app/)
+![Status](https://img.shields.io/badge/Status-Active-success?style=for-the-badge)
+![Next.js](https://img.shields.io/badge/Frontend-Next.js_15-black?style=for-the-badge&logo=next.js)
+![Node.js](https://img.shields.io/badge/Backend-Express-green?style=for-the-badge&logo=nodedotjs)
+![MongoDB](https://img.shields.io/badge/Database-MongoDB-green?style=for-the-badge&logo=mongodb)
 
 ---
 
-## 🛠️ เทคโนโลยีที่ใช้ (Tech Stack)
+## 🌐 Live
+You can view the live application here:  
+👉 **[https://rov-sn-tournament-official.vercel.app/](https://rov-sn-tournament-official.vercel.app/)**
+
+---
+
+## 🚀 Key Features
+
+### 👥 Public Portal (Spectators)
+- **Real-time Standings:** Live score updates and group rankings.
+- **Match Schedule:** View upcoming fixtures and past match results.
+- **Player Statistics:** In-depth stats including MVP, Most Kills, Most Assists, and Highest Damage.
+- **Team Information:** Profiles for participating teams and player rosters.
+
+### 🛠️ Admin Dashboard
+- **Match Management:** Record scores, update statuses, and upload match screenshots.
+- **Schedule Manager:** Create, drag-and-drop, and organize tournament schedules.
+- **Data Import/Export:** Bulk import players and teams easily via CSV files.
+- **Game Data:** Manage meta data such as Hero pools and team logos.
+- **Audit Log:** Track result editing history and maintain data integrity.
+
+---
+
+## 🛠️ Tech Stack
 
 **Frontend (`/client`):**
 - **Framework:** Next.js 15 (App Router)
@@ -40,33 +47,33 @@
 - **Framework:** Express.js
 - **Database:** MongoDB (Mongoose)
 - **Authentication:** JWT (JSON Web Token)
-- **File Storage:** Local Storage / Cloudinary (Optional)
+- **File Storage:** Local Storage / Cloudinary (Supported)
 
 ---
 
-## ⚙️ การติดตั้งและใช้งาน (Installation & Usage)
+## ⚙️ Installation & Setup
 
-โปรเจกต์นี้แยกส่วน Frontend และ Backend ชัดเจน (Monorepo Structure)
+This project follows a **Monorepo** structure (Frontend and Backend in one repository).
 
 ### 1. Prerequisites
-- Node.js (v18 หรือสูงกว่า)
-- MongoDB Database
+- Node.js (v18 or higher)
+- MongoDB Database (Local or Atlas)
 
-### 2. ติดตั้ง Dependencies
+### 2. Install Dependencies
 ```bash
-# ติดตั้งฝั่ง Server
+# Install Server dependencies
 cd server
 npm install
 
-# ติดตั้งฝั่ง Client
+# Install Client dependencies
 cd ../client
 npm install
 
 ```
 
-### 3. การตั้งค่า Environment Variables (.env)
+### 3. Environment Variables (.env)
 
-สร้างไฟล์ `.env` ในโฟลเดอร์ `server/` และ `client/` ตามตัวอย่าง:
+Create `.env` files in both `server/` and `client/` directories based on the examples below:
 
 **Server (`server/.env`):**
 
@@ -74,7 +81,7 @@ npm install
 PORT=3001
 MONGO_URI=mongodb://localhost:27017/rov-tournament
 JWT_SECRET=your_super_secret_key
-# Optional for Cloudinary
+# Optional: Cloudinary for image storage
 CLOUDINARY_CLOUD_NAME=...
 CLOUDINARY_API_KEY=...
 CLOUDINARY_API_SECRET=...
@@ -84,22 +91,26 @@ CLOUDINARY_API_SECRET=...
 **Client (`client/.env.local`):**
 
 ```env
+# For local development
 NEXT_PUBLIC_API_URL=http://localhost:3001/api
+
+# For production (change to your deployed backend URL)
+# NEXT_PUBLIC_API_URL=[https://your-backend-url.com/api](https://your-backend-url.com/api)
 
 ```
 
 ---
 
-## 🖥️ การรันในโหมดพัฒนา (Development)
+## 🖥️ Development Mode
 
-ต้องเปิด Terminal 2 หน้าต่างเพื่อรันคู่กัน:
+To run the project locally, open **two terminal windows**:
 
 **Terminal 1 (Backend):**
 
 ```bash
 cd server
 npm run dev
-# Server จะรันที่ http://localhost:3001
+# Server starts at http://localhost:3001
 
 ```
 
@@ -108,67 +119,61 @@ npm run dev
 ```bash
 cd client
 npm run dev
-# Client จะรันที่ http://localhost:3000
+# Client starts at http://localhost:3000
 
 ```
 
 ---
 
-## 🚀 การรันในโหมด Production (Deployment)
+## 🚀 Production Deployment
 
-โปรเจกต์นี้รองรับการรันด้วย **PM2** เพื่อจัดการ Process ทั้งสองฝั่งพร้อมกัน
+### Option 1: VPS (Self-Hosted with PM2)
 
-1. **Build โปรเจกต์:**
+The project includes an `ecosystem.config.js` for easy management with PM2.
+
+1. **Build the project:**
 ```bash
-# Build Server
-cd server
-npm run build
-
-# Build Client
-cd ../client
-npm run build
+cd server && npm run build
+cd ../client && npm run build
 
 ```
 
 
-2. **Start ด้วย PM2:**
-รันคำสั่งที่ root ของโปรเจกต์ (ที่มีไฟล์ `ecosystem.config.js`)
+2. **Start with PM2:**
 ```bash
 pm2 start ecosystem.config.js
 
 ```
 
 
-3. **ตรวจสอบสถานะ:**
-```bash
-pm2 status
-pm2 logs
 
-```
+### Option 2: Cloud (Vercel + Render/Railway)
 
-
+* **Frontend:** Deploy the `client` folder to **Vercel**.
+* **Backend:** Deploy the `server` folder to **Render** or **Railway**.
+* **Database:** Use **MongoDB Atlas**.
 
 ---
 
-## 📂 โครงสร้างโฟลเดอร์ (Folder Structure)
+## 📂 Folder Structure
 
 ```
 .
-├── client/                 # Next.js Frontend
-│   ├── app/                # App Router Pages
-│   ├── components/         # UI Components
-│   ├── lib/                # API Clients & Utils
-│   └── public/             # Static Assets
+├── client/                 # Next.js Frontend application
+│   ├── app/                # App Router Pages & Layouts
+│   ├── components/         # Reusable UI Components
+│   ├── lib/                # API Clients & Utility functions
+│   └── public/             # Static Assets (Images, Icons)
 │
-├── server/                 # Express Backend
+├── server/                 # Express Backend API
 │   ├── src/
-│   │   ├── controllers/    # Route Logic
-│   │   ├── models/         # MongoDB Schemas
-│   │   ├── routes/         # API Routes
-│   │   └── middleware/     # Auth & Validation
-│   └── uploads/            # Local File Storage
+│   │   ├── controllers/    # Business Logic & Request Handlers
+│   │   ├── models/         # MongoDB Mongoose Schemas
+│   │   ├── routes/         # API Route Definitions
+│   │   └── middleware/     # Auth & Validation Middleware
+│   └── uploads/            # Local File Storage Directory
 │
-└── ecosystem.config.js     # PM2 Configuration
+└── ecosystem.config.js     # PM2 Configuration for VPS deployment
 
 ```
 
@@ -177,13 +182,3 @@ pm2 logs
 ## 📄 License
 
 This project is licensed under the MIT License.
-
-```
-
-### สิ่งที่เปลี่ยนแปลง:
-1.  **Tech Stack:** เปลี่ยนจาก Vite/React เป็น **Next.js 15 (App Router)**
-2.  **Deployment:** เพิ่มส่วนการใช้งาน **PM2** และ `ecosystem.config.js`
-3.  **Commands:** ปรับคำสั่งติดตั้งและการรันแยก folder `client` และ `server` ชัดเจน
-4.  **Structure:** อัปเดตผังโฟลเดอร์ให้ตรงกับปัจจุบัน
-
-```
