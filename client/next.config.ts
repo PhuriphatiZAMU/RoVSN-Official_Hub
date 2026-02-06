@@ -7,8 +7,8 @@ const securityHeaders = [
     key: 'Content-Security-Policy',
     value: [
       "default-src 'self'",
-      // Removed 'unsafe-eval' for better security - add back if needed for specific features
-      "script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://vercel.live https://va.vercel-scripts.com",
+      // 'unsafe-eval' is required for Next.js production build
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://vercel.live https://va.vercel-scripts.com",
       // 'unsafe-inline' required for Next.js styled-jsx
       "style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com",
       "font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com data:",

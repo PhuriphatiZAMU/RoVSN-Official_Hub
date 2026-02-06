@@ -457,9 +457,13 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
     const [language, setLanguage] = useState<Language>('th');
+    const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
-        // Load saved language preference
+        // Mark as mounted first
+        setMounted(true);
+
+        // Load saved language preference only on client
         const saved = localStorage.getItem('language') as Language;
         if (saved && (saved === 'th' || saved === 'en')) {
             setLanguage(saved);
@@ -476,6 +480,16 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
         t: translations[language],
         changeLanguage,
     };
+
+    // Prevent hydration mismatch by rendering null until mounted
+    // This ensures server and client render the same initial content
+    if (!mounted) {
+        return (
+            <LanguageContext.Provider value={value}>
+                {children}
+            </LanguageContext.Provider>
+        );
+    }
 
     return (
         <LanguageContext.Provider value={value}>
