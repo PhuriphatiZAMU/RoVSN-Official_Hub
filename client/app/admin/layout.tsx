@@ -48,19 +48,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         setSidebarOpen(false);
     }, [pathname]);
 
-    if (loading) {
+    if (loading || !isAuthenticated) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-100">
                 <div className="text-center">
                     <div className="w-12 h-12 border-4 border-cyan-aura border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                    <p className="text-gray-500 font-display">Loading Admin Panel...</p>
+                    <p className="text-gray-500 font-display">
+                        {loading ? 'Loading Admin Panel...' : 'Redirecting to login...'}
+                    </p>
                 </div>
             </div>
         );
-    }
-
-    if (!isAuthenticated) {
-        return null; // Will redirect via useEffect
     }
 
     const currentMenu = menuItems.find(m => isActive(m.path, m.exact)) || { label: 'Admin' };
