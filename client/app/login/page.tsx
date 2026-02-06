@@ -24,17 +24,19 @@ function LoginContent() {
             const result = await login(username, password);
 
             if (result.success) {
-                // Redirect to callback URL or admin dashboard
-                const callbackUrl = searchParams.get('callbackUrl') || '/admin';
-                router.push(callbackUrl);
+                console.log("Login success, redirecting...");
+                // Refresh data and redirect
+                router.refresh();
+                router.push('/admin');
             } else {
                 setError(result.error || 'เข้าสู่ระบบไม่สำเร็จ');
+                setLoading(false); // Stop loading only on error
             }
         } catch {
             setError('เกิดข้อผิดพลาดในการเข้าสู่ระบบ');
-        } finally {
             setLoading(false);
         }
+        // Note: We don't set loading(false) on success because we are redirecting
     };
 
     return (
