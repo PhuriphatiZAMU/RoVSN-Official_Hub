@@ -29,7 +29,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<AuthUser | null>(null);
     const [loading, setLoading] = useState(true);
 
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://rov-sn-tournament-api.onrender.com/api';
+    // Use local proxy
+    const API_URL = '/api/proxy';
 
     // Helper to get token
     const getToken = () => typeof window !== 'undefined' ? localStorage.getItem('token') : null;

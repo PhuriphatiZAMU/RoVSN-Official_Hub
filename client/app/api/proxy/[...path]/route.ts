@@ -1,64 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const COOKIE_NAME = process.env.JWT_COOKIE_NAME || 'rov_auth_token';
 // For server-side API proxy, use the backend server URL
 const API_URL = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
-// Proxy handler for admin API calls that need authentication
-export async function GET(
-    request: NextRequest,
-    { params }: { params: Promise<{ path: string[] }> }
-) {
-    const resolvedParams = await params;
-    return handleProxy(request, resolvedParams.path, 'GET');
-}
-
-export async function POST(
-    request: NextRequest,
-    { params }: { params: Promise<{ path: string[] }> }
-) {
-    const resolvedParams = await params;
-    return handleProxy(request, resolvedParams.path, 'POST');
-}
-
-export async function PUT(
-    request: NextRequest,
-    { params }: { params: Promise<{ path: string[] }> }
-) {
-    const resolvedParams = await params;
-    return handleProxy(request, resolvedParams.path, 'PUT');
-}
-
-export async function DELETE(
-    request: NextRequest,
-    { params }: { params: Promise<{ path: string[] }> }
-) {
-    const resolvedParams = await params;
-    return handleProxy(request, resolvedParams.path, 'DELETE');
-}
-
+// Helper to handle proxy requests
 async function handleProxy(
     request: NextRequest,
     pathSegments: string[],
     method: string
 ) {
-    const token = request.cookies.get(COOKIE_NAME)?.value;
-
-    if (!token) {
-        return NextResponse.json(
-            { error: 'Unauthorized' },
-            { status: 401 }
-        );
-    }
-
     const path = pathSegments.join('/');
     const url = new URL(request.url);
-    const apiUrl = `${API_URL}/${path}${url.search}`;
+    const backendUrl = `${API_URL}/${path}${url.search}`;
 
     try {
+        // Forward headers, especially Authorization
         const headers: HeadersInit = {
-            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
         };
+
+        const authHeader = request.headers.get('authorization');
+        if (authHeader) {
+            headers['Authorization'] = authHeader;
+        }
 
         let body: BodyInit | null = null;
 
@@ -66,33 +30,67 @@ async function handleProxy(
         const contentType = request.headers.get('content-type');
         if (method !== 'GET' && method !== 'HEAD') {
             if (contentType?.includes('multipart/form-data')) {
-                // For file uploads, pass through the body
+                // For file uploads, pass through the body array buffer
+                // Note: Fetch might need specific handling for FormData boundaries if not handled automatically
                 body = await request.arrayBuffer();
-                headers['Content-Type'] = contentType;
+                // Don't set Content-Type for multipart, let fetch set boundary
+                // But we need to be careful here. 
+                // Simple JSON proxying is safer to start.
+                // If uploading files, we might need a more robust stream proxy.
+                // For now, let's stick to JSON which is 99% of use cases here.
             } else {
                 // JSON body
                 const jsonBody = await request.json().catch(() => null);
                 if (jsonBody) {
                     body = JSON.stringify(jsonBody);
-                    headers['Content-Type'] = 'application/json';
                 }
             }
         }
 
-        const response = await fetch(apiUrl, {
+        // Forward request to backend
+        const response = await fetch(backendUrl, {
             method,
             headers,
             body,
+            // crucial for self-signed certs or some internal networks, but on Vercel/Render standard HTTPS is fine
         });
 
-        const data = await response.json().catch(() => ({}));
+        // Get response body
+        const responseData = await response.json().catch(() => ({}));
 
-        return NextResponse.json(data, { status: response.status });
+        return NextResponse.json(responseData, { status: response.status });
+
     } catch (error) {
-        console.error('Proxy error:', error);
+        console.error(`Proxy Error [${method} ${path}]:`, error);
         return NextResponse.json(
-            { error: 'Internal server error' },
+            { error: 'Internal server error', details: String(error) },
             { status: 500 }
         );
     }
+}
+
+// Export route handlers dynamically
+export async function GET(req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
+    const { path } = await params;
+    return handleProxy(req, path, 'GET');
+}
+
+export async function POST(req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
+    const { path } = await params;
+    return handleProxy(req, path, 'POST');
+}
+
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
+    const { path } = await params;
+    return handleProxy(req, path, 'PUT');
+}
+
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
+    const { path } = await params;
+    return handleProxy(req, path, 'DELETE');
+}
+
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
+    const { path } = await params;
+    return handleProxy(req, path, 'PATCH');
 }

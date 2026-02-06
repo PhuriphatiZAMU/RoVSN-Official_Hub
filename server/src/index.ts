@@ -31,8 +31,10 @@ const PORT = process.env.PORT || 3000;
 app.use(compression());
 app.use(bodyParser.json());
 app.use(cors({
-    origin: true, // Allow all origins (or use verify function if strictness is needed)
-    credentials: true
+    origin: process.env.CLIENT_URL || true, // Use defined Client URL or allow all if not set (for dev)
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 // Static uploads folder

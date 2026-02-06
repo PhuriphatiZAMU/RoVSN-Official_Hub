@@ -14,14 +14,15 @@ import {
     PlayerHeroStat
 } from '@/types';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
+// Use local proxy for client-side requests to avoid CORS and auth issues
+const API_URL = '/api/proxy';
 
 const api = axios.create({
     baseURL: API_URL,
     headers: {
         'Content-Type': 'application/json',
     },
-    // withCredentials: true, // Not needed for Token-based auth, but kept for compatibility if needed
+    // withCredentials: true, // Not needed for Token-based auth
 });
 
 // Add a request interceptor to attach the token
