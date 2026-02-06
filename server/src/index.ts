@@ -31,17 +31,7 @@ const PORT = process.env.PORT || 3000;
 app.use(compression());
 app.use(bodyParser.json());
 app.use(cors({
-    origin: [
-        'https://rov-sn-tournament-official.vercel.app',
-        'https://ro-v-sn-tournament-official.vercel.app',
-        'http://localhost:5173',
-        'http://localhost:5174',
-        'http://localhost:5175',
-        'http://localhost:3000',
-        'http://localhost:3001',
-        'http://localhost:3002',
-        'https://phuriphatizamu.github.io'
-    ],
+    origin: true, // Allow all origins (or use verify function if strictness is needed)
     credentials: true
 }));
 
