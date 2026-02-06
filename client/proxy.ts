@@ -9,7 +9,7 @@ const protectedPaths = ['/admin'];
 // Paths that should redirect to admin if already authenticated
 const authPaths = ['/login'];
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
     const token = request.cookies.get(COOKIE_NAME)?.value;
     const { pathname } = request.nextUrl;
 
@@ -46,7 +46,7 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
 }
 
-// Configure which routes the middleware should run on
+// Configure which routes the proxy should run on
 export const config = {
     matcher: [
         '/admin/:path*',
