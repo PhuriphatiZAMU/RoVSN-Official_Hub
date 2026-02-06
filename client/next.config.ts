@@ -14,7 +14,7 @@ const securityHeaders = [
       "font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com data:",
       "img-src 'self' data: blob: https://res.cloudinary.com https://flagcdn.com",
       // Specified exact domains instead of wildcards
-      "connect-src 'self' https://rov-sn-tournament-official.vercel.app https://vitals.vercel-insights.com wss://ws-us3.pusher.com https://res.cloudinary.com",
+      "connect-src 'self' http://localhost:3001 https://rov-sn-tournament-api.onrender.com https://rov-sn-tournament-official.vercel.app https://vitals.vercel-insights.com wss://ws-us3.pusher.com https://res.cloudinary.com",
       "frame-ancestors 'self'",
       "form-action 'self'",
       "base-uri 'self'",

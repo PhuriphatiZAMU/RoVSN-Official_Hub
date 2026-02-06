@@ -31,7 +31,26 @@ export default function AdminDrawPage() {
     const [editingName, setEditingName] = useState('');
 
     // Custom Dates
+    const [startDate, setStartDate] = useState('');
     const [customMatchDates, setCustomMatchDates] = useState<Record<number, string>>({});
+
+    const handleStartDateChange = (date: string) => {
+        setStartDate(date);
+
+        // Auto-fill subsequent dates
+        if (date && teams.length > 0) {
+            const start = new Date(date);
+            const totalRounds = teams.length % 2 === 0 ? teams.length - 1 : teams.length;
+            const newDates: Record<number, string> = {};
+
+            for (let i = 0; i < totalRounds; i++) {
+                const currentDate = new Date(start);
+                currentDate.setDate(start.getDate() + i); // Assuming daily matches, user can edit later
+                newDates[i + 1] = currentDate.toISOString().split('T')[0];
+            }
+            setCustomMatchDates(newDates);
+        }
+    };
 
     // Logo Modal State
     const [logoModalOpen, setLogoModalOpen] = useState(false);
@@ -42,8 +61,37 @@ export default function AdminDrawPage() {
     const [logoPreview, setLogoPreview] = useState('');
     const [uploadingLogo, setUploadingLogo] = useState(false);
 
+    // Playoff Schedule State
+    const [playoffTeams, setPlayoffTeams] = useState<{ rank1: string; rank2: string; rank3: string; rank4: string }>({
+        rank1: '', rank2: '', rank3: '', rank4: ''
+    });
+    const [savingPlayoffs, setSavingPlayoffs] = useState(false);
+    const [loadingStandings, setLoadingStandings] = useState(false);
+    const [standingsLoaded, setStandingsLoaded] = useState(false);
+
+    // Tournament Progress State
+    const [tournamentStatus, setTournamentStatus] = useState<{
+        leagueComplete: boolean;
+        semiFinalExists: boolean;
+        semiFinalComplete: boolean;
+        finalsExists: boolean;
+        semiFinalResults: { sf1Winner?: string; sf1Loser?: string; sf2Winner?: string; sf2Loser?: string };
+        leagueMatchesTotal: number;
+        leagueMatchesCompleted: number;
+    }>({
+        leagueComplete: false,
+        semiFinalExists: false,
+        semiFinalComplete: false,
+        finalsExists: false,
+        semiFinalResults: {},
+        leagueMatchesTotal: 0,
+        leagueMatchesCompleted: 0
+    });
+    const [loadingStatus, setLoadingStatus] = useState(true);
+
     useEffect(() => {
         fetchRosterTeams();
+        fetchTournamentStatus();
     }, []);
 
     const fetchRosterTeams = async () => {
@@ -58,6 +106,195 @@ export default function AdminDrawPage() {
         } catch (err) {
             console.error("Failed to auto-load teams:", err);
         }
+    };
+
+    const [debugMsg, setDebugMsg] = useState<string>('');
+
+    const fetchTournamentStatus = async () => {
+        setLoadingStatus(true);
+        setLoadingStandings(true);
+        setDebugMsg(''); // Clear debug
+        try {
+            const [scheduleData, resultsData, standings] = await Promise.all([
+                apiService.getSchedule(),
+                apiService.getResults(),
+                apiService.getStandings()
+            ]);
+
+            // Debug Standings
+            if (!standings || standings.length === 0) {
+                setDebugMsg('API returned empty standings array.');
+            } else {
+                setDebugMsg(`Loaded ${standings.length} items from standings. First item: ${JSON.stringify(standings[0])}`);
+            }
+
+            const scheduleList = (scheduleData as any).schedule || scheduleData || [];
+            const results = resultsData || [];
+
+            // Check league days (Day 1-9 or any day < 10)
+            const leagueDays = scheduleList.filter((d: any) => d.day < 10);
+            const leagueMatches = leagueDays.flatMap((d: any) =>
+                (d.matches || []).map((m: any) => ({
+                    matchId: `${d.day}_${m.blue}_vs_${m.red}`.replace(/\s+/g, ''),
+                    ...m
+                }))
+            );
+            const leagueMatchesCompleted = leagueMatches.filter((m: any) =>
+                results.some((r: any) => r.matchId === m.matchId)
+            ).length;
+            const leagueComplete = leagueMatches.length > 0 && leagueMatchesCompleted === leagueMatches.length;
+
+            // Check Semi Finals (Day 10)
+            const semiDay = scheduleList.find((d: any) => d.day === 10);
+            const semiFinalExists = semiDay && semiDay.matches && semiDay.matches.length > 0;
+
+            let semiFinalComplete = false;
+            let semiFinalResults: any = {};
+
+            if (semiFinalExists) {
+                const sf1 = semiDay.matches[0];
+                const sf2 = semiDay.matches[1];
+                const sf1MatchId = `10_${sf1.blue}_vs_${sf1.red}`.replace(/\s+/g, '');
+                const sf2MatchId = `10_${sf2.blue}_vs_${sf2.red}`.replace(/\s+/g, '');
+
+                const sf1Result = results.find((r: any) => r.matchId === sf1MatchId);
+                const sf2Result = results.find((r: any) => r.matchId === sf2MatchId);
+
+                semiFinalComplete = !!(sf1Result && sf2Result);
+
+                if (sf1Result) {
+                    semiFinalResults.sf1Winner = sf1Result.winner;
+                    semiFinalResults.sf1Loser = sf1Result.winner === sf1Result.teamBlue ? sf1Result.teamRed : sf1Result.teamBlue;
+                }
+                if (sf2Result) {
+                    semiFinalResults.sf2Winner = sf2Result.winner;
+                    semiFinalResults.sf2Loser = sf2Result.winner === sf2Result.teamBlue ? sf2Result.teamRed : sf2Result.teamBlue;
+                }
+            }
+
+            // Check Finals (Day 11)
+            const finalsDay = scheduleList.find((d: any) => d.day === 11);
+            const finalsExists = finalsDay && finalsDay.matches && finalsDay.matches.length > 0;
+
+            setTournamentStatus({
+                leagueComplete,
+                semiFinalExists,
+                semiFinalComplete,
+                finalsExists,
+                semiFinalResults,
+                leagueMatchesTotal: leagueMatches.length,
+                leagueMatchesCompleted
+            });
+
+            // Load standings for playoff teams
+            let loadedFromStandings = false;
+
+            if (standings && standings.length > 0) {
+                console.log('Standings Raw Data:', standings);
+
+                const sorted = [...standings].sort((a: any, b: any) => {
+                    // Normalize Team Names first for H2H lookup
+                    const teamNameA = a.team || a.name || a.teamName || '';
+                    const teamNameB = b.team || b.name || b.teamName || '';
+
+                    // 1. Points
+                    const ptsA = a.points !== undefined ? a.points : (a.pts !== undefined ? a.pts : ((a.won || a.w || a.gamesWon || 0) * 3));
+                    const ptsB = b.points !== undefined ? b.points : (b.pts !== undefined ? b.pts : ((b.won || b.w || b.gamesWon || 0) * 3));
+
+                    if (ptsB !== ptsA) return ptsB - ptsA;
+
+                    // 2. Game Difference
+                    const diffA = a.gameDiff !== undefined ? a.gameDiff : (a.gd !== undefined ? a.gd : ((a.gamesWon || 0) - (a.gamesLost || 0)));
+                    const diffB = b.gameDiff !== undefined ? b.gameDiff : (b.gd !== undefined ? b.gd : ((b.gamesWon || 0) - (b.gamesLost || 0)));
+
+                    if (diffB !== diffA) return diffB - diffA;
+
+                    // 3. Head-to-Head (H2H)
+                    // If points and GD are equal, check who won when they played each other
+                    if (results && results.length > 0) {
+                        const h2hMatch = results.find((r: any) =>
+                            (r.teamBlue === teamNameA && r.teamRed === teamNameB) ||
+                            (r.teamBlue === teamNameB && r.teamRed === teamNameA)
+                        );
+
+                        if (h2hMatch) {
+                            // If A defeated B, A should be higher (return negative)
+                            if (h2hMatch.winner === teamNameA) return -1;
+                            if (h2hMatch.winner === teamNameB) return 1;
+                        }
+                    }
+
+                    // 4. Total Wins
+                    const winsA = a.won !== undefined ? a.won : (a.w !== undefined ? a.w : 0);
+                    const winsB = b.won !== undefined ? b.won : (b.w !== undefined ? b.w : 0);
+                    if (winsB !== winsA) return winsB - winsA;
+
+                    // 5. Fallback: Alphabetical
+                    return teamNameA.localeCompare(teamNameB);
+                });
+
+                // Filter out empty team names & Normalize team name
+                const validTeams = sorted
+                    .map((s: any) => ({
+                        ...s,
+                        teamName: s.team || s.name || s.teamName || ''
+                    }))
+                    .filter((s: any) => s.teamName && s.teamName.trim() !== '');
+
+                console.log('Valid Teams (Sorted):', validTeams);
+
+                if (validTeams.length >= 4) {
+                    setPlayoffTeams({
+                        rank1: validTeams[0]?.teamName || '',
+                        rank2: validTeams[1]?.teamName || '',
+                        rank3: validTeams[2]?.teamName || '',
+                        rank4: validTeams[3]?.teamName || ''
+                    });
+                    setStandingsLoaded(true);
+                    loadedFromStandings = true;
+                } else {
+                    console.log('Not enough valid teams in standings:', validTeams.length);
+                    setDebugMsg(prev => prev + ` | Valid teams found: ${validTeams.length}. Need 4.`);
+                }
+            }
+
+            // Fallback: extract teams from schedule if standings not complete
+            if (!loadedFromStandings) {
+                const allTeamsInSchedule = new Set<string>();
+                leagueDays.forEach((d: any) => {
+                    (d.matches || []).forEach((m: any) => {
+                        if (m.blue && m.blue.trim()) allTeamsInSchedule.add(m.blue.trim());
+                        if (m.red && m.red.trim()) allTeamsInSchedule.add(m.red.trim());
+                    });
+                });
+
+                const teamsArray = Array.from(allTeamsInSchedule).sort();
+                console.log('Teams from schedule:', teamsArray);
+
+                // Also update the global teams list if it's empty
+                if (teamsArray.length > 0 && teams.length === 0) {
+                    setTeams(teamsArray);
+                }
+
+                if (teamsArray.length >= 4) {
+                    // Start: Fallback Teams Loaded
+                    setDebugMsg(prev => prev + ' | Fallback teams loaded from schedule (Alphabetical). Please select Top 4 teams manually.');
+
+                    // We DO NOT auto-populate playoffTeams here anymore to avoid incorrect alphabetical selection.
+                    // User must verify standings or select manually.
+                }
+            }
+        } catch (err: any) {
+            console.error("Failed to load tournament status:", err);
+            setDebugMsg(`Error: ${err.message}`);
+        } finally {
+            setLoadingStatus(false);
+            setLoadingStandings(false);
+        }
+    };
+
+    const fetchStandings = async () => {
+        fetchTournamentStatus();
     };
 
     // --- Team Management ---
@@ -159,7 +396,8 @@ export default function AdminDrawPage() {
                     roundMatches.push({
                         blue: home,
                         red: away,
-                        time: '18:00'
+                        time: '18:00',
+                        date: getRoundDate(round + 1) // Add date to match
                     });
                 }
             }
@@ -269,6 +507,191 @@ export default function AdminDrawPage() {
         setMatchDays([]);
         setDisplayedMatches([]);
         setMessage(null);
+    };
+
+    // --- Playoff Schedule Logic ---
+
+    // Create Semi Finals schedule from standings (Day 90)
+    const createSemiFinals = async () => {
+        const { rank1, rank2, rank3, rank4 } = playoffTeams;
+
+        if (!rank1 || !rank2 || !rank3 || !rank4) {
+            setMessage({ type: 'error', text: 'Standings not loaded - cannot create Semi Finals' });
+            return;
+        }
+
+        const result = await Swal.fire({
+            title: 'Create Semi Finals?',
+            html: `
+                <div class="text-left">
+                    <p class="mb-2">Based on current standings (Rule: 1vs2, 3vs4 | BO5):</p>
+                    <p><strong>🅰️ Semi Final 1:</strong> ${rank1} (1st) vs ${rank2} (2nd)</p>
+                    <p><strong>🅱️ Semi Final 2:</strong> ${rank3} (3rd) vs ${rank4} (4th)</p>
+                    <p class="text-xs text-orange-600 mt-1 font-bold">Format: Best of 5 (BO5)</p>
+                    <div class="mt-4">
+                        <label class="block text-sm font-bold text-gray-700 mb-1">Select Date:</label>
+                        <input id="swal-sf-date" type="date" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-orange-500">
+                    </div>
+                </div>
+            `,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#f97316',
+            confirmButtonText: 'Create Semi Finals',
+            preConfirm: () => {
+                const dateInput = document.getElementById('swal-sf-date') as HTMLInputElement;
+                return dateInput.value;
+            }
+        });
+
+        if (!result.isConfirmed) return;
+
+        const selectedDate = result.value || '';
+        console.log('Selected Date for Semi Finals:', selectedDate); // Debug Date
+
+        setSavingPlayoffs(true);
+        setMessage(null);
+
+        try {
+            const semiFinalSchedule = {
+                day: 10,
+                date: selectedDate,
+                matches: [
+                    { blue: rank1, red: rank2, time: '18:00', date: selectedDate }, // Add date to matches too
+                    { blue: rank3, red: rank4, time: '19:00', date: selectedDate }
+                ]
+            };
+
+            const existingData = await apiService.getSchedule();
+            const existingSchedule = (existingData as any).schedule || existingData || [];
+
+            console.log('Existing Schedule Length:', existingSchedule.length);
+
+            // Remove any existing playoff days (>= 10) to overwrite
+            const filteredSchedule = existingSchedule.filter((d: any) => d.day < 10);
+
+            const newSchedule = [...filteredSchedule, semiFinalSchedule];
+
+            console.log('Sending New Schedule Payload:', { schedule: newSchedule, teams });
+
+            const saveResult = await apiService.createSchedule({ schedule: newSchedule, teams });
+            console.log('Save Result:', saveResult);
+
+            setMessage({ type: 'success', text: 'Semi Finals created successfully!' });
+
+            Swal.fire({
+                icon: 'success',
+                title: 'Semi Finals Created!',
+                html: `
+                    <div class="text-left">
+                        <p class="font-bold mb-2">🥊 Semi Finals (Day 10):</p>
+                        <p>• ${rank1} vs ${rank2}</p>
+                        <p>• ${rank3} vs ${rank4}</p>
+                        <p class="mt-3 text-gray-500 text-sm">Enter results in the Results page, then come back to create Finals Day.</p>
+                    </div>
+                `,
+                confirmButtonText: 'OK'
+            });
+
+            // Force delay before refresh to ensure DB write
+            setTimeout(async () => {
+                await fetchTournamentStatus();
+                setSavingPlayoffs(false);
+            }, 1000);
+
+        } catch (error: any) {
+            console.error('Error creating Semi Finals:', error);
+            setMessage({ type: 'error', text: error.message || 'Failed to create Semi Finals' });
+            setSavingPlayoffs(false);
+        }
+    };
+
+    // Create Finals Day schedule from Semi Finals results (Day 91)
+    const createFinalsDay = async () => {
+        const { sf1Winner, sf1Loser, sf2Winner, sf2Loser } = tournamentStatus.semiFinalResults;
+
+        if (!sf1Winner || !sf1Loser || !sf2Winner || !sf2Loser) {
+            setMessage({ type: 'error', text: 'Semi Finals results not complete' });
+            return;
+        }
+
+        const result = await Swal.fire({
+            title: 'Create Grand Finals?',
+            html: `
+                <div class="text-left">
+                    <p class="mb-2">Based on Semi Finals results (Rule: BO5):</p>
+                    <p><strong>🥉 3rd Place Match:</strong> ${sf1Loser} vs ${sf2Loser} <span class="text-xs font-bold text-gray-500">(BO5)</span></p>
+                    <p class="text-xs text-gray-500 ml-4">← Semi Final losers</p>
+                    <p class="mt-2"><strong>🏆 Grand Final:</strong> ${sf1Winner} vs ${sf2Winner} <span class="text-xs font-bold text-orange-600">(BO5)</span></p>
+                    <p class="text-xs text-gray-500 ml-4">← Semi Final winners</p>
+                    <div class="mt-4">
+                        <label class="block text-sm font-bold text-gray-700 mb-1">Select Date:</label>
+                        <input id="swal-gf-date" type="date" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-yellow-500">
+                    </div>
+                </div>
+            `,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#eab308',
+            confirmButtonText: 'Create Grand Finals',
+            preConfirm: () => {
+                const dateInput = document.getElementById('swal-gf-date') as HTMLInputElement;
+                return dateInput.value;
+            }
+        });
+
+        if (!result.isConfirmed) return;
+
+        const selectedDate = result.value || '';
+
+        setSavingPlayoffs(true);
+        setMessage(null);
+
+        try {
+            const finalsDaySchedule = {
+                day: 11,
+                date: selectedDate,
+                matches: [
+                    { blue: sf1Loser, red: sf2Loser, time: '13:00' },   // 3rd Place Match
+                    { blue: sf1Winner, red: sf2Winner, time: '15:00' } // Grand Finals
+                ]
+            };
+
+            const existingData = await apiService.getSchedule();
+            const existingSchedule = (existingData as any).schedule || existingData || [];
+
+            // Remove existing Day 11 only
+            const filteredSchedule = existingSchedule.filter((d: any) => d.day !== 11);
+
+            const newSchedule = [...filteredSchedule, finalsDaySchedule];
+            await apiService.createSchedule({ schedule: newSchedule, teams });
+
+            setMessage({ type: 'success', text: 'Grand Finals created!' });
+
+            Swal.fire({
+                icon: 'success',
+                title: '🏆 Grand Finals Created!',
+                html: `
+                    <div class="text-left">
+                        <p class="font-bold mb-2">Grand Finals Day (Day 11):</p>
+                        <p>• 🥉 3rd Place Match: ${sf1Loser} vs ${sf2Loser}</p>
+                        <p class="text-xs text-gray-500 ml-4">(Semi Final losers)</p>
+                        <p>• 🏆 Grand Final: ${sf1Winner} vs ${sf2Winner}</p>
+                        <p class="text-xs text-gray-500 ml-4">(Semi Final winners)</p>
+                    </div>
+                `,
+                confirmButtonText: 'OK'
+            });
+
+            // Refresh status
+            await fetchTournamentStatus();
+
+        } catch (error: any) {
+            console.error('Error creating Grand Finals:', error);
+            setMessage({ type: 'error', text: error.message || 'Failed to create Grand Finals' });
+        } finally {
+            setSavingPlayoffs(false);
+        }
     };
 
     // --- Logo Modal Logic ---
@@ -388,10 +811,22 @@ export default function AdminDrawPage() {
                 {/* Date Settings */}
                 {!isDrawing && !drawComplete && teams.length >= 2 && (
                     <div className="mb-8 border-t border-gray-100 pt-6">
-                        <h3 className="font-bold text-gray-700 text-lg mb-4">
-                            <i className="fas fa-calendar-alt mr-2 text-cyan-aura"></i>
-                            Date Settings ({totalRounds} Days)
-                        </h3>
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="font-bold text-gray-700 text-lg">
+                                <i className="fas fa-calendar-alt mr-2 text-cyan-aura"></i>
+                                Date Settings ({totalRounds} Days)
+                            </h3>
+                            <div className="flex items-center gap-2">
+                                <label className="text-sm text-gray-600 font-bold">Start Date:</label>
+                                <input
+                                    type="date"
+                                    value={startDate}
+                                    onChange={(e) => handleStartDateChange(e.target.value)}
+                                    className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:border-cyan-aura focus:outline-none"
+                                />
+                                <span className="text-xs text-gray-400 ml-1">(Auto-fill)</span>
+                            </div>
+                        </div>
                         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
                             {Array.from({ length: totalRounds }).map((_, i) => {
                                 const day = i + 1;
@@ -479,7 +914,25 @@ export default function AdminDrawPage() {
                             <div key={round.day} className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
                                 <div className="bg-gray-100 px-4 py-2 border-b border-gray-200 flex justify-between items-center">
                                     <span className="font-bold text-gray-700">Round {round.day}</span>
-                                    <span className="text-xs text-gray-500">{round.date}</span>
+                                    {drawComplete ? (
+                                        <input
+                                            type="date"
+                                            value={round.date || ''}
+                                            onChange={(e) => {
+                                                const newDate = e.target.value;
+                                                setMatchDays(prev => prev.map(r => r.day === round.day ? {
+                                                    ...r,
+                                                    date: newDate,
+                                                    matches: r.matches.map((m: any) => ({ ...m, date: newDate })) // Also update match dates
+                                                } : r));
+                                                // Also update customMatchDates to keep sync
+                                                setCustomMatchDates(prev => ({ ...prev, [round.day]: newDate }));
+                                            }}
+                                            className="text-xs text-gray-600 border border-gray-300 rounded px-1 py-0.5 focus:outline-none focus:border-cyan-aura"
+                                        />
+                                    ) : (
+                                        <span className="text-xs text-gray-500">{round.date}</span>
+                                    )}
                                 </div>
                                 <div className="p-2 space-y-2">
                                     {round.matches.map((match: any, idx: number) => {
@@ -501,6 +954,181 @@ export default function AdminDrawPage() {
                     </div>
                 </div>
             )}
+
+            {/* Playoff Schedule Section */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mt-8">
+                <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-orange-50 to-amber-50">
+                    <div className="flex justify-between items-center mb-4">
+                        <div className="flex items-center gap-3">
+                            <i className="fas fa-trophy text-2xl text-orange-500"></i>
+                            <div>
+                                <h3 className="text-xl font-bold text-uefa-dark">PLAYOFF SCHEDULE</h3>
+                                <p className="text-sm text-gray-500">Create Semi Finals and Finals Day based on results</p>
+                            </div>
+                        </div>
+                        <button
+                            onClick={fetchTournamentStatus}
+                            className="px-4 py-2 bg-white border border-gray-200 text-orange-600 text-sm font-bold rounded-lg hover:bg-orange-50 shadow-sm"
+                        >
+                            <i className={`fas fa-sync-alt mr-2 ${loadingStandings ? 'fa-spin' : ''}`}></i>
+                            Refresh Status
+                        </button>
+                    </div>
+
+                    {debugMsg && (
+                        <div className="bg-gray-800 border border-gray-700 text-green-400 p-3 text-xs font-mono rounded-lg overflow-x-auto select-all">
+                            <strong>DEBUG LOG:</strong> {debugMsg}
+                        </div>
+                    )}
+                </div>
+
+                <div className="p-6">
+                    {loadingStatus ? (
+                        <div className="text-center py-8">
+                            <i className="fas fa-spinner fa-spin text-3xl text-orange-400 mb-3"></i>
+                            <p className="text-gray-500">Loading tournament status...</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-6">
+                            {/* Step 1: League Phase Progress */}
+                            <div className={`p-4 rounded-xl border-2 ${tournamentStatus.leagueComplete ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'}`}>
+                                <div className="flex items-center gap-3 mb-2">
+                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${tournamentStatus.leagueComplete ? 'bg-green-500 text-white' : 'bg-gray-300 text-white'}`}>
+                                        {tournamentStatus.leagueComplete ? <i className="fas fa-check"></i> : '1'}
+                                    </div>
+                                    <h4 className="font-bold text-gray-700">League Phase</h4>
+                                </div>
+                                <div className="ml-11">
+                                    {tournamentStatus.leagueComplete ? (
+                                        <p className="text-green-600 font-bold">✅ Complete - All {tournamentStatus.leagueMatchesTotal} matches finished</p>
+                                    ) : (
+                                        <div>
+                                            <p className="text-gray-600">
+                                                Progress: {tournamentStatus.leagueMatchesCompleted} / {tournamentStatus.leagueMatchesTotal} matches
+                                            </p>
+                                            <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                                                <div
+                                                    className="bg-orange-400 h-2 rounded-full transition-all"
+                                                    style={{ width: `${tournamentStatus.leagueMatchesTotal > 0 ? (tournamentStatus.leagueMatchesCompleted / tournamentStatus.leagueMatchesTotal) * 100 : 0}%` }}
+                                                ></div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Step 2: Semi Finals */}
+                            <div className={`p-4 rounded-xl border-2 ${tournamentStatus.semiFinalComplete ? 'bg-green-50 border-green-200' : tournamentStatus.semiFinalExists ? 'bg-orange-50 border-orange-200' : tournamentStatus.leagueComplete ? 'bg-blue-50 border-blue-200' : 'bg-gray-50 border-gray-200 opacity-60'}`}>
+                                <div className="flex items-center gap-3 mb-2">
+                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${tournamentStatus.semiFinalComplete ? 'bg-green-500 text-white' : tournamentStatus.semiFinalExists ? 'bg-orange-500 text-white' : 'bg-gray-300 text-white'}`}>
+                                        {tournamentStatus.semiFinalComplete ? <i className="fas fa-check"></i> : '2'}
+                                    </div>
+                                    <h4 className="font-bold text-gray-700">Semi Finals</h4>
+                                </div>
+                                <div className="ml-11">
+                                    {tournamentStatus.semiFinalComplete ? (
+                                        <div>
+                                            <p className="text-green-600 font-bold mb-2">✅ Complete</p>
+                                            <div className="bg-white rounded-lg p-3 border">
+                                                <p className="text-sm">🏆 SF1 Winner: <strong className="text-green-600">{tournamentStatus.semiFinalResults.sf1Winner}</strong></p>
+                                                <p className="text-sm">🏆 SF2 Winner: <strong className="text-green-600">{tournamentStatus.semiFinalResults.sf2Winner}</strong></p>
+                                            </div>
+                                        </div>
+                                    ) : tournamentStatus.semiFinalExists ? (
+                                        <p className="text-orange-600">⏳ Waiting for results - Enter results in the Results page</p>
+                                    ) : tournamentStatus.leagueComplete ? (
+                                        <div>
+                                            <p className="text-blue-600 mb-3">Ready to create Semi Finals:</p>
+
+                                            {standingsLoaded && playoffTeams.rank1 ? (
+                                                <div className="bg-white rounded-lg p-3 border mb-3">
+                                                    <p className="text-xs text-gray-400 mb-1">Proposed Matchups:</p>
+                                                    <p className="text-sm">🥇 1st: <strong className="text-uefa-dark">{playoffTeams.rank1}</strong> vs 🥈 2nd: <strong className="text-uefa-dark">{playoffTeams.rank2}</strong></p>
+                                                    <p className="text-sm">🥉 3rd: <strong className="text-uefa-dark">{playoffTeams.rank3}</strong> vs 4️⃣ 4th: <strong className="text-uefa-dark">{playoffTeams.rank4}</strong></p>
+                                                </div>
+                                            ) : (
+                                                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-3">
+                                                    <p className="text-sm text-yellow-700 mb-2"><i className="fas fa-exclamation-triangle mr-1"></i> Standings incomplete. Please select teams:</p>
+                                                    <div className="grid grid-cols-2 gap-2">
+                                                        <select value={playoffTeams.rank1} onChange={e => setPlayoffTeams(p => ({ ...p, rank1: e.target.value }))} className="text-sm border p-1 rounded">
+                                                            <option value="">Select 1st</option>
+                                                            {teams.map(t => <option key={t} value={t}>{t}</option>)}
+                                                        </select>
+                                                        <select value={playoffTeams.rank2} onChange={e => setPlayoffTeams(p => ({ ...p, rank2: e.target.value }))} className="text-sm border p-1 rounded">
+                                                            <option value="">Select 2nd</option>
+                                                            {teams.map(t => <option key={t} value={t}>{t}</option>)}
+                                                        </select>
+                                                        <select value={playoffTeams.rank3} onChange={e => setPlayoffTeams(p => ({ ...p, rank3: e.target.value }))} className="text-sm border p-1 rounded">
+                                                            <option value="">Select 3rd</option>
+                                                            {teams.map(t => <option key={t} value={t}>{t}</option>)}
+                                                        </select>
+                                                        <select value={playoffTeams.rank4} onChange={e => setPlayoffTeams(p => ({ ...p, rank4: e.target.value }))} className="text-sm border p-1 rounded">
+                                                            <option value="">Select 4th</option>
+                                                            {teams.map(t => <option key={t} value={t}>{t}</option>)}
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            <button
+                                                onClick={createSemiFinals}
+                                                disabled={savingPlayoffs || !playoffTeams.rank1 || !playoffTeams.rank2 || !playoffTeams.rank3 || !playoffTeams.rank4}
+                                                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold rounded-lg shadow-lg hover:shadow-orange-500/50 disabled:opacity-50 transition-all"
+                                            >
+                                                {savingPlayoffs ? <i className="fas fa-spinner fa-spin"></i> : <i className="fas fa-plus-circle"></i>}
+                                                Create Semi Finals
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <p className="text-gray-400">Complete League Phase first</p>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Step 3: Grand Finals */}
+                            <div className={`p-4 rounded-xl border-2 ${tournamentStatus.finalsExists ? 'bg-green-50 border-green-200' : tournamentStatus.semiFinalComplete ? 'bg-yellow-50 border-yellow-300' : 'bg-gray-50 border-gray-200 opacity-60'}`}>
+                                <div className="flex items-center gap-3 mb-2">
+                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${tournamentStatus.finalsExists ? 'bg-green-500 text-white' : tournamentStatus.semiFinalComplete ? 'bg-yellow-500 text-white' : 'bg-gray-300 text-white'}`}>
+                                        {tournamentStatus.finalsExists ? <i className="fas fa-check"></i> : '3'}
+                                    </div>
+                                    <h4 className="font-bold text-gray-700">Grand Finals</h4>
+                                </div>
+                                <div className="ml-11">
+                                    {tournamentStatus.finalsExists ? (
+                                        <p className="text-green-600 font-bold">✅ Created - View in Schedule page</p>
+                                    ) : tournamentStatus.semiFinalComplete ? (
+                                        <div>
+                                            <p className="text-yellow-600 mb-3">Ready to create Grand Finals from Semi Finals results:</p>
+                                            <div className="bg-white rounded-lg p-3 border mb-3 space-y-2">
+                                                <div>
+                                                    <p className="text-sm font-bold">🥉 3rd Place Match</p>
+                                                    <p className="text-sm ml-4"><strong>{tournamentStatus.semiFinalResults.sf1Loser}</strong> vs <strong>{tournamentStatus.semiFinalResults.sf2Loser}</strong></p>
+                                                    <p className="text-xs text-gray-500 ml-4">← Semi Final losers</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm font-bold">🏆 Grand Final</p>
+                                                    <p className="text-sm ml-4"><strong>{tournamentStatus.semiFinalResults.sf1Winner}</strong> vs <strong>{tournamentStatus.semiFinalResults.sf2Winner}</strong></p>
+                                                    <p className="text-xs text-gray-500 ml-4">← Semi Final winners</p>
+                                                </div>
+                                            </div>
+                                            <button
+                                                onClick={createFinalsDay}
+                                                disabled={savingPlayoffs}
+                                                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-yellow-500 to-amber-500 text-white font-bold rounded-lg shadow-lg hover:shadow-yellow-500/50 disabled:opacity-50 transition-all"
+                                            >
+                                                {savingPlayoffs ? <i className="fas fa-spinner fa-spin"></i> : <i className="fas fa-trophy"></i>}
+                                                Create Grand Finals
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <p className="text-gray-400">Complete Semi Finals first</p>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
 
             {/* Logo Modal */}
             {logoModalOpen && (

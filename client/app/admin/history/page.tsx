@@ -32,22 +32,25 @@ export default function AdminResultHistoryPage() {
     const fetchHistory = async () => {
         setLoading(true);
         try {
-            const response = await axios.get(`${API_BASE}/results/recent-changes?limit=100`, {
+            // Use proxy route for authenticated requests
+            console.log('Fetching history from proxy...');
+            const response = await axios.get('/api/proxy/results/recent-changes?limit=100', {
                 withCredentials: true
             });
+            console.log('History response:', response.data);
             setHistory(response.data || []);
         } catch (error: any) {
             console.error('Error fetching history:', error);
-            if (error.response?.status === 403 || error.response?.status === 401) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Session Expired',
-                    text: 'Please login again.',
-                    confirmButtonText: 'Login'
-                }).then(() => {
-                    window.location.href = '/login';
-                });
-            }
+            console.error('Error response:', error.response?.data);
+            console.error('Error status:', error.response?.status);
+
+            // Show error but don't redirect immediately
+            Swal.fire({
+                icon: 'error',
+                title: 'Error Loading History',
+                text: error.response?.data?.message || error.message || 'Failed to load history',
+                confirmButtonText: 'OK'
+            });
         } finally {
             setLoading(false);
         }

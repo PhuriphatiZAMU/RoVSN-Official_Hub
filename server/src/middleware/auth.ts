@@ -11,8 +11,22 @@ export interface AuthRequest extends Request {
 }
 
 export const authenticateToken = (req: AuthRequest, res: Response, next: NextFunction) => {
+    let token = '';
+
+    // 1. Check Authorization Header (Bearer)
     const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+        token = authHeader.split(' ')[1];
+    }
+
+    // 2. Check Cookies if token not found (for Next.js / Browser access)
+    if (!token && req.headers.cookie) {
+        const cookies = req.headers.cookie.split(';');
+        const authCookie = cookies.find(c => c.trim().startsWith('rov_auth_token='));
+        if (authCookie) {
+            token = authCookie.split('=')[1];
+        }
+    }
 
     if (!token) {
         return res.status(401).json({ error: 'Access token required' });
@@ -20,6 +34,7 @@ export const authenticateToken = (req: AuthRequest, res: Response, next: NextFun
 
     jwt.verify(token, JWT_SECRET, (err, user) => {
         if (err) {
+            // Token might be expired
             return res.status(403).json({ error: 'Invalid or expired token' });
         }
         req.user = user;

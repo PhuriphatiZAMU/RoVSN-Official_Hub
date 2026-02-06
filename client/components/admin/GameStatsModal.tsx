@@ -30,6 +30,9 @@ interface PlayerStats {
 interface GameStatsData {
     blue: PlayerStats[];
     red: PlayerStats[];
+    winner?: 'blue' | 'red';
+    mvp?: string;
+    duration?: string;
 }
 
 interface GameStatsModalProps {
@@ -72,6 +75,10 @@ export default function GameStatsModal({
 
     const [bluePlayers, setBluePlayers] = useState<PlayerStats[]>(createEmptyPlayers());
     const [redPlayers, setRedPlayers] = useState<PlayerStats[]>(createEmptyPlayers());
+    const [winner, setWinner] = useState<'blue' | 'red' | null>(null);
+    const [mvp, setMvp] = useState<string>('');
+    const [duration, setDuration] = useState<string>('');
+
     const [heroPickerOpen, setHeroPickerOpen] = useState<HeroPickerState>({ open: false, team: null, index: null });
     const [heroSearch, setHeroSearch] = useState<string>('');
     const heroSearchRef = useRef<HTMLInputElement>(null);
@@ -218,6 +225,9 @@ export default function GameStatsModal({
         if (isOpen) {
             setBluePlayers(initialData?.blue && initialData?.blue.length === 5 ? [...initialData.blue] : createEmptyPlayers());
             setRedPlayers(initialData?.red && initialData?.red.length === 5 ? [...initialData.red] : createEmptyPlayers());
+            setWinner(initialData?.winner || null);
+            setMvp(initialData?.mvp || '');
+            setDuration(initialData?.duration || '');
         }
     }, [isOpen, initialData]);
 
@@ -245,7 +255,13 @@ export default function GameStatsModal({
     };
 
     const handleSave = () => {
-        onSave({ blue: bluePlayers, red: redPlayers });
+        onSave({
+            blue: bluePlayers,
+            red: redPlayers,
+            winner: winner || undefined,
+            mvp,
+            duration
+        });
         onClose();
     };
 
@@ -333,6 +349,56 @@ export default function GameStatsModal({
                     <button onClick={onClose} className="text-gray-400 hover:text-red-500 transition-colors">
                         <i className="fas fa-times text-2xl"></i>
                     </button>
+                </div>
+
+                {/* Game Details: Winner, MVP, Duration */}
+                <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 mb-6 flex flex-wrap gap-6 items-center">
+                    {/* Winner Selection */}
+                    <div className="flex items-center gap-3">
+                        <span className="font-bold text-gray-700">ทีมที่ชนะ:</span>
+                        <label className={`cursor-pointer px-4 py-2 rounded-lg border-2 transition-all flex items-center gap-2 ${winner === 'blue' ? 'bg-blue-50 border-blue-500 text-blue-700 font-bold' : 'bg-white border-gray-300 text-gray-500 hover:border-gray-400'}`}>
+                            <input type="radio" name="gameWinner" className="hidden" checked={winner === 'blue'} onChange={() => setWinner('blue')} />
+                            <span className={`w-3 h-3 rounded-full ${winner === 'blue' ? 'bg-blue-500' : 'bg-gray-300'}`}></span>
+                            {teamBlue}
+                        </label>
+                        <label className={`cursor-pointer px-4 py-2 rounded-lg border-2 transition-all flex items-center gap-2 ${winner === 'red' ? 'bg-red-50 border-red-500 text-red-700 font-bold' : 'bg-white border-gray-300 text-gray-500 hover:border-gray-400'}`}>
+                            <input type="radio" name="gameWinner" className="hidden" checked={winner === 'red'} onChange={() => setWinner('red')} />
+                            <span className={`w-3 h-3 rounded-full ${winner === 'red' ? 'bg-red-500' : 'bg-gray-300'}`}></span>
+                            {teamRed}
+                        </label>
+                    </div>
+
+                    {/* MVP Selection (Only show if winner selected) */}
+                    <div className={`flex items-center gap-2 transition-opacity ${winner ? 'opacity-100' : 'opacity-50 pointer-events-none'}`}>
+                        <span className="font-bold text-gray-700">MVP:</span>
+                        <select
+                            value={mvp}
+                            onChange={(e) => setMvp(e.target.value)}
+                            disabled={!winner}
+                            className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-cyan-aura focus:border-transparent outline-none bg-white min-w-[200px]"
+                        >
+                            <option value="">-- เลือกผู้เล่น MVP --</option>
+                            {(winner === 'blue' ? blueRoster : winner === 'red' ? redRoster : []).map((p) => (
+                                <option key={p._id} value={p.name}>
+                                    {p.name} {p.inGameName ? `(${p.inGameName})` : ''}
+                                </option>
+                            ))}
+                            {/* Fallback: If current inputs have names properly typed but not in roster? */}
+                            {/* Normally Roster should cover it. Keeping it simple as requested. */}
+                        </select>
+                    </div>
+
+                    {/* Duration */}
+                    <div className="flex items-center gap-2 ml-auto">
+                        <span className="font-bold text-gray-700">Duration:</span>
+                        <input
+                            type="text"
+                            placeholder="MM:SS"
+                            value={duration}
+                            onChange={(e) => setDuration(e.target.value)}
+                            className="border border-gray-300 rounded-lg px-3 py-2 w-24 text-center focus:ring-2 focus:ring-cyan-aura focus:border-transparent outline-none font-mono"
+                        />
+                    </div>
                 </div>
 
                 <div className="grid xl:grid-cols-2 gap-8 mb-6">

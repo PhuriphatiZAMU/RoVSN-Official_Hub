@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 const COOKIE_NAME = process.env.JWT_COOKIE_NAME || 'rov_auth_token';
-// For server-side API proxy, use the internal API URL or relative path
-const API_URL = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || '/api';
+// For server-side API proxy, use the backend server URL
+const API_URL = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 // Proxy handler for admin API calls that need authentication
 export async function GET(

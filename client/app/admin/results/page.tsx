@@ -19,6 +19,9 @@ interface PlayerStats {
 interface GameStatsData {
     blue: PlayerStats[];
     red: PlayerStats[];
+    winner?: 'blue' | 'red';
+    mvp?: string;
+    duration?: string;
 }
 
 interface Match {
@@ -39,6 +42,18 @@ interface MatchResult {
     duration: string;
     isByeWin?: boolean;
 }
+
+// Helper function to convert day number to display label
+const getDayLabel = (day: number): string => {
+    switch (day) {
+        case 10: return 'Day 10 (Semi Finals BO5)';
+        case 11: return 'Day 11 (Grand Final BO5)';
+        // Handle legacy data just in case
+        case 90: return 'Day 10 (Semi Finals BO5)';
+        case 91: return 'Day 11 (Grand Final BO5)';
+        default: return `Day ${day} (League BO5`;
+    }
+};
 
 export default function AdminResultsPage() {
     const { t } = useLanguage();
@@ -170,7 +185,7 @@ export default function AdminResultsPage() {
             scoreBlue: formData.scoreBlue,
             scoreRed: formData.scoreRed,
             winner,
-            matchDate: new Date().toISOString(),
+            matchDate: formData.matchDate ? new Date(formData.matchDate).toISOString() : new Date().toISOString(),
             mvp: formData.mvp,
             duration: formData.duration,
             isByeWin: formData.isByeWin
@@ -198,7 +213,10 @@ export default function AdminResultsPage() {
                     redTeam: selectedMatch.red,
                     stats: {
                         blue: game.blue,
-                        red: game.red
+                        red: game.red,
+                        winner: game.winner,
+                        mvp: game.mvp,
+                        duration: game.duration
                     }
                 }));
 
@@ -254,7 +272,7 @@ export default function AdminResultsPage() {
                                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                                         }`}
                                 >
-                                    Day {d.day}
+                                    {getDayLabel(d.day)}
                                 </button>
                             ))}
                         </div>
@@ -332,8 +350,8 @@ export default function AdminResultsPage() {
                                     </div>
                                 </div>
 
-                                {/* Options */}
-                                <div className="flex flex-wrap gap-4 items-center justify-center bg-gray-50 p-4 rounded-lg">
+                                {/* Bye Win Options */}
+                                <div className="flex flex-col items-center justify-center bg-gray-50 p-4 rounded-lg gap-3">
                                     <label className="flex items-center gap-2 cursor-pointer">
                                         <input
                                             type="checkbox"
@@ -343,38 +361,41 @@ export default function AdminResultsPage() {
                                         />
                                         <span className="font-bold text-gray-700">ชนะบาย (No Show)</span>
                                     </label>
+
+                                    {formData.isByeWin && (
+                                        <div className="flex gap-4 animate-fade-in">
+                                            <span className="text-sm self-center">เลือกทีมชนะ:</span>
+                                            <label className="flex items-center gap-2 cursor-pointer">
+                                                <input
+                                                    type="radio"
+                                                    name="byeWinner"
+                                                    checked={formData.scoreBlue! > formData.scoreRed!} // Use score logic to store winner state implicitly or add explicit logic
+                                                    onChange={() => setFormData({ ...formData, scoreBlue: 3, scoreRed: 0 })} // Auto set scores? Or just used for winner determination?
+                                                    className="text-blue-600"
+                                                />
+                                                <span className="text-blue-600 font-bold">{selectedMatch.blue}</span>
+                                            </label>
+                                            <label className="flex items-center gap-2 cursor-pointer">
+                                                <input
+                                                    type="radio"
+                                                    name="byeWinner"
+                                                    checked={formData.scoreRed! > formData.scoreBlue!}
+                                                    onChange={() => setFormData({ ...formData, scoreBlue: 0, scoreRed: 3 })}
+                                                    className="text-red-600"
+                                                />
+                                                <span className="text-red-600 font-bold">{selectedMatch.red}</span>
+                                            </label>
+                                        </div>
+                                    )}
                                 </div>
 
-                                {/* Details */}
-                                <div className="grid md:grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-bold text-gray-600 mb-1">MVP Player</label>
-                                        <input
-                                            type="text"
-                                            value={formData.mvp}
-                                            onChange={(e) => setFormData({ ...formData, mvp: e.target.value })}
-                                            className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-cyan-aura focus:border-transparent"
-                                            placeholder="ระบุชื่อ MVP..."
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-bold text-gray-600 mb-1">Game Duration</label>
-                                        <input
-                                            type="text"
-                                            value={formData.duration}
-                                            onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
-                                            className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-cyan-aura focus:border-transparent"
-                                            placeholder="เช่น 15:30"
-                                        />
-                                    </div>
-                                </div>
-
+                                {/* Details: MVP & Duration Removed per request */}
                                 {/* Game Stats Buttons */}
                                 {!formData.isByeWin && (
                                     <div className="border-t pt-4">
                                         <h3 className="font-bold text-gray-700 mb-3">บันทึกสถิติรายเกม (Game Stats)</h3>
                                         <div className="flex gap-3 overflow-x-auto pb-2">
-                                            {[...Array(Math.max((formData.scoreBlue || 0) + (formData.scoreRed || 0), 1))].map((_, i) => (
+                                            {[...Array(selectedDay && selectedDay >= 10 ? 5 : 3)].map((_, i) => (
                                                 <button
                                                     key={i}
                                                     type="button"
@@ -389,6 +410,47 @@ export default function AdminResultsPage() {
                                                 </button>
                                             ))}
                                         </div>
+
+                                        {/* Display saved game stats summary */}
+                                        {gameStats.length > 0 && (
+                                            <div className="mt-4 space-y-3">
+                                                <h4 className="text-sm font-bold text-gray-600">สถิติที่บันทึกไว้:</h4>
+                                                {gameStats.map((game, idx) => game && (
+                                                    <div key={idx} className="bg-gray-50 rounded-lg p-3 text-xs">
+                                                        <div className="flex justify-between items-center mb-2">
+                                                            <div className="font-bold text-gray-700">Game {idx + 1}</div>
+                                                            <div className="text-gray-500">
+                                                                {game.winner && <span className={`mr-2 font-bold ${game.winner === 'blue' ? 'text-blue-600' : 'text-red-600'}`}>Winner: {game.winner === 'blue' ? 'Blue' : 'Red'}</span>}
+                                                                {game.mvp && <span className="mr-2 text-cyan-600">MVP: {game.mvp}</span>}
+                                                                {game.duration && <span>Time: {game.duration}</span>}
+                                                            </div>
+                                                        </div>
+                                                        <div className="grid grid-cols-2 gap-4">
+                                                            {/* Blue Team */}
+                                                            <div>
+                                                                <div className="text-blue-600 font-bold mb-1">{selectedMatch?.blue}</div>
+                                                                {game.blue?.map((p, pi) => p.name && (
+                                                                    <div key={pi} className="flex justify-between text-gray-600">
+                                                                        <span>{p.name} ({p.hero})</span>
+                                                                        <span>{p.k}/{p.d}/{p.a}</span>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                            {/* Red Team */}
+                                                            <div>
+                                                                <div className="text-red-600 font-bold mb-1">{selectedMatch?.red}</div>
+                                                                {game.red?.map((p, pi) => p.name && (
+                                                                    <div key={pi} className="flex justify-between text-gray-600">
+                                                                        <span>{p.name} ({p.hero})</span>
+                                                                        <span>{p.k}/{p.d}/{p.a}</span>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
                                 )}
 
@@ -418,7 +480,7 @@ export default function AdminResultsPage() {
                         </div>
                     )}
                 </div>
-            </div>
+            </div >
 
             {selectedMatch && (
                 <GameStatsModal
@@ -432,7 +494,8 @@ export default function AdminResultsPage() {
                     allPlayers={allPlayers}
                     allHeroes={allHeroes}
                 />
-            )}
-        </div>
+            )
+            }
+        </div >
     );
 }

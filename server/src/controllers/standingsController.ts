@@ -14,7 +14,7 @@ export const getStandings = async (req: Request, res: Response) => {
             {
                 $match: {
                     $expr: {
-                        $lt: [{ $toInt: { $ifNull: ['$matchDay', 0] } }, 90]
+                        $lt: [{ $toInt: { $ifNull: ['$matchDay', 0] } }, 10]
                     }
                 }
             },
@@ -135,7 +135,7 @@ export const getDetailedStandings = async (req: Request, res: Response) => {
             {
                 $match: {
                     $expr: {
-                        $lt: [{ $toInt: { $ifNull: ['$matchDay', 0] } }, 90]
+                        $lt: [{ $toInt: { $ifNull: ['$matchDay', 0] } }, 10]
                     }
                 }
             },

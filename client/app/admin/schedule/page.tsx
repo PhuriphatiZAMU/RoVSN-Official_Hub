@@ -6,6 +6,15 @@ import { useLanguage } from '@/components/providers/LanguageProvider';
 import { apiService } from '@/lib/api-client';
 import { ScheduleItem, MatchResult } from '@/types'; // Adjust imports
 
+// Helper function to convert day number to display label
+const getDayLabel = (day: number): string => {
+    switch (day) {
+        case 90: return 'Semi Finals';
+        case 91: return 'Grand Finals';
+        default: return `Day ${day}`;
+    }
+};
+
 export default function AdminSchedulePage() {
     const { t } = useLanguage();
     const [schedule, setSchedule] = useState<{ day: number; matches: any[] }[]>([]);
@@ -198,7 +207,7 @@ export default function AdminSchedulePage() {
                                             }`}
                                     >
                                         <div className="flex items-center justify-between">
-                                            <span className="font-bold">Day {day.day}</span>
+                                            <span className="font-bold">{getDayLabel(day.day)}</span>
                                             {isCompleted ? (
                                                 <i className={`fas fa-check-circle ${selectedDay === day.day ? 'text-white' : 'text-green-500'}`}></i>
                                             ) : (
@@ -223,7 +232,7 @@ export default function AdminSchedulePage() {
                         <div className="p-5 border-b border-gray-100">
                             <h3 className="font-bold text-uefa-dark">
                                 <i className="fas fa-gamepad mr-2 text-cyan-aura"></i>
-                                {selectedDay ? `Day ${selectedDay} - ${selectedDayData?.matches?.length || 0} ${t.admin.schedulePage.matches}` : t.admin.schedulePage.selectDay}
+                                {selectedDay ? `${getDayLabel(selectedDay)} - ${selectedDayData?.matches?.length || 0} ${t.admin.schedulePage.matches}` : t.admin.schedulePage.selectDay}
                             </h3>
                         </div>
                         <div className="p-5">
