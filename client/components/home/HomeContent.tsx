@@ -1,7 +1,8 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useLanguage } from '@/components/providers/LanguageProvider';
+import { useLanguage, translations } from '@/components/providers/LanguageProvider';
 import LatestMatches from './LatestMatches';
 import LeagueTable from './LeagueTable';
 import type { ProcessedStanding, MatchWithResult, ScheduleMatch } from '@/lib/api';
@@ -20,6 +21,14 @@ export default function HomeContent({
     teamLogos
 }: HomeContentProps) {
     const { t } = useLanguage();
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
+    // Use default Thai translations for SSR, actual translations after mount
+    const displayT = mounted ? t : translations.th;
 
     return (
         <div className="container mx-auto px-4 py-12">
@@ -29,13 +38,13 @@ export default function HomeContent({
                 <div>
                     <div className="flex justify-between items-end mb-6 border-b border-gray-100 pb-4">
                         <h2 className="text-xl md:text-3xl font-display font-bold uppercase text-uefa-dark border-l-4 border-cyan-aura pl-4">
-                            {t.home.latestResults}
+                            {displayT.home.latestResults}
                         </h2>
                         <Link
                             href="/fixtures"
                             className="text-cyan-aura font-bold hover:text-cyan-600 hover:underline text-sm flex items-center gap-1 transition-colors"
                         >
-                            {t.home.viewAll} <i className="fas fa-arrow-right"></i>
+                            {displayT.home.viewAll} <i className="fas fa-arrow-right"></i>
                         </Link>
                     </div>
                     <LatestMatches
@@ -49,13 +58,13 @@ export default function HomeContent({
                 <div>
                     <div className="flex justify-between items-end mb-6 border-b border-gray-100 pb-4">
                         <h2 className="text-xl md:text-3xl font-display font-bold uppercase text-uefa-dark border-l-4 border-cyan-aura pl-4">
-                            {t.home.leagueTable}
+                            {displayT.home.leagueTable}
                         </h2>
                         <Link
                             href="/standings"
                             className="text-cyan-aura font-bold hover:text-cyan-600 hover:underline text-sm flex items-center gap-1 transition-colors"
                         >
-                            {t.home.fullTable} <i className="fas fa-arrow-right"></i>
+                            {displayT.home.fullTable} <i className="fas fa-arrow-right"></i>
                         </Link>
                     </div>
                     <div className="bg-white shadow-lg shadow-gray-100 rounded-2xl overflow-hidden border border-gray-100 hover:shadow-xl transition-shadow duration-300">
