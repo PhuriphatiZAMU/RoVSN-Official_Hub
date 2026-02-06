@@ -2,9 +2,13 @@ import { Metadata } from 'next';
 import Link from 'next/link';
 import { serverApi } from '@/lib/api';
 import HeroCarousel from '@/components/home/HeroCarousel';
-import LatestMatches from '@/components/home/LatestMatches';
-import LeagueTable from '@/components/home/LeagueTable';
-import HomeContent from '@/components/home/HomeContent';
+import dynamic from 'next/dynamic';
+
+// Dynamically import HomeContent with SSR disabled to prevent hydration errors
+const HomeContent = dynamic(() => import('@/components/home/HomeContent'), {
+    ssr: false,
+    loading: () => <div className="container mx-auto px-4 py-12 min-h-screen"></div>
+});
 
 export const metadata: Metadata = {
     title: 'RoV SN Tournament 2026',
