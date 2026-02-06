@@ -37,42 +37,61 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Check authentication status by calling verify endpoint
     const checkAuth = useCallback(async () => {
         const token = getToken();
+
+        console.log('[AuthProvider] Checking auth...', { token: !!token, apiUrl: API_URL });
+
         if (!token) {
+            console.log('[AuthProvider] No token found, clearing user');
             setUser(null);
             setLoading(false);
             return;
         }
 
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+
         try {
             setLoading(true);
+            console.log('[AuthProvider] Fetching verify endpoint...');
             const response = await fetch(`${API_URL}/auth/verify`, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${token}`
-                }
+                },
+                signal: controller.signal
             });
+
+            clearTimeout(timeoutId);
+
+            console.log(`[AuthProvider] Verify response: ${response.status}`);
 
             if (response.ok) {
                 const data = await response.json();
                 if (data.valid && data.user) {
+                    console.log('[AuthProvider] User verified:', data.user.username);
                     setUser({
                         id: data.user.id || 'admin',
                         username: data.user.username || 'admin',
                         role: data.user.role || 'admin',
                     });
                 } else {
+                    console.warn('[AuthProvider] Invalid user data');
                     localStorage.removeItem('token');
                     setUser(null);
                 }
             } else {
+                console.warn('[AuthProvider] Verify failed');
                 localStorage.removeItem('token');
                 setUser(null);
             }
         } catch (error) {
-            console.error('Auth check error:', error);
-            // Don't clear token on network error immediately, but user state is null
+            console.error('[AuthProvider] Auth check error:', error);
+            // On timeout or network error, maybe keep token but invalid session?
+            // For safety, let's clear token to prevent infinite loops if backend is down
+            // localStorage.removeItem('token'); 
             setUser(null);
         } finally {
+            console.log('[AuthProvider] Auth check finished');
             setLoading(false);
         }
     }, []);
