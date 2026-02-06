@@ -16,7 +16,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     // Protect admin routes
     useEffect(() => {
         if (!loading && !isAuthenticated) {
-            router.push('/login');
+            router.replace('/login');
         }
     }, [loading, isAuthenticated, router]);
 

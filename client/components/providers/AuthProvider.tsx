@@ -1,7 +1,6 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
 
 // Type definitions
 interface AuthUser {
@@ -29,8 +28,6 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<AuthUser | null>(null);
     const [loading, setLoading] = useState(true);
-    const router = useRouter();
-    const pathname = usePathname();
 
     // Use local proxy
     const API_URL = '/api/proxy';
@@ -82,13 +79,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     console.warn('[AuthProvider] Invalid user data');
                     localStorage.removeItem('token');
                     setUser(null);
-                    if (pathname?.startsWith('/admin')) router.push('/login');
                 }
             } else {
                 console.warn('[AuthProvider] Verify failed');
                 localStorage.removeItem('token');
                 setUser(null);
-                if (pathname?.startsWith('/admin')) router.push('/login');
             }
         } catch (error) {
             console.error('[AuthProvider] Auth check error:', error);
@@ -100,7 +95,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             console.log('[AuthProvider] Auth check finished');
             setLoading(false);
         }
-    }, [pathname, router]);
+    }, []);
 
     // Run auth check on mount
     useEffect(() => {
