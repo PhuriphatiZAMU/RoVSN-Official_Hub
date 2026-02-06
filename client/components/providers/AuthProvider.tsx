@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
 
 // Type definitions
 interface AuthUser {
@@ -28,6 +29,8 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<AuthUser | null>(null);
     const [loading, setLoading] = useState(true);
+    const router = useRouter();
+    const pathname = usePathname();
 
     // Use local proxy
     const API_URL = '/api/proxy';
@@ -79,11 +82,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     console.warn('[AuthProvider] Invalid user data');
                     localStorage.removeItem('token');
                     setUser(null);
+                    if (pathname?.startsWith('/admin')) router.push('/login');
                 }
             } else {
                 console.warn('[AuthProvider] Verify failed');
                 localStorage.removeItem('token');
                 setUser(null);
+                if (pathname?.startsWith('/admin')) router.push('/login');
             }
         } catch (error) {
             console.error('[AuthProvider] Auth check error:', error);
@@ -95,7 +100,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             console.log('[AuthProvider] Auth check finished');
             setLoading(false);
         }
-    }, []);
+    }, [pathname, router]);
+
+    // Run auth check on mount
+    useEffect(() => {
+        checkAuth();
+    }, [checkAuth]);
 
     // Login function - calls our API route
     const login = useCallback(async (username: string, password: string): Promise<LoginResult> => {
@@ -122,8 +132,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             // Save token to localStorage
             if (data.token) {
                 localStorage.setItem('token', data.token);
-                // Manually set user state immediately to avoid waiting for verify roundtrip if possible
-                // but checkAuth is safer
+                // Manually set user state immediately to avoid waiting for verify roundtrip
                 await checkAuth();
                 return { success: true };
             } else {
