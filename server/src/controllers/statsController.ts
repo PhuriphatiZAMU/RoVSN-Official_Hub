@@ -103,10 +103,15 @@ export const getPlayerStats = async (req: Request, res: Response) => {
                         ]
                     },
                     kda: {
-                        $cond: [
-                            { $eq: ['$totalDeaths', 0] },
-                            { $add: ['$totalKills', '$totalAssists'] },
-                            { $round: [{ $divide: [{ $add: ['$totalKills', '$totalAssists'] }, '$totalDeaths'] }, 2] }
+                        $round: [
+                            {
+                                $cond: {
+                                    if: { $eq: ['$totalDeaths', 0] },
+                                    then: { $add: ['$totalKills', '$totalAssists'] },
+                                    else: { $divide: [{ $add: ['$totalKills', '$totalAssists'] }, '$totalDeaths'] }
+                                }
+                            },
+                            2
                         ]
                     }
                 }
@@ -173,10 +178,15 @@ export const getTeamStats = async (req: Request, res: Response) => {
                         ]
                     },
                     kda: {
-                        $cond: [
-                            { $eq: ["$totalDeaths", 0] },
-                            { $add: ["$totalKills", "$totalAssists"] },
-                            { $divide: [{ $add: ["$totalKills", "$totalAssists"] }, "$totalDeaths"] }
+                        $round: [
+                            {
+                                $cond: {
+                                    if: { $eq: ["$totalDeaths", 0] },
+                                    then: { $add: ["$totalKills", "$totalAssists"] },
+                                    else: { $divide: [{ $add: ["$totalKills", "$totalAssists"] }, "$totalDeaths"] }
+                                }
+                            },
+                            2
                         ]
                     }
                 }
