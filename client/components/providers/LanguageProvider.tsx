@@ -456,18 +456,18 @@ interface LanguageContextType {
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
+    // Always start with 'th' for SSR consistency
     const [language, setLanguage] = useState<Language>('th');
-    const [mounted, setMounted] = useState(false);
+    const [isHydrated, setIsHydrated] = useState(false);
 
     useEffect(() => {
-        // Mark as mounted first
-        setMounted(true);
-
-        // Load saved language preference only on client
+        // Load saved language preference only on client after hydration
         const saved = localStorage.getItem('language') as Language;
         if (saved && (saved === 'th' || saved === 'en')) {
             setLanguage(saved);
         }
+        // Mark as hydrated AFTER setting language
+        setIsHydrated(true);
     }, []);
 
     const changeLanguage = useCallback((lang: Language) => {
@@ -475,21 +475,14 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
         localStorage.setItem('language', lang);
     }, []);
 
+    // IMPORTANT: Always use 'th' translations until hydrated to prevent mismatch
+    const effectiveLanguage = isHydrated ? language : 'th';
+
     const value: LanguageContextType = {
-        language,
-        t: translations[language],
+        language: effectiveLanguage,
+        t: translations[effectiveLanguage],
         changeLanguage,
     };
-
-    // Prevent hydration mismatch by rendering null until mounted
-    // This ensures server and client render the same initial content
-    if (!mounted) {
-        return (
-            <LanguageContext.Provider value={value}>
-                {children}
-            </LanguageContext.Provider>
-        );
-    }
 
     return (
         <LanguageContext.Provider value={value}>
