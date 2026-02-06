@@ -47,7 +47,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="th" className={`${kanit.variable} ${oswald.variable}`}>
+    <html lang="th" className={`${kanit.variable} ${oswald.variable}`} suppressHydrationWarning>
       <head>
         {/* Font Awesome for icons */}
         <link
@@ -58,7 +58,7 @@ export default function RootLayout({
           referrerPolicy="no-referrer"
         />
       </head>
-      <body className="antialiased">
+      <body className="antialiased" suppressHydrationWarning>
         <Providers>
           {children}
         </Providers>

@@ -11,6 +11,12 @@ export default function Navbar() {
     const pathname = usePathname();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [scrolled, setScrolled] = useState(false);
+    const [mounted, setMounted] = useState(false);
+
+    // Mark as mounted to prevent hydration mismatch
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     // Handle scroll effect
     useEffect(() => {
@@ -47,6 +53,12 @@ export default function Navbar() {
     const toggleLanguage = () => {
         changeLanguage(language === 'th' ? 'en' : 'th');
     };
+
+    // Flag URL - use default 'th' for SSR, actual language after hydration
+    const flagUrl = mounted
+        ? (language === 'th' ? "https://flagcdn.com/w40/th.png" : "https://flagcdn.com/w40/gb.png")
+        : "https://flagcdn.com/w40/th.png";
+    const displayLanguage = mounted ? language : 'th';
 
     return (
         <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrolled ? 'bg-uefa-dark shadow-lg py-2' : 'bg-gradient-to-b from-uefa-dark to-transparent py-4'}`}>
@@ -95,15 +107,15 @@ export default function Navbar() {
                             className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-white/10 hover:border-cyan-aura/50 transition-all group bg-uefa-dark/50 backdrop-blur-sm"
                         >
                             <Image
-                                src={language === 'th' ? "https://flagcdn.com/w40/th.png" : "https://flagcdn.com/w40/gb.png"}
-                                alt={language}
+                                src={flagUrl}
+                                alt={displayLanguage}
                                 width={20}
                                 height={15}
                                 className="w-5 h-auto rounded shadow-sm opacity-80 group-hover:opacity-100 transition-opacity"
                                 style={{ width: 'auto', height: 'auto' }}
                                 unoptimized
                             />
-                            <span className="text-gray-300 text-sm font-bold group-hover:text-cyan-aura">{language.toUpperCase()}</span>
+                            <span className="text-gray-300 text-sm font-bold group-hover:text-cyan-aura">{displayLanguage.toUpperCase()}</span>
                         </button>
                     </div>
 
@@ -136,15 +148,15 @@ export default function Navbar() {
                                 className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10"
                             >
                                 <Image
-                                    src={language === 'th' ? "https://flagcdn.com/w40/th.png" : "https://flagcdn.com/w40/gb.png"}
-                                    alt={language}
+                                    src={flagUrl}
+                                    alt={displayLanguage}
                                     width={20}
                                     height={15}
                                     className="w-5 h-auto rounded"
                                     style={{ width: 'auto', height: 'auto' }}
                                     unoptimized
                                 />
-                                <span className="text-xs font-bold text-white">{language.toUpperCase()}</span>
+                                <span className="text-xs font-bold text-white">{displayLanguage.toUpperCase()}</span>
                             </button>
                             {/* Close Button */}
                             <button
