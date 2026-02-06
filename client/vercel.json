@@ -2,7 +2,7 @@
     "$schema": "https://openapi.vercel.sh/vercel.json",
     "headers": [
         {
-            "source": "/(.*)",
+            "source": "/((?!_vercel).*)",
             "headers": [
                 {
                     "key": "Content-Security-Policy",
@@ -34,7 +34,7 @@
                 },
                 {
                     "key": "Cross-Origin-Opener-Policy",
-                    "value": "same-origin"
+                    "value": "same-origin-allow-popups"
                 },
                 {
                     "key": "Cross-Origin-Resource-Policy",
