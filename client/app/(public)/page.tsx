@@ -2,13 +2,7 @@ import { Metadata } from 'next';
 import Link from 'next/link';
 import { serverApi } from '@/lib/api';
 import HeroCarousel from '@/components/home/HeroCarousel';
-import dynamic from 'next/dynamic';
-
-// Dynamically import HomeContent with SSR disabled to prevent hydration errors
-const HomeContent = dynamic(() => import('@/components/home/HomeContent'), {
-    ssr: false,
-    loading: () => <div className="container mx-auto px-4 py-12 min-h-screen" />,
-});
+import HomeContentWrapper from '@/components/home/HomeContentWrapper';
 
 export const metadata: Metadata = {
     title: 'RoV SN Tournament 2026',
@@ -32,8 +26,8 @@ export default async function HomePage() {
             {/* Hero Carousel */}
             <HeroCarousel />
 
-            {/* Content Section - Using Client Component for translations */}
-            <HomeContent
+            {/* Content Section - Using Client Component Wrapper for hydration safety */}
+            <HomeContentWrapper
                 latestMatches={data.latestMatches}
                 upcomingMatches={data.upcomingMatches}
                 standings={data.standings}
