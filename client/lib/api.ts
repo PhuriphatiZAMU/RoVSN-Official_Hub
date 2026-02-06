@@ -13,7 +13,7 @@ import {
 
 // Server-side API URL (private, for SSR and Server Components)
 const getServerApiUrl = () => {
-    return process.env.API_URL || 'http://localhost:3001/api';
+    return process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 };
 
 // Type for fetch options
